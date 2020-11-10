@@ -7,3 +7,4 @@ Very early tool, not ready for much use yet
 
 Tool can currently create a mesh along a Path node and you can control the subdivisions and it has a pretty simple water shader.
 
+* Note the repository has a copy of Zylann's terrain included at the moment as I'm using that for test scenes. https://github.com/Zylann/godot_heightmap_plugin
