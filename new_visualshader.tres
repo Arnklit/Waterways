@@ -1,0 +1,36 @@
+[gd_resource type="VisualShader" load_steps=2 format=2]
+
+[sub_resource type="VisualShaderNodeFresnel" id=1]
+
+[resource]
+code = "shader_type spatial;
+render_mode specular_schlick_ggx;
+
+
+
+
+void vertex() {
+// Output:0
+
+}
+
+void fragment() {
+// Fresnel:2
+	bool n_in2p2 = false;
+	float n_in2p3 = 1.00000;
+	float n_out2p0 = n_in2p2 ? (pow(clamp(dot(NORMAL, VIEW), 0.0, 1.0), n_in2p3)) : (pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), n_in2p3));
+
+// Output:0
+	ALPHA = n_out2p0;
+
+}
+
+void light() {
+// Output:0
+
+}
+"
+graph_offset = Vector2( -161, 153 )
+nodes/fragment/2/node = SubResource( 1 )
+nodes/fragment/2/position = Vector2( 80, 180 )
+nodes/fragment/connections = PoolIntArray( 2, 0, 0, 1 )
