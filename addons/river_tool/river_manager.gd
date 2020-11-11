@@ -67,7 +67,7 @@ func _enter_tree() -> void:
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
 		# Uncomment for debugging the MeshInstance object
-		# new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
+		new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
 	_mesh_instance = get_child(0)
 	_generate_river()
 
@@ -243,12 +243,55 @@ func _generate_river() -> void:
 			_st.add_index( (step * (step_width_divs + 1)) + w_sub + 3 + step_width_divs - 1)
 			_st.add_index( (step * (step_width_divs + 1)) + w_sub + 2 + step_width_divs - 1)
 	
+	
+	
 	_st.generate_normals()
 	_st.generate_tangents()
+	_st.deindex()
 	
 	var mesh = ArrayMesh.new()
+	var mesh2 =  ArrayMesh.new()
 	mesh = _st.commit()
-	_mesh_instance.mesh = mesh
+	
+	_mdt.create_from_surface(mesh, 0)
+	
+	# Generate UV2
+	# Decide on grid size
+	var grid_side = sqrt(steps)
+	if fmod(grid_side, 1.0) != 0.0:
+		grid_side += 1
+	var grid_size = pow(int(grid_side), 2)
+	
+	print("Grid Size is: " + str(grid_size))
+	
+#	var index = 0
+#	for step in steps:
+#		for y in step_length_divs + 1:
+#			for x in step_width_divs + 1:
+#				var pos := Vector2(float(x) / float(step_width_divs + 1), float(y) / float(step_length_divs + 1))
+#				_mdt.set_vertex_uv2(index, pos)
+#				print("index is: " + str(index))
+#				print(pos)
+#				index += 1
+
+	_mdt.set_vertex_uv2(0, Vector2(0.0, 0.0))
+	_mdt.set_vertex_uv2(1, Vector2(0.5, 0.0))
+	_mdt.set_vertex_uv2(2, Vector2(0.0, 0.5))
+
+	_mdt.set_vertex_uv2(3, Vector2(0.0, 0.5))
+	_mdt.set_vertex_uv2(4, Vector2(0.5, 0.0))
+	_mdt.set_vertex_uv2(5, Vector2(0.5, 0.5))
+
+	_mdt.set_vertex_uv2(6, Vector2(0.0, 0.5))
+	_mdt.set_vertex_uv2(7, Vector2(0.5, 0.5))
+	_mdt.set_vertex_uv2(8, Vector2(0.0, 1.0))
+#
+	_mdt.set_vertex_uv2(9, Vector2(0.0, 1.0))
+	_mdt.set_vertex_uv2(10, Vector2(0.5, 0.5))
+	_mdt.set_vertex_uv2(11, Vector2(0.5, 1.0))
+	
+	_mdt.commit_to_surface(mesh2)
+	_mesh_instance.mesh = mesh2
 	_mesh_instance.mesh.surface_set_material(0, _material)
 
 
