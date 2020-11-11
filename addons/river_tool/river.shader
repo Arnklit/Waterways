@@ -14,8 +14,7 @@ void fragment() {
 	depthTest = depthTest * 2.0 - 1.0;
 	depthTest = PROJECTION_MATRIX[3][2] / (depthTest + PROJECTION_MATRIX[2][2]);
 	depthTest += VERTEX.z;
-//	ALBEDO = vec3(depthTest);
-	
+
 	vec2 base_uv = UV;
 	ALBEDO = albedo.rgb;
 	ROUGHNESS = roughness;

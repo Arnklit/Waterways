@@ -6,8 +6,8 @@ const DEFAULT_NORMAL_PATH = "res://addons/river_tool/waves.png"
 
 # Shape Properties
 export(int, 1, 100) var steps := 6 setget set_steps
-export(int, 1, 8) var step_length_divs = 1 setget set_step_length_divs
-export(int, 1, 8) var step_width_divs = 1 setget set_step_width_divs
+export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
+export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
 
 # Material Properties
@@ -117,9 +117,7 @@ func set_steps(value : int) -> void:
 	river_width_values = []
 	for step in steps + 1:
 		var interpol = float(step) / float(steps + 2)
-		print("interpol is:" + str(interpol))
 		var interpol_old = interpol * float(old_river_width_values.size())
-		print("interpol_old is:" + str(interpol_old))
 		var interpolated_value = lerp(old_river_width_values[int(interpol_old)], old_river_width_values[int(interpol_old) + 1], fmod(interpol_old, 1.0))
 		river_width_values.append(interpolated_value)
 	river_width_values.append(river_width_values.back())
@@ -243,8 +241,6 @@ func _generate_river() -> void:
 			_st.add_index( (step * (step_width_divs + 1)) + w_sub + 3 + step_width_divs - 1)
 			_st.add_index( (step * (step_width_divs + 1)) + w_sub + 2 + step_width_divs - 1)
 	
-	
-	
 	_st.generate_normals()
 	_st.generate_tangents()
 	_st.deindex()
@@ -260,9 +256,38 @@ func _generate_river() -> void:
 	var grid_side = sqrt(steps)
 	if fmod(grid_side, 1.0) != 0.0:
 		grid_side += 1
-	var grid_size = pow(int(grid_side), 2)
-	
-	print("Grid Size is: " + str(grid_size))
+	grid_side = int(grid_side)
+	var grid_side_length = 1.0 / float(grid_side)
+	var x_grid_sub_length = grid_side_length / float(step_width_divs)
+	var y_grid_sub_length = grid_side_length / float(step_length_divs)
+	var grid_size = pow(grid_side, 2)
+	var index := 0
+	var UVs := steps * step_width_divs * step_length_divs * 6
+	var x_offset := 0.0
+	for x in grid_side:
+		var y_offset := 0.0
+		for y in grid_side:
+			
+			if index < UVs:
+				var sub_y_offset := 0.0
+				for sub_y in step_length_divs:
+					var sub_x_offset := 0.0
+					for sub_x in step_width_divs:
+						var x_comb_offset = x_offset + sub_x_offset
+						var y_comb_offset = y_offset + sub_y_offset
+						_mdt.set_vertex_uv2(index, Vector2(x_comb_offset, y_comb_offset))
+						_mdt.set_vertex_uv2(index + 1, Vector2(x_comb_offset + x_grid_sub_length, y_comb_offset))
+						_mdt.set_vertex_uv2(index + 2, Vector2(x_comb_offset, y_comb_offset + y_grid_sub_length))
+						
+						_mdt.set_vertex_uv2(index + 3, Vector2(x_comb_offset + x_grid_sub_length, y_comb_offset))
+						_mdt.set_vertex_uv2(index + 4, Vector2(x_comb_offset + x_grid_sub_length, y_comb_offset + y_grid_sub_length))
+						_mdt.set_vertex_uv2(index + 5, Vector2(x_comb_offset, y_comb_offset + y_grid_sub_length))
+						index += 6
+						sub_x_offset += grid_side_length / float(step_width_divs)
+					sub_y_offset += grid_side_length / float(step_length_divs)
+					
+			y_offset += grid_side_length
+		x_offset += grid_side_length
 	
 #	var index = 0
 #	for step in steps:
@@ -274,21 +299,21 @@ func _generate_river() -> void:
 #				print(pos)
 #				index += 1
 
-	_mdt.set_vertex_uv2(0, Vector2(0.0, 0.0))
-	_mdt.set_vertex_uv2(1, Vector2(0.5, 0.0))
-	_mdt.set_vertex_uv2(2, Vector2(0.0, 0.5))
-
-	_mdt.set_vertex_uv2(3, Vector2(0.0, 0.5))
-	_mdt.set_vertex_uv2(4, Vector2(0.5, 0.0))
-	_mdt.set_vertex_uv2(5, Vector2(0.5, 0.5))
-
-	_mdt.set_vertex_uv2(6, Vector2(0.0, 0.5))
-	_mdt.set_vertex_uv2(7, Vector2(0.5, 0.5))
-	_mdt.set_vertex_uv2(8, Vector2(0.0, 1.0))
+#	_mdt.set_vertex_uv2(0, Vector2(0.0, 0.0))
+#	_mdt.set_vertex_uv2(1, Vector2(0.5, 0.0))
+#	_mdt.set_vertex_uv2(2, Vector2(0.0, 0.5))
 #
-	_mdt.set_vertex_uv2(9, Vector2(0.0, 1.0))
-	_mdt.set_vertex_uv2(10, Vector2(0.5, 0.5))
-	_mdt.set_vertex_uv2(11, Vector2(0.5, 1.0))
+#	_mdt.set_vertex_uv2(3, Vector2(0.0, 0.5))
+#	_mdt.set_vertex_uv2(4, Vector2(0.5, 0.0))
+#	_mdt.set_vertex_uv2(5, Vector2(0.5, 0.5))
+#
+#	_mdt.set_vertex_uv2(6, Vector2(0.0, 0.5))
+#	_mdt.set_vertex_uv2(7, Vector2(0.5, 0.5))
+#	_mdt.set_vertex_uv2(8, Vector2(0.0, 1.0))
+##
+#	_mdt.set_vertex_uv2(9, Vector2(0.0, 1.0))
+#	_mdt.set_vertex_uv2(10, Vector2(0.5, 0.5))
+#	_mdt.set_vertex_uv2(11, Vector2(0.5, 1.0))
 	
 	_mdt.commit_to_surface(mesh2)
 	_mesh_instance.mesh = mesh2
