@@ -8,6 +8,7 @@ uniform float absorption : hint_range(0.0, 1.0) = 0.0;
 uniform sampler2D texture_normal : hint_normal;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
+uniform sampler2D flowmap : hint_black;
 
 void fragment() {
 	float depthTest = texture(DEPTH_TEXTURE,SCREEN_UV).r;
@@ -29,4 +30,5 @@ void fragment() {
 	EMISSION += textureLod(SCREEN_TEXTURE,ref_ofs,ROUGHNESS * 8.0).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
+//	ALBEDO = texture(flowmap, UV2).rgb;
 }

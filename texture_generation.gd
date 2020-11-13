@@ -27,7 +27,6 @@ func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
 	var u = 1.0 - v - w
 	return Vector3(u, v, w)
 
-# https://stackoverflow.com/questions/11262391/from-barycentric-to-cartesian
 func bary2cart(a : Vector3, b : Vector3, c: Vector3, barycentric: Vector3) -> Vector3:
 	return barycentric.x * a + barycentric.y * b + barycentric.z * c
 
@@ -36,7 +35,7 @@ func generate_tex() -> void:
 	var _mdt := MeshDataTool.new()
 	var imageTexture := ImageTexture.new()
 	var image := Image.new()
-	image.create(4, 4, true, Image.FORMAT_RGB8)
+	image.create(256, 256, true, Image.FORMAT_RGB8)
 	image.fill(Color(0.0, 0.0, 0.0))
 	
 	image.lock()
@@ -46,43 +45,48 @@ func generate_tex() -> void:
 	# We need to move the verts into world space
 	var world_verts : PoolVector3Array = []
 	for v in verts.size():
-		world_verts.append( transform.xform(verts[v]) )
-	print("uv1" + str(uv1))
-	print("verts" + str(verts))
-	print("world_verts" + str(world_verts))
+		world_verts.append( global_transform.xform(verts[v]) )
+	#print("uv1" + str(uv1))
+	#print("verts" + str(verts))
+	#print("world_verts" + str(world_verts))
 	
 	for x in image.get_width():
 		for y in image.get_height():
-			print("**************NEW*PIXEL**************")
+			#print("**************NEW*PIXEL**************")
 			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
 			
 			var baryatric_coords
 			
 			var correct_triangle := []
 			for tris in uv1.size() / 3:
-				print("tris is: " + str(tris))
+				#print("tris is: " + str(tris))
 				var triangle : PoolVector2Array = []
 				triangle.append(uv1[tris * 3])
 				triangle.append(uv1[tris * 3 + 1])
 				triangle.append(uv1[tris * 3 + 2])
-				print("triangle is: " + str(triangle))
+				#print("triangle is: " + str(triangle))
 				if Geometry.is_point_in_polygon(uv_coordinate, triangle):
+					var p = Vector3(uv_coordinate.x, uv_coordinate.y, 0.0)
+					var a = Vector3(uv1[tris * 3].x, uv1[tris * 3].y, 0.0)
+					var b = Vector3(uv1[tris * 3 + 1].x, uv1[tris * 3 + 1].y, 0.0)
+					var c = Vector3(uv1[tris * 3 + 2].x, uv1[tris * 3 + 2].y, 0.0)
+					baryatric_coords = cart2bary(p, a, b, c)
 					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
-					baryatric_coords = cart2bary(Vector3(uv_coordinate.x, uv_coordinate.y, 0.0), Vector3(uv1[tris].x, uv1[tris].y, 0.0), Vector3(uv1[tris + 1].x, uv1[tris + 1].y, 0.0), Vector3(uv1[tris + 2].x, uv1[tris + 2].y, 0.0) )
+					#print("baryatric coords: " + str(baryatric_coords))
 					break
-			print("uv coordinate is" + str(uv_coordinate))
-			print("correct tri is: " + str(correct_triangle))
+			#print("uv coordinate is" + str(uv_coordinate))
+			#print("correct tri is: " + str(correct_triangle))
 			
 			var vert0 = world_verts[correct_triangle[0]] 
 			var vert1 = world_verts[correct_triangle[1]] 
 			var vert2 = world_verts[correct_triangle[2]]
 			
-			print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
+			#print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
 			
 			var real_pos = bary2cart(vert0, vert1, vert2, baryatric_coords)
-			print("real_pos is: " + str(real_pos))
+			#print("real_pos is: " + str(real_pos))
 			var real_pos_up = real_pos + Vector3.UP * 10.0
-			print("real_pos_up is: " + str(real_pos_up))
+			#print("real_pos_up is: " + str(real_pos_up))
 			
 			#var world_pos = Vector3( (float(x) / 256.0) - .5, 0.0, (float(y) / 256.0) - .5)
 			#var world_pos_up = Vector3( (float(x) / 256.0) - .5, 10.0, (float(y) / 256.0) - .5)

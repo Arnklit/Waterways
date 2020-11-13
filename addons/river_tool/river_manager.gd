@@ -9,6 +9,9 @@ export(int, 1, 100) var steps := 6 setget set_steps
 export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
 export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
+export(bool) var bake_flowmap setget set_bake_flowmap
+export(Texture) var flowmap_texture
+export(int) var flowmap_resolution = 256
 
 # Material Properties
 export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo 
@@ -149,6 +152,11 @@ func set_smoothness(value : float) -> void:
 	emit_signal("river_changed")
 
 
+func set_bake_flowmap(value : bool) -> void:
+	if _first_enter_tree:
+		return
+	generate_flowmap()
+
 func set_albedo(color : Color) -> void:
 	albedo = color
 	_material.set_shader_param("albedo", color)
@@ -198,6 +206,26 @@ func _analyse_parent() -> void:
 		parent_is_path = true
 		var parent_path = _parent_object as Path
 		parent_path.connect("curve_changed", self, "_on_Path_curve_changed")
+
+
+func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
+	var v0 := b - a
+	var v1 := c - a
+	var v2 := p - a
+	var d00 := v0.dot(v0)
+	var d01 := v0.dot(v1)
+	var d11 := v1.dot(v1)
+	var d20 := v2.dot(v0)
+	var d21 := v2.dot(v1)
+	var denom := d00 * d11 - d01 * d01
+	var v = (d11 * d20 - d01 * d21) / denom
+	var w = (d00 * d21 - d01 * d20) / denom
+	var u = 1.0 - v - w
+	return Vector3(u, v, w)
+
+
+func bary2cart(a : Vector3, b : Vector3, c: Vector3, barycentric: Vector3) -> Vector3:
+	return barycentric.x * a + barycentric.y * b + barycentric.z * c
 
 
 func _generate_river() -> void:
@@ -289,35 +317,78 @@ func _generate_river() -> void:
 			y_offset += grid_side_length
 		x_offset += grid_side_length
 	
-#	var index = 0
-#	for step in steps:
-#		for y in step_length_divs + 1:
-#			for x in step_width_divs + 1:
-#				var pos := Vector2(float(x) / float(step_width_divs + 1), float(y) / float(step_length_divs + 1))
-#				_mdt.set_vertex_uv2(index, pos)
-#				print("index is: " + str(index))
-#				print(pos)
-#				index += 1
-
-#	_mdt.set_vertex_uv2(0, Vector2(0.0, 0.0))
-#	_mdt.set_vertex_uv2(1, Vector2(0.5, 0.0))
-#	_mdt.set_vertex_uv2(2, Vector2(0.0, 0.5))
-#
-#	_mdt.set_vertex_uv2(3, Vector2(0.0, 0.5))
-#	_mdt.set_vertex_uv2(4, Vector2(0.5, 0.0))
-#	_mdt.set_vertex_uv2(5, Vector2(0.5, 0.5))
-#
-#	_mdt.set_vertex_uv2(6, Vector2(0.0, 0.5))
-#	_mdt.set_vertex_uv2(7, Vector2(0.5, 0.5))
-#	_mdt.set_vertex_uv2(8, Vector2(0.0, 1.0))
-##
-#	_mdt.set_vertex_uv2(9, Vector2(0.0, 1.0))
-#	_mdt.set_vertex_uv2(10, Vector2(0.5, 0.5))
-#	_mdt.set_vertex_uv2(11, Vector2(0.5, 1.0))
-	
 	_mdt.commit_to_surface(mesh2)
 	_mesh_instance.mesh = mesh2
 	_mesh_instance.mesh.surface_set_material(0, _material)
+
+func generate_flowmap() -> void:
+	var image := Image.new()
+	image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
+	image.fill(Color(0.0, 0.0, 0.0))
+	
+	image.lock()
+	var space_state := get_world().direct_space_state
+	var uv2 := _mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
+	var verts := _mesh_instance.mesh.surface_get_arrays(0)[0] as PoolVector3Array
+	# We need to move the verts into world space
+	var world_verts : PoolVector3Array = []
+	for v in verts.size():
+		world_verts.append( global_transform.xform(verts[v]) )
+	
+	for x in image.get_width():
+		for y in image.get_height():
+			#print("***NEW PIXEL***")
+			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
+			#print("uv_coordinate: " + str(uv_coordinate))
+			var baryatric_coords
+			var correct_triangle := []
+			for tris in uv2.size() / 3:
+				var triangle : PoolVector2Array = []
+				triangle.append(uv2[tris * 3])
+				triangle.append(uv2[tris * 3 + 1])
+				triangle.append(uv2[tris * 3 + 2])
+				if Geometry.is_point_in_polygon(uv_coordinate, triangle):
+					var p = Vector3(uv_coordinate.x, uv_coordinate.y, 0.0)
+					var a = Vector3(uv2[tris * 3].x, uv2[tris * 3].y, 0.0)
+					var b = Vector3(uv2[tris * 3 + 1].x, uv2[tris * 3 + 1].y, 0.0)
+					var c = Vector3(uv2[tris * 3 + 2].x, uv2[tris * 3 + 2].y, 0.0)
+					baryatric_coords = cart2bary(p, a, b, c)
+					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
+					#print("correct_triangle: " + str(correct_triangle))
+					break
+			
+			# If there is no correct triangle we are in the empty part of the UV2 map and should draw
+			if correct_triangle:
+				var vert0 = world_verts[correct_triangle[0]] 
+				var vert1 = world_verts[correct_triangle[1]] 
+				var vert2 = world_verts[correct_triangle[2]]
+				#print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
+				
+				var real_pos = bary2cart(vert0, vert1, vert2, baryatric_coords)
+				var real_pos_up = real_pos + Vector3.UP * 10.0
+				#print("real_pos: " + str(real_pos))
+				
+				var result_up = space_state.intersect_ray(real_pos, real_pos_up)
+				var result_down = space_state.intersect_ray(real_pos_up, real_pos)
+				
+				var up_hit_frontface = false
+				if result_up:
+					if result_up.normal.y < 0:
+						true
+				
+				if result_up or result_down:
+					#print("hit something")
+					#image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
+					if not up_hit_frontface and result_down:
+						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
+	
+	image.unlock()
+	
+	var imageTexture := ImageTexture.new()
+	imageTexture.create_from_image(image, Texture.FLAG_CONVERT_TO_LINEAR)
+	flowmap_texture = imageTexture
+	flowmap_texture.set_flags(Texture.FLAGS_DEFAULT + Texture.FLAG_CONVERT_TO_LINEAR)
+	_material.set_shader_param("flowmap", flowmap_texture)
 
 
 # Signal Methods
