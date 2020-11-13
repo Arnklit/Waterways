@@ -2,7 +2,7 @@
 
 [ext_resource path="res://texture_generation.gd" type="Script" id=1]
 
-[sub_resource type="Image" id=17]
+[sub_resource type="Image" id=1]
 data = {
 "data": PoolByteArray( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ),
 "format": "RGB8",
@@ -11,31 +11,31 @@ data = {
 "width": 4
 }
 
-[sub_resource type="ImageTexture" id=18]
+[sub_resource type="ImageTexture" id=2]
 flags = 23
 flags = 23
-image = SubResource( 17 )
+image = SubResource( 1 )
 size = Vector2( 4, 4 )
 
 [sub_resource type="SpatialMaterial" id=3]
-albedo_texture = SubResource( 18 )
+albedo_texture = SubResource( 2 )
 
 [sub_resource type="QuadMesh" id=4]
 material = SubResource( 3 )
 
-[sub_resource type="Image" id=19]
+[sub_resource type="Image" id=5]
 data = {
-"data": PoolByteArray( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ),
+"data": PoolByteArray( 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 255, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 ),
 "format": "RGB8",
 "height": 4,
 "mipmaps": false,
 "width": 4
 }
 
-[sub_resource type="ImageTexture" id=20]
+[sub_resource type="ImageTexture" id=6]
 flags = 23
 flags = 23
-image = SubResource( 19 )
+image = SubResource( 5 )
 size = Vector2( 4, 4 )
 
 [sub_resource type="SphereShape" id=7]
@@ -52,18 +52,18 @@ rings = 8
 
 [sub_resource type="CubeMesh" id=10]
 
-[sub_resource type="SpatialMaterial" id=16]
+[sub_resource type="SpatialMaterial" id=11]
 
-[sub_resource type="BoxShape" id=11]
+[sub_resource type="BoxShape" id=12]
 
 [node name="TextureGeneration" type="Spatial"]
 
 [node name="WaterPlane" type="MeshInstance" parent="."]
-transform = Transform( 1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0.5, 0, 0.5 )
+transform = Transform( 1, 0, 0, 0, -1.62921e-07, 1, 0, -1, -1.62921e-07, 0.5, 0, 0.5 )
 mesh = SubResource( 4 )
 material/0 = null
 script = ExtResource( 1 )
-generated_texture = SubResource( 20 )
+generated_texture = SubResource( 6 )
 
 [node name="StaticBody" type="StaticBody" parent="."]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.570919, 0.0750001, 0.646667 )
@@ -80,7 +80,10 @@ transform = Transform( 0.0488579, -0.048052, 0.0603832, -0.00453099, 0.0695584, 
 
 [node name="MeshInstance" type="MeshInstance" parent="StaticBody2"]
 mesh = SubResource( 10 )
-material/0 = SubResource( 16 )
+material/0 = SubResource( 11 )
 
 [node name="CollisionShape" type="CollisionShape" parent="StaticBody2"]
-shape = SubResource( 11 )
+shape = SubResource( 12 )
+
+[node name="Spatial" type="Spatial" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 0.830633, 0, 0.878303 )

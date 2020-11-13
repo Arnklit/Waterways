@@ -11,6 +11,27 @@ func set_generate(value : bool) -> void:
 	generate_tex()
 
 
+# top answer - https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
+func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
+	var v0 := b - a
+	var v1 := c - a
+	var v2 := p - a
+	var d00 := v0.dot(v0)
+	var d01 := v0.dot(v1)
+	var d11 := v1.dot(v1)
+	var d20 := v2.dot(v0)
+	var d21 := v2.dot(v1)
+	var denom := d00 * d11 - d01 * d01
+	var v = (d11 * d20 - d01 * d21) / denom
+	var w = (d00 * d21 - d01 * d20) / denom
+	var u = 1.0 - v - w
+	return Vector3(u, v, w)
+
+# https://stackoverflow.com/questions/11262391/from-barycentric-to-cartesian
+func bary2cart(a : Vector3, b : Vector3, c: Vector3, barycentric: Vector3) -> Vector3:
+	return barycentric.x * a + barycentric.y * b + barycentric.z * c
+
+
 func generate_tex() -> void:
 	var _mdt := MeshDataTool.new()
 	var imageTexture := ImageTexture.new()
@@ -26,16 +47,18 @@ func generate_tex() -> void:
 	var world_verts : PoolVector3Array = []
 	for v in verts.size():
 		world_verts.append( transform.xform(verts[v]) )
-	#print("uv1" + str(uv1))
-	#print("verts" + str(verts))
-	#print("world_verts" + str(world_verts))
+	print("uv1" + str(uv1))
+	print("verts" + str(verts))
+	print("world_verts" + str(world_verts))
 	
 	for x in image.get_width():
 		for y in image.get_height():
+			print("**************NEW*PIXEL**************")
 			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
 			
+			var baryatric_coords
+			
 			var correct_triangle := []
-			var triangle_distances := []
 			for tris in uv1.size() / 3:
 				print("tris is: " + str(tris))
 				var triangle : PoolVector2Array = []
@@ -44,28 +67,19 @@ func generate_tex() -> void:
 				triangle.append(uv1[tris * 3 + 2])
 				print("triangle is: " + str(triangle))
 				if Geometry.is_point_in_polygon(uv_coordinate, triangle):
-					correct_triangle = [tris, tris + 1, tris + 2]
-					triangle_distances.append(uv_coordinate.distance_to(uv1[tris]))
-					triangle_distances.append(uv_coordinate.distance_to(uv1[tris + 1]))
-					triangle_distances.append(uv_coordinate.distance_to(uv1[tris + 2]))
+					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
+					baryatric_coords = cart2bary(Vector3(uv_coordinate.x, uv_coordinate.y, 0.0), Vector3(uv1[tris].x, uv1[tris].y, 0.0), Vector3(uv1[tris + 1].x, uv1[tris + 1].y, 0.0), Vector3(uv1[tris + 2].x, uv1[tris + 2].y, 0.0) )
 					break
 			print("uv coordinate is" + str(uv_coordinate))
 			print("correct tri is: " + str(correct_triangle))
-			print("triangle distances is: " + str( triangle_distances ))
 			
-			var combined_dists = triangle_distances[0] + triangle_distances[1] + triangle_distances[2]
-			var weight0 = combined_dists / triangle_distances[0]
-			var weight1 = combined_dists / triangle_distances[1]
-			var weight2 = combined_dists / triangle_distances[2]
-			var combined_weight = weight0 + weight1 + weight2
-			print("weight0: " + str(weight0 / combined_weight))
-			print("weight1: " + str(weight1 / combined_weight))
-			print("weight2: " + str(weight2 / combined_weight))
-			print("combined weight: " + str(combined_weight))
-			var vert0 = world_verts[correct_triangle[0]] * (weight0 / combined_weight)
-			var vert1 = world_verts[correct_triangle[1]] * (weight1 / combined_weight)
-			var vert2 = world_verts[correct_triangle[2]] * (weight2 / combined_weight)
-			var real_pos = (vert0 + vert1 + vert2)
+			var vert0 = world_verts[correct_triangle[0]] 
+			var vert1 = world_verts[correct_triangle[1]] 
+			var vert2 = world_verts[correct_triangle[2]]
+			
+			print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
+			
+			var real_pos = bary2cart(vert0, vert1, vert2, baryatric_coords)
 			print("real_pos is: " + str(real_pos))
 			var real_pos_up = real_pos + Vector3.UP * 10.0
 			print("real_pos_up is: " + str(real_pos_up))
