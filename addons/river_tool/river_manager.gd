@@ -3,6 +3,7 @@ extends Spatial
 
 const DEFAULT_SHADER_PATH = "res://addons/river_tool/river.shader"
 const DEFAULT_NORMAL_PATH = "res://addons/river_tool/waves.png"
+const RENDERER_PATH = "res://Renderer.tscn"
 
 # Shape Properties
 export(int, 1, 100) var steps := 6 setget set_steps
@@ -10,6 +11,8 @@ export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
 export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
 export(bool) var bake_flowmap setget set_bake_flowmap
+export(float) var flowmap_distance = 0.1
+export(Texture) var distance_texture
 export(Texture) var flowmap_texture
 export(int) var flowmap_resolution = 256
 
@@ -31,6 +34,7 @@ var _default_shader : Shader
 var _material : Material
 var _first_enter_tree = true
 var _parent_object 
+var _renderer
 var parent_is_path := false
 
 # Signal used to update handles immedieately when values are changed in script
@@ -56,6 +60,7 @@ func _init() -> void:
 	set_texture_normal(load(DEFAULT_NORMAL_PATH))
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
+	_renderer = load(RENDERER_PATH)
 
 
 func _enter_tree() -> void:
@@ -384,11 +389,39 @@ func generate_flowmap() -> void:
 	
 	image.unlock()
 	
-	var imageTexture := ImageTexture.new()
-	imageTexture.create_from_image(image, Texture.FLAG_CONVERT_TO_LINEAR)
-	flowmap_texture = imageTexture
-	flowmap_texture.set_flags(Texture.FLAGS_DEFAULT + Texture.FLAG_CONVERT_TO_LINEAR)
-	_material.set_shader_param("flowmap", flowmap_texture)
+	# Calculate how many colums are in UV2
+	var grid_side = sqrt(steps)
+	if fmod(grid_side, 1.0) != 0.0:
+		grid_side += 1
+	grid_side = int(grid_side)
+	print("grid_side: " + str(grid_side))
+	var margin = int(round(float(flowmap_resolution) / float(grid_side)))
+	print("margin: " + str(margin))
+	var with_margins_size = flowmap_resolution + 2 * margin
+	print("with_margins_size: " + str(with_margins_size))
+	
+	var image_with_margins := Image.new()
+	image_with_margins.create(with_margins_size, with_margins_size, true, Image.FORMAT_RGB8)
+	image_with_margins.lock()
+	image_with_margins.blend_rect(image, Rect2(0.0, flowmap_resolution - margin, flowmap_resolution, margin), Vector2(margin + margin, 0.0))
+	image_with_margins.blend_rect(image, Rect2(0.0, 0.0, flowmap_resolution, flowmap_resolution), Vector2(margin, margin))
+	image_with_margins.blend_rect(image, Rect2(0.0, 0.0, flowmap_resolution, margin), Vector2(0.0, flowmap_resolution + margin))
+	image_with_margins.unlock()
+	
+	var texture_to_dilate := ImageTexture.new()
+	texture_to_dilate.create_from_image(image_with_margins, Texture.FLAG_CONVERT_TO_LINEAR)
+	# Create renderer for dilate filter
+	var renderer_instance = _renderer.instance()
+	
+	self.add_child(renderer_instance)
+	
+	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, flowmap_distance), "completed")
+	var img = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	distance_texture = ImageTexture.new()
+	distance_texture.create_from_image(img, Texture.FLAG_CONVERT_TO_LINEAR)
+	#yield(get_tree(), "idle_frame")
+	
+	_material.set_shader_param("distance_map", distance_texture)
 
 
 # Signal Methods
