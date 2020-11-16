@@ -11,9 +11,7 @@ export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
 export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
 export(bool) var bake_flowmap setget set_bake_flowmap
-export(float) var flowmap_distance = 0.1
 export(Texture) var distance_texture
-export(Texture) var flowmap_texture
 export(int) var flowmap_resolution = 256
 
 # Material Properties
@@ -415,14 +413,13 @@ func generate_flowmap() -> void:
 	
 	self.add_child(renderer_instance)
 	
-	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, flowmap_distance), "completed")
+	var dilate_amount = 0.5 / float(grid_side + 2)
+	print ("dilate_amount: " + str(dilate_amount))
+	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount), "completed")
 	var img = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	distance_texture = ImageTexture.new()
 	distance_texture.create_from_image(img, Texture.FLAG_CONVERT_TO_LINEAR)
-	#yield(get_tree(), "idle_frame")
-	
-	_material.set_shader_param("distance_map", distance_texture)
-
+	print("finished calculating distance map")
 
 # Signal Methods
 func _on_Path_curve_changed() -> void:

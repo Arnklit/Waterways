@@ -10,7 +10,7 @@ uniform sampler2D texture_foam : hint_white;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform sampler2D distance_map : hint_black;
-uniform sampler2D flow_map : hint_normal;
+uniform sampler2D flow_map;
 uniform vec2 uv_tiling = vec2(1.0, 1.0);
 
 void fragment() {
@@ -20,7 +20,7 @@ void fragment() {
 	float phase1 = fract(TIME * -flow_speed);
 	float phase2 = fract(phase1 + 0.5);
 	float flow_mix = abs((phase1 - 0.5) * 2.0);
-		
+
 	float depthTest = texture(DEPTH_TEXTURE,SCREEN_UV).r;
 	depthTest = depthTest * 2.0 - 1.0;
 	depthTest = PROJECTION_MATRIX[3][2] / (depthTest + PROJECTION_MATRIX[2][2]);
@@ -29,10 +29,9 @@ void fragment() {
 	float foam_tex_phase1 = texture(texture_foam, base_uv + (flow * phase1 * flow_speed)).r;
 	float foam_tex_phase2 = texture(texture_foam, base_uv + (flow * phase2 * flow_speed)).r;
 	float foam = clamp(mix(foam_tex_phase1, foam_tex_phase2, flow_mix) * 4.0 - 1.5, 0.0, 1.0);
-	float foam_mask = texture( distance_map, UV2).r * 3.0;
+	float foam_mask = texture( flow_map, UV2).b * 2.0;
 
 	ALBEDO = mix(albedo.rgb, vec3(1.0, 1.0, 1.0), foam * foam_mask);
-	//ALBEDO = albedo.rgb;
 	ROUGHNESS = roughness;
 	vec3 normal_tex_phase1 = texture(texture_normal, base_uv + (flow * phase1 * flow_speed)).rgb;
 	vec3 normal_tex_phase2 = texture(texture_normal, base_uv + (flow * phase2 * flow_speed)).rgb;
@@ -48,6 +47,8 @@ void fragment() {
 	EMISSION += textureLod(SCREEN_TEXTURE,ref_ofs,ROUGHNESS * 8.0).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
-
-
+	
+	
+	
+	//ALBEDO = texture( flow_map, UV2).bbb * 1.0;
 }
