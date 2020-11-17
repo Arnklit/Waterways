@@ -29,6 +29,10 @@ _global_script_class_icons={
 config/name="RiverTool"
 config/icon="res://icon.png"
 
+[audio]
+
+default_bus_layout=""
+
 [editor_plugins]
 
 enabled=PoolStringArray( "river_tool", "zylann.hterrain" )

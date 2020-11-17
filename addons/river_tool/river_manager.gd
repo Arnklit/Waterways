@@ -12,6 +12,9 @@ export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
 export(bool) var bake_flowmap setget set_bake_flowmap
 export(Texture) var distance_texture
+export(Texture) var normal_texture
+export(Texture) var flowmap_texture
+export(Texture) var blurred_flowmap_texture
 export(int) var flowmap_resolution = 256
 
 # Material Properties
@@ -324,7 +327,19 @@ func _generate_river() -> void:
 	_mesh_instance.mesh = mesh2
 	_mesh_instance.mesh.surface_set_material(0, _material)
 
+func reset_all_colliders(node):
+	for n in node.get_children():
+		if n.get_child_count() > 0:
+			reset_all_colliders(n)
+		if n is CollisionShape:
+			if n.disabled == false:
+				n.disabled = true
+				n.disabled = false
+
+
 func generate_flowmap() -> void:
+	reset_all_colliders(get_tree().root)
+
 	var image := Image.new()
 	image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
 	image.fill(Color(0.0, 0.0, 0.0))
@@ -386,7 +401,7 @@ func generate_flowmap() -> void:
 						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
 	
 	image.unlock()
-	
+	print("finished collision map")
 	# Calculate how many colums are in UV2
 	var grid_side = sqrt(steps)
 	if fmod(grid_side, 1.0) != 0.0:
@@ -407,7 +422,8 @@ func generate_flowmap() -> void:
 	image_with_margins.unlock()
 	
 	var texture_to_dilate := ImageTexture.new()
-	texture_to_dilate.create_from_image(image_with_margins, Texture.FLAG_CONVERT_TO_LINEAR)
+	texture_to_dilate.create_from_image(image_with_margins)
+	print("finished adding margins")
 	# Create renderer for dilate filter
 	var renderer_instance = _filter_renderer.instance()
 	
@@ -416,10 +432,31 @@ func generate_flowmap() -> void:
 	var dilate_amount = 0.6 / float(grid_side + 2)
 	print ("dilate_amount: " + str(dilate_amount))
 	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount), "completed")
-	var img = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	print("dilate finished")
+	var normal_map = yield(renderer_instance.apply_normal(dilated_texture), "completed")
+	print("normal finished")
+	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map), "completed")
+	print("flowmap finished")
+	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, 6.0), "completed")
+	print("blurred_flowmap finished")
+	
+	var dilate_result = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var normal_result = normal_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var flowmap_result = flow_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var blurred_flowmap_result = blurred_flow_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	
 	distance_texture = ImageTexture.new()
-	distance_texture.create_from_image(img, Texture.FLAG_CONVERT_TO_LINEAR)
-	print("finished calculating distance map")
+	distance_texture.create_from_image(dilate_result)
+	normal_texture = ImageTexture.new()
+	normal_texture.create_from_image(normal_result)
+	flowmap_texture = ImageTexture.new()
+	flowmap_texture.create_from_image(flowmap_result)
+	blurred_flowmap_texture = ImageTexture.new()
+	blurred_flowmap_texture.create_from_image(blurred_flowmap_result, 5) # 5 should disable repeat
+	_material.set_shader_param("flowmap", blurred_flowmap_texture)
+	
+	print("finished map bake")
+
 
 # Signal Methods
 func _on_Path_curve_changed() -> void:

@@ -8,13 +8,13 @@ uniform float absorption : hint_range(0.0, 1.0) = 0.0;
 uniform sampler2D texture_water : hint_black;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
-uniform sampler2D flow_map : hint_normal;
+uniform sampler2D flowmap : hint_normal;
 uniform vec2 uv_tiling = vec2(1.0, 1.0);
 
 void fragment() {
 	// Setup for flow_maps
 	vec2 base_uv = UV * uv_tiling;
-	vec2 flow = texture(flow_map, UV2).xy;
+	vec2 flow = texture(flowmap, UV2).xy;
 	flow = (flow - 0.5) * 2.0; // remap
 	float phase1 = fract(TIME * -flow_speed);
 	float phase2 = fract(phase1 + 0.5);
@@ -32,7 +32,7 @@ void fragment() {
 
 	// Mix the two scales together for the foam pattern
 	float foam = clamp((water_x1.b * .65 + water_x1.b * 0.35) * 4.0 - 1.5, 0.0, 1.0);
-	float foam_mask = texture( flow_map, UV2).b * 2.0;
+	float foam_mask = texture(flowmap, UV2).b * 2.0;
 
 	// Depthtest
 	float depthTest = texture(DEPTH_TEXTURE,SCREEN_UV).r;
