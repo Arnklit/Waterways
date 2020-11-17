@@ -35,4 +35,4 @@ enabled=PoolStringArray( "river_tool", "zylann.hterrain" )
 
 [rendering]
 
-environment/default_environment="res://default_env.tres"
+environment/default_environment="res://test_assets/default_env.tres"

@@ -1,12 +1,8 @@
 tool
 extends Viewport
 
-export(Texture) var input_texture : Texture
-export(Texture) var render_result : Texture
-export(bool) var render := false setget set_render
-
-const DILATE_PASS1_PATH = "res://addons/river_tool/dilate_filter_pass1.shader"
-const DILATE_PASS2_PATH = "res://addons/river_tool/dilate_filter_pass2.shader"
+const DILATE_PASS1_PATH = "res://addons/river_tool/shaders/dilate_filter_pass1.shader"
+const DILATE_PASS2_PATH = "res://addons/river_tool/shaders/dilate_filter_pass2.shader"
 var dilate_pass_1_shader : Shader
 var dilate_pass_2_shader : Shader
 var dilate_pass_1_mat : Material
@@ -54,7 +50,3 @@ func apply_dilate(input_texture : Texture, dilation : float) -> ImageTexture:
 	pass2_result.create_from_image(image2)
 	
 	return pass2_result
-
-
-func set_render(value : bool) -> void:
-	render_result =  yield(apply_dilate(input_texture, 0.1), "completed")

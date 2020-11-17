@@ -1,9 +1,9 @@
 tool
 extends Spatial
 
-const DEFAULT_SHADER_PATH = "res://addons/river_tool/river.shader"
-const DEFAULT_NORMAL_PATH = "res://addons/river_tool/waves.png"
-const RENDERER_PATH = "res://Renderer.tscn"
+const DEFAULT_SHADER_PATH = "res://addons/river_tool/shaders/river.shader"
+const DEFAULT_WATER_TEXTURE_PATH = "res://addons/river_tool/textures/water1.png"
+const FILTER_RENDERER_PATH = "res://addons/river_tool/FilterRenderer.tscn"
 
 # Shape Properties
 export(int, 1, 100) var steps := 6 setget set_steps
@@ -18,7 +18,7 @@ export(int) var flowmap_resolution = 256
 export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo 
 export(float, 0.0, 1.0) var roughness = 0.2 setget set_roughness
 export(float, -1.0, 1.0) var refraction = 0.05 setget set_refraction
-export(Texture) var texture_normal setget set_texture_normal
+export(Texture) var texture_water setget set_water_texture
 export(float, -16.0, 16.0) var normal_scale = 1.0 setget set_normal_scale
 export(float, 0.0, 1.0) var absorption = 0.0 setget set_absorption
 export(float, 0.0, 10.0) var flow_speed = 1.0 setget set_flowspeed
@@ -32,7 +32,7 @@ var _default_shader : Shader
 var _material : Material
 var _first_enter_tree = true
 var _parent_object 
-var _renderer
+var _filter_renderer
 var parent_is_path := false
 
 # Signal used to update handles immedieately when values are changed in script
@@ -55,10 +55,10 @@ func _init() -> void:
 	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
 	_material = ShaderMaterial.new()
 	_material.shader = _default_shader
-	set_texture_normal(load(DEFAULT_NORMAL_PATH))
+	set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
-	_renderer = load(RENDERER_PATH)
+	_filter_renderer = load(FILTER_RENDERER_PATH)
 
 
 func _enter_tree() -> void:
@@ -175,9 +175,9 @@ func set_refraction(value : float) -> void:
 	_material.set_shader_param("refraction", value)
 
 
-func set_texture_normal(texture : Texture) -> void:
-	texture_normal = texture
-	_material.set_shader_param("texture_normal", texture)
+func set_water_texture(texture : Texture) -> void:
+	texture_water = texture
+	_material.set_shader_param("texture_water", texture)
 
 
 func set_normal_scale(value : float) -> void:
@@ -409,11 +409,11 @@ func generate_flowmap() -> void:
 	var texture_to_dilate := ImageTexture.new()
 	texture_to_dilate.create_from_image(image_with_margins, Texture.FLAG_CONVERT_TO_LINEAR)
 	# Create renderer for dilate filter
-	var renderer_instance = _renderer.instance()
+	var renderer_instance = _filter_renderer.instance()
 	
 	self.add_child(renderer_instance)
 	
-	var dilate_amount = 0.5 / float(grid_side + 2)
+	var dilate_amount = 0.6 / float(grid_side + 2)
 	print ("dilate_amount: " + str(dilate_amount))
 	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount), "completed")
 	var img = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))

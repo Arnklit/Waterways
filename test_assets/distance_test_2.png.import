@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/distance_test.png-5e3d91fc7362a696468a51c3b39d2478.stex"
+path="res://.import/distance_test_2.png-2e99f13dc69281500c0e01b2a50b0df7.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://distance_test.png"
-dest_files=[ "res://.import/distance_test.png-5e3d91fc7362a696468a51c3b39d2478.stex" ]
+source_file="res://test_assets/distance_test_2.png"
+dest_files=[ "res://.import/distance_test_2.png-2e99f13dc69281500c0e01b2a50b0df7.stex" ]
 
 [params]
 

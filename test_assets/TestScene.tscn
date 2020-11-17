@@ -1,0 +1,168 @@
+[gd_scene load_steps=21 format=2]
+
+[ext_resource path="res://addons/river_tool/river_manager.gd" type="Script" id=1]
+[ext_resource path="res://test_assets/tdata/data.hterrain" type="Resource" id=2]
+[ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=3]
+[ext_resource path="res://test_assets/dirt_alb_bump.png" type="Texture" id=4]
+[ext_resource path="res://test_assets/dirt_nor_rough.png" type="Texture" id=5]
+[ext_resource path="res://test_assets/riverbed_nor_rough.png" type="Texture" id=6]
+[ext_resource path="res://test_assets/riverbed_alb_bump.png" type="Texture" id=7]
+[ext_resource path="res://addons/river_tool/textures/water1.png" type="Texture" id=8]
+[ext_resource path="res://addons/river_tool/shaders/river.shader" type="Shader" id=9]
+[ext_resource path="res://test_assets/distance_test_2.png" type="Texture" id=11]
+[ext_resource path="res://test_assets/flow_test_6.png" type="Texture" id=12]
+
+[sub_resource type="Curve3D" id=1]
+_data = {
+"points": PoolVector3Array( -3.31742, 1.56044, -0.969166, 3.31742, -1.56044, 0.969166, -9.65518, 2.37832, -0.175081, -1.57495, 0.465966, -0.0388737, 1.57495, -0.465966, 0.0388737, -2.68471, -0.341387, 1.19917, -1.84323, 0.556605, -0.471498, 1.84323, -0.556605, 0.471498, 4.04392, -2.60746, 1.965, -1.32024, 0.326841, -1.10997, 1.32024, -0.326841, 1.10997, 10.31, -4.01284, 5.67662, -1.31891, 1.61507, -1.92695, 1.31891, -1.61507, 1.92695, 15.2247, -7.85101, 11.4431 ),
+"tilts": PoolRealArray( 0, 0, 0, 0, 0 )
+}
+
+[sub_resource type="ShaderMaterial" id=2]
+shader = ExtResource( 9 )
+shader_param/albedo = Color( 0.411765, 0.4, 0.368627, 0.439216 )
+shader_param/roughness = 0.116
+shader_param/refraction = 0.05
+shader_param/absorption = 0.427
+shader_param/normal_scale = 1.0
+shader_param/flow_speed = 1.32
+shader_param/uv_tiling = Vector2( 1, 1 )
+shader_param/texture_water = ExtResource( 8 )
+shader_param/flow_map = ExtResource( 12 )
+
+[sub_resource type="ArrayMesh" id=3]
+surfaces/0 = {
+"aabb": AABB( -10.0773, -7.85101, -2.4976, 26.765, 10.2293, 15.1807 ),
+"array_data": PoolByteArray( 175, 60, 33, 193, 101, 54, 24, 64, 158, 111, 9, 64, 48, 117, 8, 0, 22, 0, 132, 127, 0, 0, 0, 0, 0, 0, 0, 0, 141, 186, 19, 193, 101, 54, 24, 64, 172, 216, 31, 192, 49, 116, 8, 0, 20, 0, 131, 127, 0, 60, 0, 0, 85, 53, 0, 0, 63, 64, 223, 192, 67, 7, 133, 63, 56, 64, 63, 64, 47, 117, 7, 0, 20, 0, 131, 127, 0, 0, 0, 60, 0, 0, 85, 53, 141, 186, 19, 193, 101, 54, 24, 64, 172, 216, 31, 192, 49, 116, 8, 0, 20, 0, 131, 127, 0, 60, 0, 0, 85, 53, 0, 0, 55, 41, 200, 192, 67, 7, 133, 63, 160, 178, 221, 191, 44, 118, 6, 0, 19, 0, 131, 127, 0, 60, 0, 60, 85, 53, 85, 53, 63, 64, 223, 192, 67, 7, 133, 63, 56, 64, 63, 64, 47, 117, 7, 0, 20, 0, 131, 127, 0, 0, 0, 60, 0, 0, 85, 53, 63, 64, 223, 192, 67, 7, 133, 63, 56, 64, 63, 64, 47, 117, 7, 0, 20, 0, 131, 127, 0, 0, 0, 60, 0, 0, 85, 53, 55, 41, 200, 192, 67, 7, 133, 63, 160, 178, 221, 191, 44, 118, 6, 0, 19, 0, 131, 127, 0, 60, 0, 60, 85, 53, 85, 53, 196, 95, 116, 192, 4, 22, 229, 189, 162, 195, 97, 64, 41, 119, 6, 0, 19, 0, 131, 127, 0, 0, 0, 64, 0, 0, 85, 57, 55, 41, 200, 192, 67, 7, 133, 63, 160, 178, 221, 191, 44, 118, 6, 0, 19, 0, 131, 127, 0, 60, 0, 60, 85, 53, 85, 53, 32, 145, 67, 192, 4, 22, 229, 189, 152, 30, 155, 191, 39, 120, 7, 0, 22, 0, 131, 127, 0, 60, 0, 64, 85, 53, 85, 57, 196, 95, 116, 192, 4, 22, 229, 189, 162, 195, 97, 64, 41, 119, 6, 0, 19, 0, 131, 127, 0, 0, 0, 64, 0, 0, 85, 57, 196, 95, 116, 192, 4, 22, 229, 189, 162, 195, 97, 64, 41, 119, 6, 0, 19, 0, 131, 127, 0, 0, 0, 64, 0, 0, 85, 57, 32, 145, 67, 192, 4, 22, 229, 189, 152, 30, 155, 191, 39, 120, 7, 0, 22, 0, 131, 127, 0, 60, 0, 64, 85, 53, 85, 57, 190, 81, 50, 191, 69, 232, 149, 191, 72, 46, 107, 64, 40, 120, 7, 0, 24, 0, 132, 127, 0, 0, 0, 66, 0, 0, 0, 60, 32, 145, 67, 192, 4, 22, 229, 189, 152, 30, 155, 191, 39, 120, 7, 0, 22, 0, 131, 127, 0, 60, 0, 64, 85, 53, 85, 57, 92, 193, 159, 62, 69, 232, 149, 191, 168, 190, 122, 191, 39, 120, 8, 0, 30, 0, 133, 127, 0, 60, 0, 66, 85, 53, 0, 60, 190, 81, 50, 191, 69, 232, 149, 191, 72, 46, 107, 64, 40, 120, 7, 0, 24, 0, 132, 127, 0, 0, 0, 66, 0, 0, 0, 60, 190, 81, 50, 191, 69, 232, 149, 191, 72, 46, 107, 64, 40, 120, 7, 0, 24, 0, 132, 127, 0, 0, 0, 66, 85, 53, 0, 0, 92, 193, 159, 62, 69, 232, 149, 191, 168, 190, 122, 191, 39, 120, 8, 0, 30, 0, 133, 127, 0, 60, 0, 66, 85, 57, 0, 0, 42, 135, 21, 64, 125, 228, 17, 192, 14, 147, 126, 64, 37, 120, 10, 0, 33, 0, 134, 127, 0, 0, 0, 68, 85, 53, 85, 53, 92, 193, 159, 62, 69, 232, 149, 191, 168, 190, 122, 191, 39, 120, 8, 0, 30, 0, 133, 127, 0, 60, 0, 66, 85, 57, 0, 0, 185, 189, 108, 64, 125, 228, 17, 192, 192, 168, 246, 190, 32, 122, 11, 0, 42, 0, 137, 127, 0, 60, 0, 68, 85, 57, 85, 53, 42, 135, 21, 64, 125, 228, 17, 192, 14, 147, 126, 64, 37, 120, 10, 0, 33, 0, 134, 127, 0, 0, 0, 68, 85, 53, 85, 53, 42, 135, 21, 64, 125, 228, 17, 192, 14, 147, 126, 64, 37, 120, 10, 0, 33, 0, 134, 127, 0, 0, 0, 68, 85, 53, 85, 53, 185, 189, 108, 64, 125, 228, 17, 192, 192, 168, 246, 190, 32, 122, 11, 0, 42, 0, 137, 127, 0, 60, 0, 68, 85, 57, 85, 53, 213, 44, 165, 64, 169, 88, 72, 192, 161, 165, 156, 64, 27, 123, 11, 0, 49, 0, 139, 127, 0, 0, 0, 69, 85, 53, 85, 57, 185, 189, 108, 64, 125, 228, 17, 192, 192, 168, 246, 190, 32, 122, 11, 0, 42, 0, 137, 127, 0, 60, 0, 68, 85, 57, 85, 53, 62, 151, 226, 64, 169, 88, 72, 192, 160, 118, 78, 63, 21, 124, 11, 0, 59, 0, 144, 127, 0, 60, 0, 69, 85, 57, 85, 57, 213, 44, 165, 64, 169, 88, 72, 192, 161, 165, 156, 64, 27, 123, 11, 0, 49, 0, 139, 127, 0, 0, 0, 69, 85, 53, 85, 57, 213, 44, 165, 64, 169, 88, 72, 192, 161, 165, 156, 64, 27, 123, 11, 0, 49, 0, 139, 127, 0, 0, 0, 69, 85, 53, 85, 57, 62, 151, 226, 64, 169, 88, 72, 192, 160, 118, 78, 63, 21, 124, 11, 0, 59, 0, 144, 127, 0, 60, 0, 69, 85, 57, 85, 57, 91, 39, 248, 64, 124, 36, 110, 192, 224, 59, 206, 64, 22, 124, 12, 0, 66, 0, 148, 127, 0, 0, 0, 70, 85, 53, 0, 60, 62, 151, 226, 64, 169, 88, 72, 192, 160, 118, 78, 63, 21, 124, 11, 0, 59, 0, 144, 127, 0, 60, 0, 69, 85, 57, 85, 57, 122, 0, 35, 65, 124, 36, 110, 192, 228, 203, 54, 64, 21, 124, 16, 0, 74, 0, 154, 127, 0, 60, 0, 70, 85, 57, 0, 60, 91, 39, 248, 64, 124, 36, 110, 192, 224, 59, 206, 64, 22, 124, 12, 0, 66, 0, 148, 127, 0, 0, 0, 70, 85, 53, 0, 60, 91, 39, 248, 64, 124, 36, 110, 192, 224, 59, 206, 64, 22, 124, 12, 0, 66, 0, 148, 127, 0, 0, 0, 70, 85, 57, 0, 0, 122, 0, 35, 65, 124, 36, 110, 192, 228, 203, 54, 64, 21, 124, 16, 0, 74, 0, 154, 127, 0, 60, 0, 70, 0, 60, 0, 0, 130, 179, 33, 65, 180, 65, 145, 192, 236, 178, 5, 65, 31, 120, 25, 0, 80, 0, 158, 127, 0, 0, 0, 71, 85, 57, 85, 53, 122, 0, 35, 65, 124, 36, 110, 192, 228, 203, 54, 64, 21, 124, 16, 0, 74, 0, 154, 127, 0, 60, 0, 70, 0, 60, 0, 0, 91, 133, 77, 65, 180, 65, 145, 192, 155, 251, 167, 64, 34, 117, 32, 0, 85, 0, 163, 127, 0, 60, 0, 71, 0, 60, 85, 53, 130, 179, 33, 65, 180, 65, 145, 192, 236, 178, 5, 65, 31, 120, 25, 0, 80, 0, 158, 127, 0, 0, 0, 71, 85, 57, 85, 53, 130, 179, 33, 65, 180, 65, 145, 192, 236, 178, 5, 65, 31, 120, 25, 0, 80, 0, 158, 127, 0, 0, 0, 71, 85, 57, 85, 53, 91, 133, 77, 65, 180, 65, 145, 192, 155, 251, 167, 64, 34, 117, 32, 0, 85, 0, 163, 127, 0, 60, 0, 71, 0, 60, 85, 53, 129, 34, 65, 65, 191, 172, 193, 192, 31, 31, 40, 65, 43, 111, 42, 0, 88, 0, 166, 127, 0, 0, 0, 72, 85, 57, 85, 57, 91, 133, 77, 65, 180, 65, 145, 192, 155, 251, 167, 64, 34, 117, 32, 0, 85, 0, 163, 127, 0, 60, 0, 71, 0, 60, 85, 53, 121, 76, 110, 65, 191, 172, 193, 192, 149, 98, 247, 64, 42, 110, 45, 0, 92, 0, 169, 127, 0, 60, 0, 72, 0, 60, 85, 57, 129, 34, 65, 65, 191, 172, 193, 192, 31, 31, 40, 65, 43, 111, 42, 0, 88, 0, 166, 127, 0, 0, 0, 72, 85, 57, 85, 57, 129, 34, 65, 65, 191, 172, 193, 192, 31, 31, 40, 65, 43, 111, 42, 0, 88, 0, 166, 127, 0, 0, 0, 72, 85, 57, 85, 57, 121, 76, 110, 65, 191, 172, 193, 192, 149, 98, 247, 64, 42, 110, 45, 0, 92, 0, 169, 127, 0, 60, 0, 72, 0, 60, 85, 57, 226, 47, 92, 65, 121, 59, 251, 192, 232, 237, 74, 65, 45, 107, 49, 0, 93, 0, 171, 127, 0, 0, 128, 72, 85, 57, 0, 60, 121, 76, 110, 65, 191, 172, 193, 192, 149, 98, 247, 64, 42, 110, 45, 0, 92, 0, 169, 127, 0, 60, 0, 72, 0, 60, 85, 57, 110, 128, 133, 65, 121, 59, 251, 192, 248, 63, 35, 65, 41, 109, 49, 0, 96, 0, 174, 127, 0, 60, 128, 72, 0, 60, 0, 60, 226, 47, 92, 65, 121, 59, 251, 192, 232, 237, 74, 65, 45, 107, 49, 0, 93, 0, 171, 127, 0, 0, 128, 72, 85, 57, 0, 60 ),
+"array_index_data": PoolByteArray( 0, 0, 1, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8, 0, 9, 0, 10, 0, 11, 0, 12, 0, 13, 0, 14, 0, 15, 0, 16, 0, 17, 0, 18, 0, 19, 0, 20, 0, 21, 0, 22, 0, 23, 0, 24, 0, 25, 0, 26, 0, 27, 0, 28, 0, 29, 0, 30, 0, 31, 0, 32, 0, 33, 0, 34, 0, 35, 0, 36, 0, 37, 0, 38, 0, 39, 0, 40, 0, 41, 0, 42, 0, 43, 0, 44, 0, 45, 0, 46, 0, 47, 0, 48, 0, 49, 0, 50, 0, 51, 0, 52, 0, 53, 0 ),
+"blend_shape_data": [  ],
+"format": 97591,
+"index_count": 54,
+"material": SubResource( 2 ),
+"primitive": 4,
+"skeleton_aabb": [  ],
+"vertex_count": 54
+}
+
+[sub_resource type="ProceduralSky" id=4]
+
+[sub_resource type="Environment" id=5]
+background_mode = 2
+background_sky = SubResource( 4 )
+
+[sub_resource type="SphereMesh" id=6]
+
+[sub_resource type="SphereShape" id=7]
+
+[sub_resource type="CubeMesh" id=8]
+
+[sub_resource type="BoxShape" id=9]
+
+[node name="World" type="Spatial"]
+
+[node name="DirectionalLight" type="DirectionalLight" parent="."]
+transform = Transform( 1, 0, 0, 0, -0.707107, 0.707107, 0, -0.707107, -0.707107, 0, 100, 0 )
+
+[node name="Path" type="Path" parent="."]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5165, 10.9063, 28.4656 )
+curve = SubResource( 1 )
+
+[node name="River" type="Spatial" parent="Path"]
+script = ExtResource( 1 )
+steps = 9
+smoothness = 2.46
+distance_texture = ExtResource( 11 )
+albedo = Color( 0.411765, 0.4, 0.368627, 0.439216 )
+roughness = 0.116
+texture_water = ExtResource( 8 )
+absorption = 0.427
+flow_speed = 1.32
+river_width_values = [ 2.36057, 2.38757, 2.4002, 2.3811, 2.33152, 2.25838, 2.16776, 2.07077, 1.97981, 1.9178, 1.9178 ]
+
+[node name="RiverMeshInstance" type="MeshInstance" parent="Path/River"]
+mesh = SubResource( 3 )
+material/0 = null
+
+[node name="HTerrain" type="Spatial" parent="."]
+script = ExtResource( 3 )
+ambient_wind = 0.0
+lod_scale = 2.0
+map_scale = Vector3( 1, 1, 1 )
+_terrain_data = ExtResource( 2 )
+chunk_size = 32
+collision_enabled = true
+collision_layer = 1
+collision_mask = 1
+shader_type = "Classic4"
+custom_shader = null
+custom_globalmap_shader = null
+shader_params/u_ground_uv_scale_per_texture = Plane( 5, 2, 20, 20 )
+shader_params/u_depth_blending = true
+shader_params/u_triplanar = false
+shader_params/u_tile_reduction = Plane( 1, 0, 0, 0 )
+shader_params/u_globalmap_blend_start = null
+shader_params/u_globalmap_blend_distance = null
+shader_params/u_colormap_opacity_per_texture = Plane( 1, 1, 1, 1 )
+ground/albedo_bump_0 = ExtResource( 4 )
+ground/normal_roughness_0 = ExtResource( 5 )
+ground/albedo_bump_1 = ExtResource( 7 )
+ground/normal_roughness_1 = ExtResource( 6 )
+ground/albedo_bump_2 = null
+ground/normal_roughness_2 = null
+ground/albedo_bump_3 = null
+ground/normal_roughness_3 = null
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource( 5 )
+
+[node name="Boulders" type="Spatial" parent="."]
+
+[node name="Boulder" type="StaticBody" parent="Boulders"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 15.7423, 10.6978, 31.0725 )
+
+[node name="MeshInstance" type="MeshInstance" parent="Boulders/Boulder"]
+mesh = SubResource( 6 )
+material/0 = null
+
+[node name="CollisionShape" type="CollisionShape" parent="Boulders/Boulder"]
+shape = SubResource( 7 )
+
+[node name="Boulder4" type="StaticBody" parent="Boulders"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 18.5958, 9.98176, 28.1974 )
+
+[node name="MeshInstance" type="MeshInstance" parent="Boulders/Boulder4"]
+mesh = SubResource( 8 )
+material/0 = null
+
+[node name="CollisionShape" type="CollisionShape" parent="Boulders/Boulder4"]
+shape = SubResource( 9 )
+
+[node name="Boulder5" type="StaticBody" parent="Boulders"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 27.0884, 6.92847, 34.5987 )
+
+[node name="MeshInstance" type="MeshInstance" parent="Boulders/Boulder5"]
+mesh = SubResource( 8 )
+material/0 = null
+
+[node name="CollisionShape" type="CollisionShape" parent="Boulders/Boulder5"]
+shape = SubResource( 9 )
+
+[node name="Boulder2" type="StaticBody" parent="Boulders"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 22.8018, 8.38169, 30.298 )
+
+[node name="MeshInstance" type="MeshInstance" parent="Boulders/Boulder2"]
+mesh = SubResource( 6 )
+material/0 = null
+
+[node name="CollisionShape" type="CollisionShape" parent="Boulders/Boulder2"]
+shape = SubResource( 7 )
+
+[node name="Boulder3" type="StaticBody" parent="Boulders"]
+transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 22.8018, 7.87493, 34.7831 )
+
+[node name="MeshInstance" type="MeshInstance" parent="Boulders/Boulder3"]
+mesh = SubResource( 6 )
+material/0 = null
+
+[node name="CollisionShape" type="CollisionShape" parent="Boulders/Boulder3"]
+shape = SubResource( 7 )
