@@ -35,7 +35,7 @@ default_bus_layout=""
 
 [editor_plugins]
 
-enabled=PoolStringArray( "river_tool" )
+enabled=PoolStringArray( "river_tool", "zylann.hterrain" )
 
 [rendering]
 

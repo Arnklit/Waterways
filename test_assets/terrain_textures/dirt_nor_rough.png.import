@@ -2,8 +2,8 @@
 
 importer="texture"
 type="StreamTexture"
-path.s3tc="res://.import/flow_test_6.png-3ff8d90dbbde5cabe06399fc25730d58.s3tc.stex"
-path.etc2="res://.import/flow_test_6.png-3ff8d90dbbde5cabe06399fc25730d58.etc2.stex"
+path.s3tc="res://.import/dirt_nor_rough.png-f48f050db6a2d6dc5e16e679cb4a8128.s3tc.stex"
+path.etc2="res://.import/dirt_nor_rough.png-f48f050db6a2d6dc5e16e679cb4a8128.etc2.stex"
 metadata={
 "imported_formats": [ "s3tc", "etc2" ],
 "vram_texture": true
@@ -11,16 +11,16 @@ metadata={
 
 [deps]
 
-source_file="res://test_assets/flow_test_6.png"
-dest_files=[ "res://.import/flow_test_6.png-3ff8d90dbbde5cabe06399fc25730d58.s3tc.stex", "res://.import/flow_test_6.png-3ff8d90dbbde5cabe06399fc25730d58.etc2.stex" ]
+source_file="res://test_assets/terrain_textures/dirt_nor_rough.png"
+dest_files=[ "res://.import/dirt_nor_rough.png-f48f050db6a2d6dc5e16e679cb4a8128.s3tc.stex", "res://.import/dirt_nor_rough.png-f48f050db6a2d6dc5e16e679cb4a8128.etc2.stex" ]
 
 [params]
 
 compress/mode=2
 compress/lossy_quality=0.7
-compress/hdr_mode=1
+compress/hdr_mode=0
 compress/bptc_ldr=0
-compress/normal_map=2
+compress/normal_map=0
 flags/repeat=true
 flags/filter=true
 flags/mipmaps=true

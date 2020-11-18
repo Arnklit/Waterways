@@ -2,8 +2,8 @@
 
 importer="texture"
 type="StreamTexture"
-path.s3tc="res://.import/foam_test_3.png-845780a4fbeff811a2753e74b3c41652.s3tc.stex"
-path.etc2="res://.import/foam_test_3.png-845780a4fbeff811a2753e74b3c41652.etc2.stex"
+path.s3tc="res://.import/dirt_alb_bump.png-9dde6b840ae8e9acdb7ae18330bfd2b0.s3tc.stex"
+path.etc2="res://.import/dirt_alb_bump.png-9dde6b840ae8e9acdb7ae18330bfd2b0.etc2.stex"
 metadata={
 "imported_formats": [ "s3tc", "etc2" ],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://test_assets/foam_test_3.png"
-dest_files=[ "res://.import/foam_test_3.png-845780a4fbeff811a2753e74b3c41652.s3tc.stex", "res://.import/foam_test_3.png-845780a4fbeff811a2753e74b3c41652.etc2.stex" ]
+source_file="res://test_assets/terrain_textures/dirt_alb_bump.png"
+dest_files=[ "res://.import/dirt_alb_bump.png-9dde6b840ae8e9acdb7ae18330bfd2b0.s3tc.stex", "res://.import/dirt_alb_bump.png-9dde6b840ae8e9acdb7ae18330bfd2b0.etc2.stex" ]
 
 [params]
 
@@ -25,7 +25,7 @@ flags/repeat=true
 flags/filter=true
 flags/mipmaps=true
 flags/anisotropic=false
-flags/srgb=2
+flags/srgb=1
 process/fix_alpha_border=true
 process/premult_alpha=false
 process/HDR_as_SRGB=false
