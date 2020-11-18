@@ -15,6 +15,8 @@ export(Texture) var distance_texture
 export(Texture) var normal_texture
 export(Texture) var flowmap_texture
 export(Texture) var blurred_flowmap_texture
+export(Texture) var foam_texture
+export(Texture) var combined_texture
 export(int) var flowmap_resolution = 256
 
 # Material Properties
@@ -439,11 +441,19 @@ func generate_flowmap() -> void:
 	print("flowmap finished")
 	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, 6.0), "completed")
 	print("blurred_flowmap finished")
+	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, 0.05), "completed")
+	print("foam_map finished")
+	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, 10.0), "completed")
+	print("blurred_foam_map finished")
+	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map), "completed")
+	print("combined_map finished")
 	
 	var dilate_result = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	var normal_result = normal_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	var flowmap_result = flow_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	var blurred_flowmap_result = blurred_flow_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var foam_map_result = blurred_foam_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var combined_map_result = combined_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	
 	distance_texture = ImageTexture.new()
 	distance_texture.create_from_image(dilate_result)
@@ -453,9 +463,14 @@ func generate_flowmap() -> void:
 	flowmap_texture.create_from_image(flowmap_result)
 	blurred_flowmap_texture = ImageTexture.new()
 	blurred_flowmap_texture.create_from_image(blurred_flowmap_result, 5) # 5 should disable repeat
-	_material.set_shader_param("flowmap", blurred_flowmap_texture)
+	foam_texture = ImageTexture.new()
+	foam_texture.create_from_image(foam_map_result, 5)
+	combined_texture = ImageTexture.new()
+	combined_texture.create_from_image(combined_map_result, 5)
 	
 	print("finished map bake")
+	_material.set_shader_param("flowmap", combined_texture)
+	
 
 
 # Signal Methods
