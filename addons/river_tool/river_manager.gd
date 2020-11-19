@@ -1,5 +1,9 @@
+# Copyright © 2020 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 tool
 extends Spatial
+
+const WaterHelperMethods = preload("res://addons/river_tool/water_helper_methods.gd")
 
 const DEFAULT_SHADER_PATH = "res://addons/river_tool/shaders/river.shader"
 const DEFAULT_WATER_TEXTURE_PATH = "res://addons/river_tool/textures/water1.png"
@@ -216,26 +220,6 @@ func _analyse_parent() -> void:
 		parent_path.connect("curve_changed", self, "_on_Path_curve_changed")
 
 
-func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
-	var v0 := b - a
-	var v1 := c - a
-	var v2 := p - a
-	var d00 := v0.dot(v0)
-	var d01 := v0.dot(v1)
-	var d11 := v1.dot(v1)
-	var d20 := v2.dot(v0)
-	var d21 := v2.dot(v1)
-	var denom := d00 * d11 - d01 * d01
-	var v = (d11 * d20 - d01 * d21) / denom
-	var w = (d00 * d21 - d01 * d20) / denom
-	var u = 1.0 - v - w
-	return Vector3(u, v, w)
-
-
-func bary2cart(a : Vector3, b : Vector3, c: Vector3, barycentric: Vector3) -> Vector3:
-	return barycentric.x * a + barycentric.y * b + barycentric.z * c
-
-
 func _generate_river() -> void:
 	#print("Generete river called")
 	
@@ -329,18 +313,9 @@ func _generate_river() -> void:
 	_mesh_instance.mesh = mesh2
 	_mesh_instance.mesh.surface_set_material(0, _material)
 
-func reset_all_colliders(node):
-	for n in node.get_children():
-		if n.get_child_count() > 0:
-			reset_all_colliders(n)
-		if n is CollisionShape:
-			if n.disabled == false:
-				n.disabled = true
-				n.disabled = false
-
 
 func generate_flowmap() -> void:
-	reset_all_colliders(get_tree().root)
+	WaterHelperMethods.reset_all_colliders(get_tree().root)
 
 	var image := Image.new()
 	image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
@@ -372,19 +347,19 @@ func generate_flowmap() -> void:
 					var a = Vector3(uv2[tris * 3].x, uv2[tris * 3].y, 0.0)
 					var b = Vector3(uv2[tris * 3 + 1].x, uv2[tris * 3 + 1].y, 0.0)
 					var c = Vector3(uv2[tris * 3 + 2].x, uv2[tris * 3 + 2].y, 0.0)
-					baryatric_coords = cart2bary(p, a, b, c)
+					baryatric_coords = WaterHelperMethods.cart2bary(p, a, b, c)
 					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
 					#print("correct_triangle: " + str(correct_triangle))
 					break
 			
-			# If there is no correct triangle we are in the empty part of the UV2 map and should draw
+			# If there is no correct triangle we are in the empty part of the UV2 map and should draw nothing
 			if correct_triangle:
 				var vert0 = world_verts[correct_triangle[0]] 
 				var vert1 = world_verts[correct_triangle[1]] 
 				var vert2 = world_verts[correct_triangle[2]]
 				#print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
 				
-				var real_pos = bary2cart(vert0, vert1, vert2, baryatric_coords)
+				var real_pos = WaterHelperMethods.bary2cart(vert0, vert1, vert2, baryatric_coords)
 				var real_pos_up = real_pos + Vector3.UP * 10.0
 				#print("real_pos: " + str(real_pos))
 				
@@ -470,7 +445,7 @@ func generate_flowmap() -> void:
 	
 	print("finished map bake")
 	_material.set_shader_param("flowmap", combined_texture)
-	
+	_material.set_shader_param("flowmap_set", true)
 
 
 # Signal Methods
