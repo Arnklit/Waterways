@@ -1,0 +1,50 @@
+[gd_scene load_steps=6 format=2]
+
+[ext_resource path="res://addons/river_tool/gui/icons/select.svg" type="Texture" id=1]
+[ext_resource path="res://addons/river_tool/gui/icons/create.svg" type="Texture" id=2]
+[ext_resource path="res://addons/river_tool/gui/icons/delete.svg" type="Texture" id=3]
+[ext_resource path="res://addons/river_tool/gui/edit_mode_group.tres" type="ButtonGroup" id=4]
+[ext_resource path="res://addons/river_tool/gui/river_controls.gd" type="Script" id=5]
+
+[node name="HBoxContainer" type="HBoxContainer"]
+margin_right = 40.0
+margin_bottom = 40.0
+script = ExtResource( 5 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="VSeparator" type="VSeparator" parent="."]
+margin_right = 4.0
+margin_bottom = 40.0
+
+[node name="Select" type="Button" parent="."]
+margin_left = 8.0
+margin_right = 36.0
+margin_bottom = 40.0
+toggle_mode = true
+pressed = true
+group = ExtResource( 4 )
+icon = ExtResource( 1 )
+flat = true
+
+[node name="Add" type="Button" parent="."]
+margin_left = 40.0
+margin_right = 68.0
+margin_bottom = 40.0
+toggle_mode = true
+group = ExtResource( 4 )
+icon = ExtResource( 2 )
+flat = true
+
+[node name="Remove" type="Button" parent="."]
+margin_left = 72.0
+margin_right = 100.0
+margin_bottom = 40.0
+toggle_mode = true
+group = ExtResource( 4 )
+icon = ExtResource( 3 )
+flat = true
+[connection signal="pressed" from="Select" to="." method="_on_select"]
+[connection signal="pressed" from="Add" to="." method="_on_add"]
+[connection signal="pressed" from="Remove" to="." method="_on_remove"]

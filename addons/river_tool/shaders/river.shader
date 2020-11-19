@@ -41,7 +41,7 @@ void fragment() {
 	vec3 water_x2 = mix(water_x2_phase1, water_x2_phase2, flow_mix);
 
 	// Mix the two scales together for the foam pattern
-	float foam = clamp((water_x1.b * .65 + water_x1.b * 0.35) * 4.0 - 1.5, 0.0, 1.0);
+	float foam = clamp((water_x1.b * .65 + water_x2.b * 0.35) * 4.0 - 1.5, 0.0, 1.0);
 
 	// Depthtest
 	float depthTest = texture(DEPTH_TEXTURE,SCREEN_UV).r;
