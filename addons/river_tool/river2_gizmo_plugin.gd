@@ -1,19 +1,27 @@
 extends EditorSpatialGizmoPlugin
 
-var gizmo = preload("res://addons/river_tool/river2_gizmo.gd")
-
 const River2Manager = preload("res://addons/river_tool/river2_manager.gd")
 
 
-var editor_plugin : EditorPlugin
+var gizmo = preload("res://addons/river_tool/river2_gizmo.gd")
+var current_gizmo
 
 
-func get_name():
-	return "River2Gizmo"
-
+func force_redraw():
+	if current_gizmo:
+		current_gizmo.redraw()
 
 func _init():
 	create_handle_material("handles")
+	create_material("path", Color(0, 0, 1), false, true)
+
+
+func create_gizmo(node):
+	if node is River2Manager:
+		current_gizmo = gizmo.new()
+		return current_gizmo
+	else:
+		return null
 
 
 func has_gizmo(spatial):
