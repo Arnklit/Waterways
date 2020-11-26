@@ -57,7 +57,7 @@ void fragment() {
 
 	ALBEDO = mix(albedo.rgb, vec3(1.0, 1.0, 1.0), foam * foam_mask);
 	ROUGHNESS = roughness;
-	NORMALMAP = vec3(water_x1.rg * .65 + water_x1.rg * 0.35, 1.0);
+	NORMALMAP = vec3(water_x1.rg * .65 + water_x2.rg * 0.35, 1.0);
 	NORMALMAP_DEPTH = normal_scale;
 	EMISSION += textureLod(SCREEN_TEXTURE,ref_ofs,ROUGHNESS * 8.0).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;

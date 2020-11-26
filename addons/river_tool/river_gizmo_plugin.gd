@@ -29,7 +29,6 @@ func redraw(gizmo):
 		river.connect("river_changed", self, "redraw", [gizmo])
 
 	var handles : PoolVector3Array
-	
 	var points = river.get_step_points()
 	var directions = river.get_step_points_directions()
 	
