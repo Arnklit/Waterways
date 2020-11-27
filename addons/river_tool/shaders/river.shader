@@ -19,7 +19,7 @@ void fragment() {
 	float foam_mask;
 	if (flowmap_set) {
 		flow = texture(flowmap, UV2).xy;
-		foam_mask = texture(flowmap, UV2).b * 2.0;
+		foam_mask = clamp(texture(flowmap, UV2).b * 8.0 - 4.0, 0.0, 1.0);
 	} else {
 		flow = vec2(0.5, 0.572);
 		foam_mask = 0.0;

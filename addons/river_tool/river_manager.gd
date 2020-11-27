@@ -42,17 +42,28 @@ var _default_shader : Shader
 var _material : Material
 var _first_enter_tree = true
 var _filter_renderer
+var _valid_flowmap = false
 
 # Signal used to update handles when values are changed on script side
 signal river_changed
 
 
-# This is to serialize widths without exposing it in the inspector
+# This is to serialize values without exposing it in the inspector
 func _get_property_list() -> Array:
 	return [
 		{
+			name = "curve",
+			type = TYPE_OBJECT,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
 			name = "widths",
 			type = TYPE_ARRAY,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "_valid_flowmap",
+			type = TYPE_BOOL,
 			usage = PROPERTY_USAGE_STORAGE
 		}
 	]
@@ -61,9 +72,6 @@ func _get_property_list() -> Array:
 func _init() -> void:
 	print("init called")
 	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
-	_material = ShaderMaterial.new()
-	_material.shader = _default_shader
-	set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
@@ -72,8 +80,7 @@ func _init() -> void:
 func _enter_tree() -> void:
 	if Engine.editor_hint and _first_enter_tree:
 		_first_enter_tree = false
-	print("enter tree called")
-	
+
 	if not curve:
 		curve = Curve3D.new()
 		curve.bake_interval = 0.05
@@ -81,16 +88,23 @@ func _enter_tree() -> void:
 		curve.add_point(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, -0.25), Vector3(0.0, 0.0, 0.25))
 		widths = [1.0, 1.0]
 	
-	#_analyse_parent()
-	
 	if get_child_count() <= 0:
 		var new_mesh_instance := MeshInstance.new()
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
 		# Uncomment for debugging the MeshInstance object
 		new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
-	_mesh_instance = get_child(0)
-	_generate_river()
+		_mesh_instance = get_child(0)
+		
+		_material = ShaderMaterial.new()
+		_material.shader = _default_shader
+		_material.render_priority = -1
+		set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
+		
+		_generate_river()
+	else:
+		_mesh_instance = get_child(0)
+		_material = _mesh_instance.mesh.surface_get_material(0)
 
 
 # Public Methods
@@ -105,6 +119,7 @@ func add_point(position : Vector3, index : int):
 		curve.add_point(position, -dir, dir, index + 1)
 		widths.insert(index + 1, (widths[index] + widths[index + 1]) / 2.0) # We set the width to the average of the two surrounding widths
 	emit_signal("river_changed")
+	print("in add point before generate river")
 	_generate_river()
 
 
@@ -115,6 +130,7 @@ func remove_point(index):
 	curve.remove_point(index)
 	widths.remove(index)
 	emit_signal("river_changed")
+	print("in remove point before generate river")
 	_generate_river()
 
 
@@ -143,21 +159,27 @@ func get_closest_point_to(point : Vector3) -> int:
 # Setter Methods
 func set_curve_point_position(index : int, position : Vector3) -> void:
 	curve.set_point_position(index, position)
+	print("in set_curve_point_position before generate river")
 	_generate_river()
 
 
 func set_curve_point_in(index : int, position : Vector3) -> void:
 	curve.set_point_in(index, position)
+	print("in set_curve_point_in before generate river")
 	_generate_river()
 
 
 func set_curve_point_out(index : int, position : Vector3) -> void:
 	curve.set_point_out(index, position)
+	print("in set_curve_point_out before generate river")
 	_generate_river()
 
 
 func set_widths(new_widths) -> void:
 	widths = new_widths
+	if _first_enter_tree:
+		return
+	print("in set_widths before generate river")
 	_generate_river()
 
 
@@ -192,41 +214,57 @@ func set_bake_flowmap(value : bool) -> void:
 
 func set_albedo(color : Color) -> void:
 	albedo = color
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("albedo", color)
 
 
 func set_roughness(value : float) -> void:
 	roughness = value
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("roughness", value)
 
 
 func set_refraction(value : float) -> void:
 	refraction = value
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("refraction", value)
 
 
 func set_water_texture(texture : Texture) -> void:
 	texture_water = texture
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("texture_water", texture)
 
 
 func set_normal_scale(value : float) -> void:
 	normal_scale = value
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("normal_scale", value)
 
 
 func set_absorption(value : float) -> void:
 	absorption = value
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("absorption", value)
 
 
 func set_flowspeed(value : float) -> void:
 	flow_speed = value
+	if _first_enter_tree:
+		return
 	_material.set_shader_param("flow_speed", value)
 
 
 func _generate_river() -> void:
-	
+	print("Generate River is called")
+	_valid_flowmap = false # flow map is no longer valid as mesh has changed
+	_material.set_shader_param("flowmap_set", false)
 	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size())
 	_steps = int( max(1, round(curve.get_baked_length() / average_width)) )
 
@@ -464,7 +502,8 @@ func generate_flowmap() -> void:
 	print("finished map bake")
 	_material.set_shader_param("flowmap", combined_texture)
 	_material.set_shader_param("flowmap_set", true)
-
+	
+	_valid_flowmap = true
 
 # Signal Methods
 func properties_changed() -> void:

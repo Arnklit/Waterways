@@ -172,9 +172,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 
 
 func _show_control_panel() -> void:
-	print("in _show_control_panel()")
 	if not _river_controls.get_parent():
-		print("in _show_control_panel() 2")
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
 
 
