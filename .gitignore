@@ -1,4 +1,5 @@
 addons/zylann.hterrain/
+addons/godot-plugin-refresher/
 
 # Godot-specific ignores
 .import/

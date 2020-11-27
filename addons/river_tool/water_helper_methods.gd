@@ -31,3 +31,9 @@ static func reset_all_colliders(node):
 				n.disabled = true
 				n.disabled = false
 
+
+static func sum_array(array):
+	var sum = 0.0
+	for element in array:
+			sum += element
+	return sum
