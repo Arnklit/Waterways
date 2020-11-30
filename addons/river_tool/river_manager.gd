@@ -6,6 +6,8 @@ extends Spatial
 const WaterHelperMethods = preload("res://addons/river_tool/water_helper_methods.gd")
 
 const DEFAULT_SHADER_PATH = "res://addons/river_tool/shaders/river.shader"
+const DEBUG_FLOWMAP_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_flowmap.shader"
+const DEBUG_FOAMMAP_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_foammap.shader"
 const DEFAULT_WATER_TEXTURE_PATH = "res://addons/river_tool/textures/water1.png"
 const FILTER_RENDERER_PATH = "res://addons/river_tool/FilterRenderer.tscn"
 
@@ -13,7 +15,6 @@ const FILTER_RENDERER_PATH = "res://addons/river_tool/FilterRenderer.tscn"
 export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
 export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
-export(bool) var bake_flowmap setget set_bake_flowmap
 export(Texture) var distance_texture
 export(Texture) var normal_texture
 export(Texture) var flowmap_texture
@@ -39,7 +40,11 @@ var _st : SurfaceTool
 var _mdt : MeshDataTool
 var _mesh_instance : MeshInstance
 var _default_shader : Shader
+var _debug_flowmap_shader : Shader
+var _debug_foammap_shader : Shader
 var _material : Material
+var _debug_flowmap_material : Material
+var _debug_foammap_material : Material
 var _first_enter_tree = true
 var _filter_renderer
 var _valid_flowmap = false
@@ -72,10 +77,15 @@ func _get_property_list() -> Array:
 func _init() -> void:
 	print("init called")
 	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
+	_debug_flowmap_shader = load(DEBUG_FLOWMAP_SHADER_PATH) as Shader
+	_debug_foammap_shader = load(DEBUG_FOAMMAP_SHADER_PATH) as Shader
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
-
+	_debug_flowmap_material = ShaderMaterial.new()
+	_debug_foammap_material = ShaderMaterial.new()
+	_debug_flowmap_material.shader = _debug_flowmap_shader
+	_debug_foammap_material.shader = _debug_foammap_shader
 
 func _enter_tree() -> void:
 	if Engine.editor_hint and _first_enter_tree:
@@ -88,6 +98,7 @@ func _enter_tree() -> void:
 		curve.add_point(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, -0.25), Vector3(0.0, 0.0, 0.25))
 		widths = [1.0, 1.0]
 	
+
 	if get_child_count() <= 0:
 		var new_mesh_instance := MeshInstance.new()
 		new_mesh_instance.name = "RiverMeshInstance"
@@ -96,15 +107,19 @@ func _enter_tree() -> void:
 		new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
 		_mesh_instance = get_child(0)
 		
-		_material = ShaderMaterial.new()
-		_material.shader = _default_shader
-		_material.render_priority = -1
+		_material = ShaderMaterial.new()		
 		set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
 		
 		_generate_river()
 	else:
 		_mesh_instance = get_child(0)
 		_material = _mesh_instance.mesh.surface_get_material(0)
+
+
+func _get_configuration_warning() -> String:
+	if not _valid_flowmap:
+		return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
+	return ""
 
 
 # Public Methods
@@ -265,6 +280,8 @@ func _generate_river() -> void:
 	print("Generate River is called")
 	_valid_flowmap = false # flow map is no longer valid as mesh has changed
 	_material.set_shader_param("flowmap_set", false)
+	_debug_flowmap_material.set_shader_param("flowmap_set", false)
+	_debug_foammap_material.set_shader_param("flowmap_set", false)
 	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size())
 	_steps = int( max(1, round(curve.get_baked_length() / average_width)) )
 
@@ -502,8 +519,23 @@ func generate_flowmap() -> void:
 	print("finished map bake")
 	_material.set_shader_param("flowmap", combined_texture)
 	_material.set_shader_param("flowmap_set", true)
+	_debug_flowmap_material.set_shader_param("flowmap", combined_texture)
+	_debug_flowmap_material.set_shader_param("flowmap_set", true)
+	_debug_foammap_material.set_shader_param("flowmap", combined_texture)
+	_debug_foammap_material.set_shader_param("flowmap_set", true)
 	
 	_valid_flowmap = true
+
+
+func set_debug_view(index : int) -> void:
+	match(index):
+		0:
+			_mesh_instance.material_override = null
+		1:
+			_mesh_instance.material_override = _debug_flowmap_material
+		2:
+			_mesh_instance.material_override = _debug_foammap_material
+
 
 # Signal Methods
 func properties_changed() -> void:

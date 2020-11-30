@@ -16,14 +16,22 @@ func get_name():
 	return "River Plugin"
 
 func _enter_tree() -> void:
-	add_custom_type("River", "Spatial", preload("res://addons/river_tool/river_manager.gd"), preload("icon.png"))
+	add_custom_type("River", "Spatial", preload("res://addons/river_tool/river_manager.gd"), preload("icon.svg"))
 	add_spatial_gizmo_plugin(river_gizmo)
 	river_gizmo.editor_plugin = self
 	_river_controls.connect("mode", self, "_on_mode_change")
 	_river_controls.connect("options", self, "_on_option_change")
 	_editor_selection = get_editor_interface().get_selection()
 	_editor_selection.connect("selection_changed", self, "_on_selection_change")
-	
+
+
+func _on_generate_flowmap_pressed() -> void:
+	_edited_node.generate_flowmap()
+
+
+func _on_debug_view_changed(index : int) -> void:
+	_edited_node.set_debug_view(index)
+
 
 func _exit_tree() -> void:
 	remove_custom_type("River")
@@ -174,8 +182,12 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 func _show_control_panel() -> void:
 	if not _river_controls.get_parent():
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
+		_river_controls.menu.connect("generate_flowmap", self, "_on_generate_flowmap_pressed")
+		_river_controls.menu.connect("debug_view_changed", self, "_on_debug_view_changed")
 
 
 func _hide_control_panel() -> void:
 	if _river_controls.get_parent():
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
+		_river_controls.menu.disconnect("generate_flowmap", self, "_on_generate_flowmap_pressed")
+		_river_controls.menu.disconnect("debug_view_changed", self, "_on_debug_view_changed")

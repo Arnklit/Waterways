@@ -17,6 +17,7 @@ func _init() -> void:
 	mat.set_flag(SpatialMaterial.FLAG_UNSHADED, true)
 	mat.set_flag(SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
 	mat.set_albedo(Color(1.0, 1.0, 0.0))
+	mat.render_priority = 10
 	add_material("path", mat)
 	add_material("handle_lines", mat)
 
