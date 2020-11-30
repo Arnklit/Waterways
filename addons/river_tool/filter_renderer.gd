@@ -55,13 +55,14 @@ func _enter_tree() -> void:
 	foam_pass_mat.shader = foam_pass_shader
 	combine_pass_mat.shader = combine_pass_shader
 
-func apply_combine(flow_texture : Texture, foam_texture : Texture) -> ImageTexture:
+func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture : Texture) -> ImageTexture:
 	print("apply_combine called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = combine_pass_mat
 	$ColorRect.material.set_shader_param("flow_texture", flow_texture)
 	$ColorRect.material.set_shader_param("foam_texture", foam_texture)
+	$ColorRect.material.set_shader_param("noise_texture", noise_texture)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
 	yield(get_tree(), "idle_frame")

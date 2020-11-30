@@ -5,6 +5,7 @@
 [node name="Renderer" type="Viewport"]
 size = Vector2( 256, 256 )
 own_world = true
+transparent_bg = true
 hdr = false
 keep_3d_linear = true
 render_target_v_flip = true

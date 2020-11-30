@@ -6,10 +6,9 @@ extends Spatial
 const WaterHelperMethods = preload("res://addons/river_tool/water_helper_methods.gd")
 
 const DEFAULT_SHADER_PATH = "res://addons/river_tool/shaders/river.shader"
-const DEBUG_FLOWMAP_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_flowmap.shader"
-const DEBUG_FOAMMAP_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_foammap.shader"
 const DEFAULT_WATER_TEXTURE_PATH = "res://addons/river_tool/textures/water1.png"
 const FILTER_RENDERER_PATH = "res://addons/river_tool/FilterRenderer.tscn"
+const NOISE_TEXTURE_PATH = "res://addons/river_tool/textures/noise.png"
 
 # Shape Properties
 export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
@@ -40,11 +39,8 @@ var _st : SurfaceTool
 var _mdt : MeshDataTool
 var _mesh_instance : MeshInstance
 var _default_shader : Shader
-var _debug_flowmap_shader : Shader
-var _debug_foammap_shader : Shader
 var _material : Material
-var _debug_flowmap_material : Material
-var _debug_foammap_material : Material
+var _debug_material : Material
 var _first_enter_tree = true
 var _filter_renderer
 var _valid_flowmap = false
@@ -77,15 +73,10 @@ func _get_property_list() -> Array:
 func _init() -> void:
 	print("init called")
 	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
-	_debug_flowmap_shader = load(DEBUG_FLOWMAP_SHADER_PATH) as Shader
-	_debug_foammap_shader = load(DEBUG_FOAMMAP_SHADER_PATH) as Shader
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
-	_debug_flowmap_material = ShaderMaterial.new()
-	_debug_foammap_material = ShaderMaterial.new()
-	_debug_flowmap_material.shader = _debug_flowmap_shader
-	_debug_foammap_material.shader = _debug_foammap_shader
+
 
 func _enter_tree() -> void:
 	if Engine.editor_hint and _first_enter_tree:
@@ -107,7 +98,7 @@ func _enter_tree() -> void:
 		new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
 		_mesh_instance = get_child(0)
 		
-		_material = ShaderMaterial.new()		
+		_material = ShaderMaterial.new()
 		set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
 		
 		_generate_river()
@@ -117,9 +108,10 @@ func _enter_tree() -> void:
 
 
 func _get_configuration_warning() -> String:
-	if not _valid_flowmap:
+	if _valid_flowmap:
+		return ""
+	else:
 		return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
-	return ""
 
 
 # Public Methods
@@ -222,11 +214,6 @@ func set_smoothness(value : float) -> void:
 	emit_signal("river_changed")
 
 
-func set_bake_flowmap(value : bool) -> void:
-	if _first_enter_tree:
-		return
-	generate_flowmap()
-
 func set_albedo(color : Color) -> void:
 	albedo = color
 	if _first_enter_tree:
@@ -279,9 +266,10 @@ func set_flowspeed(value : float) -> void:
 func _generate_river() -> void:
 	print("Generate River is called")
 	_valid_flowmap = false # flow map is no longer valid as mesh has changed
+	update_configuration_warning()
 	_material.set_shader_param("flowmap_set", false)
-	_debug_flowmap_material.set_shader_param("flowmap_set", false)
-	_debug_foammap_material.set_shader_param("flowmap_set", false)
+	if _debug_material:
+		_debug_material.set_shader_param("flowmap_set", false)
 	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size())
 	_steps = int( max(1, round(curve.get_baked_length() / average_width)) )
 
@@ -395,61 +383,7 @@ func generate_flowmap() -> void:
 	image.fill(Color(0.0, 0.0, 0.0))
 	
 	image.lock()
-	var space_state := get_world().direct_space_state
-	var uv2 := _mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
-	var verts := _mesh_instance.mesh.surface_get_arrays(0)[0] as PoolVector3Array
-	# We need to move the verts into world space
-	var world_verts : PoolVector3Array = []
-	for v in verts.size():
-		world_verts.append( global_transform.xform(verts[v]) )
-	
-	for x in image.get_width():
-		for y in image.get_height():
-			#print("***NEW PIXEL***")
-			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
-			#print("uv_coordinate: " + str(uv_coordinate))
-			var baryatric_coords
-			var correct_triangle := []
-			for tris in uv2.size() / 3:
-				var triangle : PoolVector2Array = []
-				triangle.append(uv2[tris * 3])
-				triangle.append(uv2[tris * 3 + 1])
-				triangle.append(uv2[tris * 3 + 2])
-				if Geometry.is_point_in_polygon(uv_coordinate, triangle):
-					var p = Vector3(uv_coordinate.x, uv_coordinate.y, 0.0)
-					var a = Vector3(uv2[tris * 3].x, uv2[tris * 3].y, 0.0)
-					var b = Vector3(uv2[tris * 3 + 1].x, uv2[tris * 3 + 1].y, 0.0)
-					var c = Vector3(uv2[tris * 3 + 2].x, uv2[tris * 3 + 2].y, 0.0)
-					baryatric_coords = WaterHelperMethods.cart2bary(p, a, b, c)
-					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
-					#print("correct_triangle: " + str(correct_triangle))
-					break
-			
-			# If there is no correct triangle we are in the empty part of the UV2 map and should draw nothing
-			if correct_triangle:
-				var vert0 = world_verts[correct_triangle[0]] 
-				var vert1 = world_verts[correct_triangle[1]] 
-				var vert2 = world_verts[correct_triangle[2]]
-				#print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
-				
-				var real_pos = WaterHelperMethods.bary2cart(vert0, vert1, vert2, baryatric_coords)
-				var real_pos_up = real_pos + Vector3.UP * 10.0
-				#print("real_pos: " + str(real_pos))
-				
-				var result_up = space_state.intersect_ray(real_pos, real_pos_up)
-				var result_down = space_state.intersect_ray(real_pos_up, real_pos)
-				
-				var up_hit_frontface = false
-				if result_up:
-					if result_up.normal.y < 0:
-						true
-				
-				if result_up or result_down:
-					#print("hit something")
-					#image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
-					if not up_hit_frontface and result_down:
-						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
-	
+	image = _generate_collisionmap(image)
 	image.unlock()
 	print("finished collision map")
 	# Calculate how many colums are in UV2
@@ -493,7 +427,7 @@ func generate_flowmap() -> void:
 	print("foam_map finished")
 	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, 10.0), "completed")
 	print("blurred_foam_map finished")
-	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map), "completed")
+	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, load(NOISE_TEXTURE_PATH) as Texture), "completed")
 	print("combined_map finished")
 	
 	var dilate_result = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
@@ -519,22 +453,82 @@ func generate_flowmap() -> void:
 	print("finished map bake")
 	_material.set_shader_param("flowmap", combined_texture)
 	_material.set_shader_param("flowmap_set", true)
-	_debug_flowmap_material.set_shader_param("flowmap", combined_texture)
-	_debug_flowmap_material.set_shader_param("flowmap_set", true)
-	_debug_foammap_material.set_shader_param("flowmap", combined_texture)
-	_debug_foammap_material.set_shader_param("flowmap_set", true)
+	if(_debug_material):
+		_debug_material.set_shader_param("flowmap", combined_texture)
+		_debug_material.set_shader_param("flowmap_set", true)
 	
 	_valid_flowmap = true
+	update_configuration_warning()
+
+
+func _generate_collisionmap(image : Image) -> Image:
+	var space_state := get_world().direct_space_state
+	var uv2 := _mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
+	var verts := _mesh_instance.mesh.surface_get_arrays(0)[0] as PoolVector3Array
+	# We need to move the verts into world space
+	var world_verts : PoolVector3Array = []
+	for v in verts.size():
+		world_verts.append( global_transform.xform(verts[v]) )
+	
+	for x in image.get_width():
+		for y in image.get_height():
+			#print("***NEW PIXEL***")
+			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
+			#print("uv_coordinate: " + str(uv_coordinate))
+			var baryatric_coords
+			var correct_triangle := []
+			for tris in uv2.size() / 3:
+				var triangle : PoolVector2Array = []
+				triangle.append(uv2[tris * 3])
+				triangle.append(uv2[tris * 3 + 1])
+				triangle.append(uv2[tris * 3 + 2])
+				var p = Vector3(uv_coordinate.x, uv_coordinate.y, 0.0)
+				var a = Vector3(uv2[tris * 3].x, uv2[tris * 3].y, 0.0)
+				var b = Vector3(uv2[tris * 3 + 1].x, uv2[tris * 3 + 1].y, 0.0)
+				var c = Vector3(uv2[tris * 3 + 2].x, uv2[tris * 3 + 2].y, 0.0)
+				baryatric_coords = WaterHelperMethods.cart2bary(p, a, b, c)
+				if WaterHelperMethods.point_in_bariatric(baryatric_coords):
+					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
+					#print("correct_triangle: " + str(correct_triangle))
+					break # we have the correct triangle so we break out of loop, maybe this should be a function
+			
+			if correct_triangle:
+				var vert0 = world_verts[correct_triangle[0]] 
+				var vert1 = world_verts[correct_triangle[1]] 
+				var vert2 = world_verts[correct_triangle[2]]
+				#print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
+				
+				var real_pos = WaterHelperMethods.bary2cart(vert0, vert1, vert2, baryatric_coords)
+				var real_pos_up = real_pos + Vector3.UP * 10.0
+				#print("real_pos: " + str(real_pos))
+				
+				var result_up = space_state.intersect_ray(real_pos, real_pos_up)
+				var result_down = space_state.intersect_ray(real_pos_up, real_pos)
+				
+				var up_hit_frontface = false
+				if result_up:
+					if result_up.normal.y < 0:
+						true
+				
+				if result_up or result_down:
+					#print("hit something")
+					#image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
+					if not up_hit_frontface and result_down:
+						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
+			else:
+				# If there is no correct triangle, we are in the empty space
+				# of UV2 and we break to skip into the next pixel row
+				break
+	
+	return image
 
 
 func set_debug_view(index : int) -> void:
-	match(index):
-		0:
-			_mesh_instance.material_override = null
-		1:
-			_mesh_instance.material_override = _debug_flowmap_material
-		2:
-			_mesh_instance.material_override = _debug_foammap_material
+	if index == 0:
+		_mesh_instance.material_override = null
+	else:
+		_debug_material = WaterHelperMethods.get_debug_material(index, combined_texture, _valid_flowmap)
+		_mesh_instance.material_override =_debug_material
 
 
 # Signal Methods

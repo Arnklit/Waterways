@@ -14,21 +14,27 @@ uniform vec2 uv_tiling = vec2(1.0, 1.0);
 
 void fragment() {
 	// Setup for flow_maps
+	vec4 flow_foam_noise = texture(flowmap, UV2);
+	
 	vec2 base_uv = UV * uv_tiling;
 	vec2 flow;
 	float foam_mask;
 	if (flowmap_set) {
-		flow = texture(flowmap, UV2).xy;
-		foam_mask = clamp(texture(flowmap, UV2).b * 8.0 - 4.0, 0.0, 1.0);
+		flow = flow_foam_noise.xy;
+		foam_mask = clamp(flow_foam_noise.b * 8.0 - 4.0, 0.0, 1.0);
 	} else {
 		flow = vec2(0.5, 0.572);
 		foam_mask = 0.0;
 	}
 	
+	float my_time = TIME + flow_foam_noise.a;
 	flow = (flow - 0.5) * 2.0; // remap
-	float phase1 = fract(TIME * -flow_speed);
+	float phase1 = fract(my_time * -flow_speed);
 	float phase2 = fract(phase1 + 0.5);
 	float flow_mix = abs((phase1 - 0.5) * 2.0);
+	
+	phase1 -= 0.5;
+	phase2 -= 0.5;
 	
 	// Sample the water texture 4 times to use for both normals and foam
 	// At 2 different scales and two different phases
