@@ -74,13 +74,13 @@ func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture
 	return result
 
 
-func apply_foam(input_texture : Texture, distance : float) -> ImageTexture:
+func apply_foam(input_texture : Texture, distance : float, resolution : float) -> ImageTexture:
 	print("apply_foam called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = foam_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("distance", distance)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
@@ -93,14 +93,14 @@ func apply_foam(input_texture : Texture, distance : float) -> ImageTexture:
 	return result
 
 
-func apply_blur(input_texture : Texture, blur : float) -> ImageTexture:
+func apply_blur(input_texture : Texture, blur : float, resolution : float) -> ImageTexture:
 	print("apply_blur called")
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = blur_pass1_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("blur", blur)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
@@ -112,7 +112,7 @@ func apply_blur(input_texture : Texture, blur : float) -> ImageTexture:
 	# Pass 2
 	$ColorRect.material = blur_pass2_mat
 	$ColorRect.material.set_shader_param("input_texture", pass1_result)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("blur", blur)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
@@ -125,13 +125,13 @@ func apply_blur(input_texture : Texture, blur : float) -> ImageTexture:
 	return pass2_result
 	
 
-func apply_normal_to_flow(input_texture : Texture) -> ImageTexture:
+func apply_normal_to_flow(input_texture : Texture, resolution : float) -> ImageTexture:
 	print("apply_normal_to_flow called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = normal_to_flow_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
 	yield(get_tree(), "idle_frame")
@@ -143,13 +143,13 @@ func apply_normal_to_flow(input_texture : Texture) -> ImageTexture:
 	return result
 
 
-func apply_normal(input_texture : Texture) -> ImageTexture:
+func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
 	print("apply_normal called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = normal_map_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
 	yield(get_tree(), "idle_frame")
@@ -161,7 +161,7 @@ func apply_normal(input_texture : Texture) -> ImageTexture:
 	return result
 
 
-func apply_dilate(input_texture : Texture, dilation : float) -> ImageTexture:
+func apply_dilate(input_texture : Texture, dilation : float, resolution : float) -> ImageTexture:
 	print("apply_dilate called")
 	size = input_texture.get_size()
 	
@@ -169,7 +169,7 @@ func apply_dilate(input_texture : Texture, dilation : float) -> ImageTexture:
 	$ColorRect.rect_size = size
 	$ColorRect.material = dilate_pass_1_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("dilation", dilation)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
@@ -181,7 +181,7 @@ func apply_dilate(input_texture : Texture, dilation : float) -> ImageTexture:
 	# Pass 2
 	$ColorRect.material = dilate_pass_2_mat
 	$ColorRect.material.set_shader_param("input_texture", pass1_result)
-	$ColorRect.material.set_shader_param("size", size.x)
+	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("dilation", dilation)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()

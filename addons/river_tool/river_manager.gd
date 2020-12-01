@@ -14,19 +14,16 @@ const NOISE_TEXTURE_PATH = "res://addons/river_tool/textures/noise.png"
 export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
 export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
-export(Texture) var distance_texture
-export(Texture) var normal_texture
-export(Texture) var flowmap_texture
-export(Texture) var blurred_flowmap_texture
-export(Texture) var foam_texture
-export(Texture) var combined_texture
 export(int) var flowmap_resolution = 256
 
 # Material Properties
-export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo 
+export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo
+export(Color, RGBA) var foam_color = Color.white setget set_foam_color
+export(float, 0.0, 10.0) var foam_ammount = 2.0 setget set_foam_ammount 
 export(float, 0.0, 1.0) var roughness = 0.2 setget set_roughness
 export(float, -1.0, 1.0) var refraction = 0.05 setget set_refraction
-export(Texture) var texture_water setget set_water_texture
+export(Texture) var water_texture setget set_water_texture
+export(float, 1.0, 20.0) var water_tiling = 1.0 setget set_water_tiling
 export(float, -16.0, 16.0) var normal_scale = 1.0 setget set_normal_scale
 export(float, 0.0, 1.0) var absorption = 0.0 setget set_absorption
 export(float, 0.0, 10.0) var flow_speed = 1.0 setget set_flowspeed
@@ -43,6 +40,7 @@ var _material : Material
 var _debug_material : Material
 var _first_enter_tree = true
 var _filter_renderer
+var _flow_foam_noise : Texture
 var _valid_flowmap = false
 
 # Signal used to update handles when values are changed on script side
@@ -60,6 +58,11 @@ func _get_property_list() -> Array:
 		{
 			name = "widths",
 			type = TYPE_ARRAY,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "_flow_foam_noise",
+			type = TYPE_OBJECT,
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
@@ -221,6 +224,19 @@ func set_albedo(color : Color) -> void:
 	_material.set_shader_param("albedo", color)
 
 
+func set_foam_color(color : Color) -> void:
+	foam_color = color
+	if _first_enter_tree:
+		return
+	_material.set_shader_param("foam_color", foam_color)
+
+
+func set_foam_ammount(ammount : float) -> void:
+	foam_ammount = ammount
+	if _first_enter_tree:
+		return
+	_material.set_shader_param("foam_ammount", foam_ammount)
+
 func set_roughness(value : float) -> void:
 	roughness = value
 	if _first_enter_tree:
@@ -236,11 +252,17 @@ func set_refraction(value : float) -> void:
 
 
 func set_water_texture(texture : Texture) -> void:
-	texture_water = texture
+	water_texture = texture
 	if _first_enter_tree:
 		return
 	_material.set_shader_param("texture_water", texture)
 
+
+func set_water_tiling(value : float) -> void:
+	water_tiling = value
+	if _first_enter_tree:
+		return
+	_material.set_shader_param("uv_tiling", water_tiling)
 
 func set_normal_scale(value : float) -> void:
 	normal_scale = value
@@ -376,6 +398,7 @@ func _generate_river() -> void:
 
 
 func generate_flowmap() -> void:
+	_generate_river()
 	WaterHelperMethods.reset_all_colliders(get_tree().root)
 
 	var image := Image.new()
@@ -410,62 +433,53 @@ func generate_flowmap() -> void:
 	print("finished adding margins")
 	
 	# Create correctly tiling noise for a channel
-	var noise_image := load(NOISE_TEXTURE_PATH) as Texture
+	var noise_texture := load(NOISE_TEXTURE_PATH) as Texture
 	var noise_with_tiling := Image.new()
-	noise_with_tiling.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
+	var noise_with_margin_size = float(grid_side + 2) * (float(noise_texture.get_width()) / float(grid_side))
+	noise_with_tiling.create(noise_with_margin_size, noise_with_margin_size, false, Image.FORMAT_RGB8)
 	noise_with_tiling.lock()
+	var slice_width = float(noise_texture.get_width()) / float(grid_side)
 	for x in grid_side:
-		noise_with_tiling.blend_rect(noise_image.get_data(), Rect2(0.0, 0.0, margin, flowmap_resolution), Vector2(float(x) * margin, 0.0))
+		noise_with_tiling.blend_rect(noise_texture.get_data(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width))
 	noise_with_tiling.unlock()
-	var noise_with_tiling_texture := ImageTexture.new()
+	var tiled_noise = ImageTexture.new()
+	tiled_noise.create_from_image(noise_with_tiling)
 	
 	# Create renderer for dilate filter
 	var renderer_instance = _filter_renderer.instance()
 	
 	self.add_child(renderer_instance)
 	
-	var dilate_amount = 0.6 / float(grid_side + 2)
-	print ("dilate_amount: " + str(dilate_amount))
-	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount), "completed")
+	var dilate_ammount = 0.6 / float(grid_side)
+	var flowmap_blur_ammount = 6.0 / float(grid_side)
+	var foam_offset_ammount = 0.1 / float(grid_side)
+	var foam_blur_ammount = 7.0 / float(grid_side)
+	print ("dilate_amount: " + str(dilate_ammount))
+	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_ammount, flowmap_resolution), "completed")
 	print("dilate finished")
-	var normal_map = yield(renderer_instance.apply_normal(dilated_texture), "completed")
+	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
 	print("normal finished")
-	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map), "completed")
+	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution), "completed")
 	print("flowmap finished")
-	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, 6.0), "completed")
+	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_ammount, flowmap_resolution), "completed")
 	print("blurred_flowmap finished")
-	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, 0.05), "completed")
+	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_ammount, flowmap_resolution), "completed")
 	print("foam_map finished")
-	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, 10.0), "completed")
+	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_ammount, flowmap_resolution), "completed")
 	print("blurred_foam_map finished")
-	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, load(NOISE_TEXTURE_PATH) as Texture), "completed")
+	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
 	print("combined_map finished")
 	
-	var dilate_result = dilated_texture.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var normal_result = normal_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var flowmap_result = flow_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var blurred_flowmap_result = blurred_flow_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var foam_map_result = blurred_foam_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var combined_map_result = combined_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var flow_foam_noise_result = combined_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	
-	distance_texture = ImageTexture.new()
-	distance_texture.create_from_image(dilate_result)
-	normal_texture = ImageTexture.new()
-	normal_texture.create_from_image(normal_result)
-	flowmap_texture = ImageTexture.new()
-	flowmap_texture.create_from_image(flowmap_result)
-	blurred_flowmap_texture = ImageTexture.new()
-	blurred_flowmap_texture.create_from_image(blurred_flowmap_result, 5) # 5 should disable repeat
-	foam_texture = ImageTexture.new()
-	foam_texture.create_from_image(foam_map_result, 5)
-	combined_texture = ImageTexture.new()
-	combined_texture.create_from_image(combined_map_result, 5)
+	_flow_foam_noise = ImageTexture.new()
+	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
 	
 	print("finished map bake")
-	_material.set_shader_param("flowmap", combined_texture)
+	_material.set_shader_param("flowmap", _flow_foam_noise)
 	_material.set_shader_param("flowmap_set", true)
 	if(_debug_material):
-		_debug_material.set_shader_param("flowmap", combined_texture)
+		_debug_material.set_shader_param("flowmap", _flow_foam_noise)
 		_debug_material.set_shader_param("flowmap_set", true)
 	
 	_valid_flowmap = true
@@ -538,7 +552,7 @@ func set_debug_view(index : int) -> void:
 	if index == 0:
 		_mesh_instance.material_override = null
 	else:
-		_debug_material = WaterHelperMethods.get_debug_material(index, combined_texture, _valid_flowmap)
+		_debug_material = WaterHelperMethods.get_debug_material(index, _flow_foam_noise, _valid_flowmap)
 		_mesh_instance.material_override =_debug_material
 
 

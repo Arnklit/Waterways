@@ -8,55 +8,56 @@ uniform float absorption : hint_range(0.0, 1.0) = 0.0;
 uniform sampler2D texture_water : hint_black;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
+uniform vec4 foam_color : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform float foam_ammount : hint_range(0.0, 10.0) = 2.0;
 uniform sampler2D flowmap : hint_normal;
 uniform bool flowmap_set = false;
-uniform vec2 uv_tiling = vec2(1.0, 1.0);
+uniform float uv_tiling = 1.0;
+
+vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, float tiling, float time, bool flowB) {
+	float phaseOffset = flowB ? 0.5 : 0.0;
+	float progress = fract(time + phaseOffset);
+	vec3 uvw;
+	uvw.xy = uv_in - flowVector * (progress - 0.5);
+	uvw.xy *= tiling;
+	uvw.xy += phaseOffset;
+	uvw.xy += (time - progress) * jump;
+	uvw.z = 1.0 - abs(1.0 - 2.0 * progress);
+	return uvw;
+}
 
 void fragment() {
 	// Setup for flow_maps
 	vec4 flow_foam_noise = texture(flowmap, UV2);
 	
-	vec2 base_uv = UV * uv_tiling;
 	vec2 flow;
 	float foam_mask;
 	if (flowmap_set) {
 		flow = flow_foam_noise.xy;
-		foam_mask = clamp(flow_foam_noise.b * 8.0 - 4.0, 0.0, 1.0);
+		foam_mask = flow_foam_noise.b;
 	} else {
 		flow = vec2(0.5, 0.572);
 		foam_mask = 0.0;
 	}
-	
-	float my_time = TIME + flow_foam_noise.a; // Adding noise to time to reduce pulsing
 	flow = (flow - 0.5) * 2.0; // remap
-	float phase1 = fract(my_time * -flow_speed);
-	float phase2 = fract(phase1 + 0.5);
-	float flow_mix = abs((phase1 - 0.5) * 2.0);
 	
-	// subtracticing half a phase period from the two phases reduces the 
-	// distortion, since we are moving from -0.5 to 0.5 instead of from
-	// 0 to 1.0
-	phase1 -= 0.5;
-	phase2 -= 0.5;
+	vec2 jump1 = vec2(0.24, 0.2083333);
+	vec2 jump2 = vec2(0.20, 0.25);
+	float time = TIME * flow_speed + flow_foam_noise.a;
+	vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_tiling, time, false);
+	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_tiling, time, true);
+	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_tiling * 2.0, time, false);
+	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_tiling * 2.0, time, true);
+
+	vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
+	vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
+	vec3 waterx2_a = texture(texture_water, flowx2_uvA.xy).rgb;
+	vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy).rgb;
+	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
+	vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
+	vec3 waterFBM = water * 0.65 + waterx2 * 0.35;
+	float combined_foam = clamp(foam_mask * waterFBM.b * foam_ammount, 0.0, 1.0);
 	
-	// Commented out version with FBM, I want to get the 
-	// phasing looking really good before I do multiple sampling
-	// Sample the water texture 4 times to use for both normals and foam
-	// At 2 different scales and two different phases
-//	vec3 water_x1_phase1 = texture(texture_water, base_uv + (flow * phase1 * flow_speed)).rgb;
-//	vec3 water_x1_phase2 = texture(texture_water, base_uv + (flow * phase2 * flow_speed)).rgb;
-//	vec3 water_x2_phase1 = texture(texture_water, base_uv * vec2(2.0, 2.0) + (flow * phase1 * flow_speed)).rgb;
-//	vec3 water_x2_phase2 = texture(texture_water, base_uv * vec2(2.0, 2.0) + (flow * phase2 * flow_speed)).rgb;
-	// Mix the water texture's 2 phases for x1 scale and x2 scale
-//	vec3 water_x1 = mix(water_x1_phase1, water_x1_phase2, flow_mix);
-//	vec3 water_x2 = mix(water_x2_phase1, water_x2_phase2, flow_mix);
-	// Mix the two scales together for the foam pattern
-//	float foam = clamp((water_x1.b * .65 + water_x2.b * 0.35) * 4.0 - 1.5, 0.0, 1.0);
-
-
-	vec3 water_phase1 = texture(texture_water, base_uv + (flow * phase1 * flow_speed)).rgb;
-	vec3 water_phase2 = texture(texture_water, base_uv + (flow * phase2 * flow_speed)).rgb;
-	vec3 water = mix(water_phase1, water_phase2, flow_mix);
 	
 	// Depthtest
 	float depthTest = texture(DEPTH_TEXTURE,SCREEN_UV).r;
@@ -67,12 +68,11 @@ void fragment() {
 	// Refraction
 	vec3 ref_normal = normalize( mix(NORMAL,TANGENT * NORMALMAP.x + BINORMAL * NORMALMAP.y + NORMAL * NORMALMAP.z,NORMALMAP_DEPTH) );
 	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction * depthTest * .2;
-	float ref_amount = 1.0 - clamp(depthTest * absorption + albedo.a, 0.0, 1.0);
+	float ref_amount = 1.0 - clamp(depthTest * absorption + albedo.a + combined_foam, 0.0, 1.0);
 
-
-	ALBEDO = mix(albedo.rgb, vec3(1.0, 1.0, 1.0), water.b * foam_mask);
+	ALBEDO = mix(albedo.rgb, foam_color.rgb, combined_foam);
 	ROUGHNESS = roughness;
-	NORMALMAP = vec3(water.rg, 0.0);
+	NORMALMAP = vec3(waterFBM.rg, 0);
 	NORMALMAP_DEPTH = normal_scale;
 	EMISSION += textureLod(SCREEN_TEXTURE,ref_ofs,ROUGHNESS * 8.0).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;

@@ -14,7 +14,7 @@ dest_files=[ "res://.import/noise.png-2c037e0f9f77fec9d8190c59341d7e63.stex" ]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/lossy_quality=0.7
 compress/hdr_mode=0
 compress/bptc_ldr=0

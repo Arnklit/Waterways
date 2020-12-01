@@ -6,7 +6,6 @@
 [ext_resource path="res://addons/river_tool/gui/river_controls.gd" type="Script" id=4]
 [ext_resource path="res://addons/river_tool/gui/river_menu.gd" type="Script" id=5]
 
-
 [node name="HBoxContainer" type="HBoxContainer"]
 margin_right = 128.0
 margin_bottom = 26.0
@@ -19,6 +18,7 @@ __meta__ = {
 margin_right = 44.0
 margin_bottom = 26.0
 text = "River"
+items = [ "Generate Flow & Foam Map", null, 0, false, false, 0, 0, null, "", false, "Debug View", null, 0, false, false, 1, 0, null, "DebugViewMenu4", false ]
 script = ExtResource( 5 )
 
 [node name="VSeparator" type="VSeparator" parent="."]
@@ -65,6 +65,59 @@ margin_right = 286.0
 margin_bottom = 26.0
 text = "Snap to colliders"
 flat = true
+
+[node name="WindowDialog" type="WindowDialog" parent="."]
+margin_left = 290.0
+margin_right = 338.0
+margin_bottom = 26.0
+popup_exclusive = true
+
+[node name="Select texture size" type="Label" parent="WindowDialog"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 20.0
+margin_top = 20.0
+margin_right = -20.0
+margin_bottom = -20.0
+size_flags_horizontal = 3
+size_flags_vertical = 7
+text = "Select texture size"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="resolution pull down" type="OptionButton" parent="WindowDialog"]
+margin_left = 100.0
+margin_top = 50.0
+margin_right = 206.0
+margin_bottom = 70.0
+text = "256"
+items = [ "64", null, false, 0, null, "128", null, false, 1, null, "256", null, false, 2, null, "512", null, false, 3, null, "1024", null, false, 4, null ]
+selected = 2
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Ok Button" type="Button" parent="WindowDialog"]
+margin_left = 76.989
+margin_top = 120.0
+margin_right = 106.989
+margin_bottom = 140.0
+text = "Ok"
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Cancel Button" type="Button" parent="WindowDialog"]
+margin_left = 174.614
+margin_top = 120.0
+margin_right = 228.614
+margin_bottom = 140.0
+text = "Cancel"
+__meta__ = {
+"_edit_use_anchors_": false
+}
 [connection signal="pressed" from="Select" to="." method="_on_select"]
 [connection signal="pressed" from="Add" to="." method="_on_add"]
 [connection signal="pressed" from="Remove" to="." method="_on_remove"]

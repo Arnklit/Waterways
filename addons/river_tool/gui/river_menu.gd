@@ -34,6 +34,8 @@ func _menu_item_selected(index : int) -> void:
 	match index:
 		RIVER_MENU.GENERATE:
 			print("Generate Pressed")
+			#get_node("../WindowDialog").rect_size = Vector2(300, 160)
+			#get_node("../WindowDialog").popup_centered()
 			emit_signal("generate_flowmap")
 		RIVER_MENU.DEBUG_VIEW_MENU:
 			print("Debug View Pressed")
