@@ -408,6 +408,17 @@ func generate_flowmap() -> void:
 	var texture_to_dilate := ImageTexture.new()
 	texture_to_dilate.create_from_image(image_with_margins)
 	print("finished adding margins")
+	
+	# Create correctly tiling noise for a channel
+	var noise_image := load(NOISE_TEXTURE_PATH) as Texture
+	var noise_with_tiling := Image.new()
+	noise_with_tiling.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
+	noise_with_tiling.lock()
+	for x in grid_side:
+		noise_with_tiling.blend_rect(noise_image.get_data(), Rect2(0.0, 0.0, margin, flowmap_resolution), Vector2(float(x) * margin, 0.0))
+	noise_with_tiling.unlock()
+	var noise_with_tiling_texture := ImageTexture.new()
+	
 	# Create renderer for dilate filter
 	var renderer_instance = _filter_renderer.instance()
 	
