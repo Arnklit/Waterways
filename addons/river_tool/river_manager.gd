@@ -510,6 +510,8 @@ func _generate_collisionmap(image : Image) -> Image:
 	for v in verts.size():
 		world_verts.append( global_transform.xform(verts[v]) )
 	
+	var tris_in_step_quad = step_length_divs * step_width_divs * 2
+	
 	for x in image.get_width():
 		for y in image.get_height():
 			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
@@ -524,22 +526,22 @@ func _generate_collisionmap(image : Image) -> Image:
 			var side := int(sqrt(_steps))
 			var column := (pixel % image.get_width()) / side
 			var row := (pixel / image.get_width()) / side
-			var quad := column * side + row
+			var step_quad := column * side + row
 			
-			for tris in uv2.size() / _steps * 3:
-				var step_quad = quad * tris
+			for tris in tris_in_step_quad:
+				var offset_tris = tris# + (tris_in_step_quad * step_quad) -- doesn't work currently, must be doing something wrong.
 				var triangle : PoolVector2Array = []
-				triangle.append(uv2[step_quad * 3])
-				triangle.append(uv2[step_quad * 3 + 1])
-				triangle.append(uv2[step_quad * 3 + 2])
+				triangle.append(uv2[offset_tris * 3])
+				triangle.append(uv2[offset_tris * 3 + 1])
+				triangle.append(uv2[offset_tris * 3 + 2])
 				var p = Vector3(uv_coordinate.x, uv_coordinate.y, 0.0)
-				var a = Vector3(uv2[step_quad * 3].x, uv2[step_quad * 3].y, 0.0)
-				var b = Vector3(uv2[step_quad * 3 + 1].x, uv2[step_quad * 3 + 1].y, 0.0)
-				var c = Vector3(uv2[step_quad * 3 + 2].x, uv2[step_quad * 3 + 2].y, 0.0)
+				var a = Vector3(uv2[offset_tris * 3].x, uv2[offset_tris * 3].y, 0.0)
+				var b = Vector3(uv2[offset_tris * 3 + 1].x, uv2[offset_tris * 3 + 1].y, 0.0)
+				var c = Vector3(uv2[offset_tris * 3 + 2].x, uv2[offset_tris * 3 + 2].y, 0.0)
 				baryatric_coords = WaterHelperMethods.cart2bary(p, a, b, c)
 				
 				if WaterHelperMethods.point_in_bariatric(baryatric_coords):
-					correct_triangle = [step_quad * 3, step_quad * 3 + 1, step_quad * 3 + 2]
+					correct_triangle = [offset_tris * 3, offset_tris * 3 + 1, offset_tris * 3 + 2]
 					break # we have the correct triangle so we break out of loop
 			
 			if correct_triangle:
