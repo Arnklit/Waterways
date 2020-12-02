@@ -18,7 +18,7 @@ __meta__ = {
 margin_right = 44.0
 margin_bottom = 26.0
 text = "River"
-items = [ "Generate Flow & Foam Map", null, 0, false, false, 0, 0, null, "", false, "Debug View", null, 0, false, false, 1, 0, null, "DebugViewMenu4", false ]
+items = [ "Generate Flow & Foam Map", null, 0, false, false, 0, 0, null, "", false, "Debug View", null, 0, false, false, 1, 0, null, "DebugViewMenu", false ]
 script = ExtResource( 5 )
 
 [node name="VSeparator" type="VSeparator" parent="."]
@@ -66,13 +66,14 @@ margin_bottom = 26.0
 text = "Snap to colliders"
 flat = true
 
-[node name="WindowDialog" type="WindowDialog" parent="."]
+[node name="BakeResolutionDialog" type="WindowDialog" parent="."]
 margin_left = 290.0
 margin_right = 338.0
 margin_bottom = 26.0
 popup_exclusive = true
+window_title = "Bake Flow & Foam Map"
 
-[node name="Select texture size" type="Label" parent="WindowDialog"]
+[node name="Select texture size" type="Label" parent="BakeResolutionDialog"]
 anchor_right = 1.0
 anchor_bottom = 1.0
 margin_left = 20.0
@@ -87,19 +88,18 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="resolution pull down" type="OptionButton" parent="WindowDialog"]
+[node name="ResolutionPullDown" type="OptionButton" parent="BakeResolutionDialog"]
 margin_left = 100.0
 margin_top = 50.0
 margin_right = 206.0
 margin_bottom = 70.0
 text = "256"
-items = [ "64", null, false, 0, null, "128", null, false, 1, null, "256", null, false, 2, null, "512", null, false, 3, null, "1024", null, false, 4, null ]
 selected = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Ok Button" type="Button" parent="WindowDialog"]
+[node name="OkButton" type="Button" parent="BakeResolutionDialog"]
 margin_left = 76.989
 margin_top = 120.0
 margin_right = 106.989
@@ -109,7 +109,7 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Cancel Button" type="Button" parent="WindowDialog"]
+[node name="CancelButton" type="Button" parent="BakeResolutionDialog"]
 margin_left = 174.614
 margin_top = 120.0
 margin_right = 228.614
@@ -122,3 +122,5 @@ __meta__ = {
 [connection signal="pressed" from="Add" to="." method="_on_add"]
 [connection signal="pressed" from="Remove" to="." method="_on_remove"]
 [connection signal="toggled" from="SnapToColliders" to="." method="_on_snap_to_colliders"]
+[connection signal="pressed" from="BakeResolutionDialog/OkButton" to="RiverMenu" method="_on_resolution_dialogue_ok_pressed"]
+[connection signal="pressed" from="BakeResolutionDialog/CancelButton" to="RiverMenu" method="_on_resolution_dialogue_cancel_pressed"]

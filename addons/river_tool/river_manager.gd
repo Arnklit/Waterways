@@ -14,7 +14,6 @@ const NOISE_TEXTURE_PATH = "res://addons/river_tool/textures/noise.png"
 export(int, 1, 8) var step_length_divs := 1 setget set_step_length_divs
 export(int, 1, 8) var step_width_divs := 1 setget set_step_width_divs
 export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
-export(int) var flowmap_resolution = 256
 
 # Material Properties
 export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo
@@ -397,7 +396,7 @@ func _generate_river() -> void:
 	_mesh_instance.mesh.surface_set_material(0, _material)
 
 
-func generate_flowmap() -> void:
+func generate_flowmap(flowmap_resolution : float) -> void:
 	_generate_river()
 	WaterHelperMethods.reset_all_colliders(get_tree().root)
 
@@ -451,9 +450,9 @@ func generate_flowmap() -> void:
 	self.add_child(renderer_instance)
 	
 	var dilate_ammount = 0.6 / float(grid_side)
-	var flowmap_blur_ammount = 6.0 / float(grid_side)
+	var flowmap_blur_ammount = 0.02 / float(grid_side) * flowmap_resolution
 	var foam_offset_ammount = 0.1 / float(grid_side)
-	var foam_blur_ammount = 7.0 / float(grid_side)
+	var foam_blur_ammount = 0.03 / float(grid_side) * flowmap_resolution
 	print ("dilate_amount: " + str(dilate_ammount))
 	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_ammount, flowmap_resolution), "completed")
 	print("dilate finished")
@@ -469,6 +468,8 @@ func generate_flowmap() -> void:
 	print("blurred_foam_map finished")
 	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
 	print("combined_map finished")
+	
+	remove_child(renderer_instance) # cleanup
 	
 	var flow_foam_noise_result = combined_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	
