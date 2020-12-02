@@ -41,6 +41,7 @@ var _first_enter_tree = true
 var _filter_renderer
 var _flow_foam_noise : Texture
 var _valid_flowmap = false
+var _baking_thread : Thread
 
 # Signal used to update handles when values are changed on script side
 signal river_changed
@@ -107,6 +108,12 @@ func _enter_tree() -> void:
 	else:
 		_mesh_instance = get_child(0)
 		_material = _mesh_instance.mesh.surface_get_material(0)
+	
+	_baking_thread = Thread.new()
+
+
+func _exit_tree() -> void:
+	_baking_thread.wait_to_finish()
 
 
 func _get_configuration_warning() -> String:
@@ -284,6 +291,14 @@ func set_flowspeed(value : float) -> void:
 	_material.set_shader_param("flow_speed", value)
 
 
+func bake_texture(resolution : float) -> void:
+	_generate_river()
+#	if _baking_thread.is_active():
+#		_baking_thread.wait_to_finish()
+#	_baking_thread.start(self, "_generate_flowmap", resolution)
+	_generate_flowmap(resolution)
+	
+
 func _generate_river() -> void:
 	print("Generate River is called")
 	_valid_flowmap = false # flow map is no longer valid as mesh has changed
@@ -369,7 +384,7 @@ func _generate_river() -> void:
 	for x in grid_side:
 		var y_offset := 0.0
 		for y in grid_side:
-
+		
 			if index < UVs:
 				var sub_y_offset := 0.0
 				for sub_y in step_length_divs:
@@ -380,26 +395,25 @@ func _generate_river() -> void:
 						_mdt.set_vertex_uv2(index, Vector2(x_comb_offset, y_comb_offset))
 						_mdt.set_vertex_uv2(index + 1, Vector2(x_comb_offset + x_grid_sub_length, y_comb_offset))
 						_mdt.set_vertex_uv2(index + 2, Vector2(x_comb_offset, y_comb_offset + y_grid_sub_length))
-
+						
 						_mdt.set_vertex_uv2(index + 3, Vector2(x_comb_offset + x_grid_sub_length, y_comb_offset))
 						_mdt.set_vertex_uv2(index + 4, Vector2(x_comb_offset + x_grid_sub_length, y_comb_offset + y_grid_sub_length))
 						_mdt.set_vertex_uv2(index + 5, Vector2(x_comb_offset, y_comb_offset + y_grid_sub_length))
 						index += 6
 						sub_x_offset += grid_side_length / float(step_width_divs)
 					sub_y_offset += grid_side_length / float(step_length_divs)
-
+			
 			y_offset += grid_side_length
 		x_offset += grid_side_length
-
+	
 	_mdt.commit_to_surface(mesh2)
 	_mesh_instance.mesh = mesh2
 	_mesh_instance.mesh.surface_set_material(0, _material)
 
 
-func generate_flowmap(flowmap_resolution : float) -> void:
-	_generate_river()
+func _generate_flowmap(flowmap_resolution : float) -> void:
 	WaterHelperMethods.reset_all_colliders(get_tree().root)
-
+	
 	var image := Image.new()
 	image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
 	image.fill(Color(0.0, 0.0, 0.0))
@@ -498,35 +512,43 @@ func _generate_collisionmap(image : Image) -> Image:
 	
 	for x in image.get_width():
 		for y in image.get_height():
-			#print("***NEW PIXEL***")
 			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
-			#print("uv_coordinate: " + str(uv_coordinate))
 			var baryatric_coords
 			var correct_triangle := []
-			for tris in uv2.size() / 3:
+			
+			# Now we want to find the correct triangle and we don't want to
+			# interpolate through all the tris for every pixel because that is
+			# slow as hell.
+			# Problem is that UV2 layout and pixels are pretty different
+			var pixel := int(x + y)
+			var side := int(sqrt(_steps))
+			var column := (pixel % image.get_width()) / side
+			var row := (pixel / image.get_width()) / side
+			var quad := column * side + row
+			
+			for tris in uv2.size() / _steps * 3:
+				var step_quad = quad * tris
 				var triangle : PoolVector2Array = []
-				triangle.append(uv2[tris * 3])
-				triangle.append(uv2[tris * 3 + 1])
-				triangle.append(uv2[tris * 3 + 2])
+				triangle.append(uv2[step_quad * 3])
+				triangle.append(uv2[step_quad * 3 + 1])
+				triangle.append(uv2[step_quad * 3 + 2])
 				var p = Vector3(uv_coordinate.x, uv_coordinate.y, 0.0)
-				var a = Vector3(uv2[tris * 3].x, uv2[tris * 3].y, 0.0)
-				var b = Vector3(uv2[tris * 3 + 1].x, uv2[tris * 3 + 1].y, 0.0)
-				var c = Vector3(uv2[tris * 3 + 2].x, uv2[tris * 3 + 2].y, 0.0)
+				var a = Vector3(uv2[step_quad * 3].x, uv2[step_quad * 3].y, 0.0)
+				var b = Vector3(uv2[step_quad * 3 + 1].x, uv2[step_quad * 3 + 1].y, 0.0)
+				var c = Vector3(uv2[step_quad * 3 + 2].x, uv2[step_quad * 3 + 2].y, 0.0)
 				baryatric_coords = WaterHelperMethods.cart2bary(p, a, b, c)
+				
 				if WaterHelperMethods.point_in_bariatric(baryatric_coords):
-					correct_triangle = [tris * 3, tris * 3 + 1, tris * 3 + 2]
-					#print("correct_triangle: " + str(correct_triangle))
-					break # we have the correct triangle so we break out of loop, maybe this should be a function
+					correct_triangle = [step_quad * 3, step_quad * 3 + 1, step_quad * 3 + 2]
+					break # we have the correct triangle so we break out of loop
 			
 			if correct_triangle:
 				var vert0 = world_verts[correct_triangle[0]] 
 				var vert1 = world_verts[correct_triangle[1]] 
 				var vert2 = world_verts[correct_triangle[2]]
-				#print("vert0: " + str(vert0) + ", vert1: " + str(vert1) + ", vert2: " + str(vert2))
 				
 				var real_pos = WaterHelperMethods.bary2cart(vert0, vert1, vert2, baryatric_coords)
 				var real_pos_up = real_pos + Vector3.UP * 10.0
-				#print("real_pos: " + str(real_pos))
 				
 				var result_up = space_state.intersect_ray(real_pos, real_pos_up)
 				var result_down = space_state.intersect_ray(real_pos_up, real_pos)

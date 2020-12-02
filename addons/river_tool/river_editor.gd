@@ -11,7 +11,6 @@ var _river_controls = preload("res://addons/river_tool/gui/river_controls.tscn")
 var _edited_node = null
 var _editor_selection : EditorSelection = null
 var _mode := "select"
-var _generate_thread
 var snap_to_colliders := false
 
 func get_name():
@@ -25,15 +24,11 @@ func _enter_tree() -> void:
 	_river_controls.connect("options", self, "_on_option_change")
 	_editor_selection = get_editor_interface().get_selection()
 	_editor_selection.connect("selection_changed", self, "_on_selection_change")
-	_generate_thread = Thread.new()
 
 
 func _on_generate_flowmap_pressed(resolution : float) -> void:
 	# set a working icon next to the river menu
-	_generate_thread.start(_edited_node, "generate_flowmap", resolution)
-	#yield(_edited_node.generate_flowmap(resolution), "completed")
-	# remove the working icon again
-	print("back after yielding to generate_flowmap")
+	_edited_node.bake_texture(resolution)
 
 
 func _on_debug_view_changed(index : int) -> void:
@@ -47,8 +42,6 @@ func _exit_tree() -> void:
 	_river_controls.disconnect("options", self, "on_option_change")
 	_editor_selection.disconnect("selection_changed", self, "_on_selection_change")
 	_hide_control_panel()
-	if _generate_thread:
-		_generate_thread.wait_to_finish()
 
 
 func handles(node):
