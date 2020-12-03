@@ -18,7 +18,7 @@ export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
 # Material Properties
 export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo
 export(Color, RGBA) var foam_color = Color.white setget set_foam_color
-export(float, 0.0, 10.0) var foam_ammount = 2.0 setget set_foam_ammount 
+export(float, 0.0, 10.0) var foam_amount = 2.0 setget set_foam_amount 
 export(float, 0.0, 1.0) var roughness = 0.2 setget set_roughness
 export(float, -1.0, 1.0) var refraction = 0.05 setget set_refraction
 export(Texture) var water_texture setget set_water_texture
@@ -237,11 +237,11 @@ func set_foam_color(color : Color) -> void:
 	_material.set_shader_param("foam_color", foam_color)
 
 
-func set_foam_ammount(ammount : float) -> void:
-	foam_ammount = ammount
+func set_foam_amount(amount : float) -> void:
+	foam_amount = amount
 	if _first_enter_tree:
 		return
-	_material.set_shader_param("foam_ammount", foam_ammount)
+	_material.set_shader_param("foam_amount", foam_amount)
 
 func set_roughness(value : float) -> void:
 	roughness = value
@@ -309,7 +309,7 @@ func _generate_river() -> void:
 	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size())
 	_steps = int( max(1, round(curve.get_baked_length() / average_width)) )
 
-	### generate widths
+	# generate widths
 	var river_width_values = []
 	
 	var length = curve.get_baked_length()
@@ -463,22 +463,22 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	
 	self.add_child(renderer_instance)
 	
-	var dilate_ammount = 0.6 / float(grid_side)
-	var flowmap_blur_ammount = 0.02 / float(grid_side) * flowmap_resolution
-	var foam_offset_ammount = 0.1 / float(grid_side)
-	var foam_blur_ammount = 0.03 / float(grid_side) * flowmap_resolution
-	print ("dilate_amount: " + str(dilate_ammount))
-	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_ammount, flowmap_resolution), "completed")
+	var dilate_amount = 0.6 / float(grid_side)
+	var flowmap_blur_amount = 0.02 / float(grid_side) * flowmap_resolution
+	var foam_offset_amount = 0.1 / float(grid_side)
+	var foam_blur_amount = 0.03 / float(grid_side) * flowmap_resolution
+	print ("dilate_amount: " + str(dilate_amount))
+	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount, flowmap_resolution), "completed")
 	print("dilate finished")
 	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
 	print("normal finished")
 	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution), "completed")
 	print("flowmap finished")
-	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_ammount, flowmap_resolution), "completed")
+	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution), "completed")
 	print("blurred_flowmap finished")
-	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_ammount, flowmap_resolution), "completed")
+	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_amount, flowmap_resolution), "completed")
 	print("foam_map finished")
-	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_ammount, flowmap_resolution), "completed")
+	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution), "completed")
 	print("blurred_foam_map finished")
 	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
 	print("combined_map finished")
@@ -511,6 +511,7 @@ func _generate_collisionmap(image : Image) -> Image:
 		world_verts.append( global_transform.xform(verts[v]) )
 	
 	var tris_in_step_quad = step_length_divs * step_width_divs * 2
+	var side := int(sqrt(_steps) + 1)
 	
 	for x in image.get_width():
 		for y in image.get_height():
@@ -518,18 +519,15 @@ func _generate_collisionmap(image : Image) -> Image:
 			var baryatric_coords
 			var correct_triangle := []
 			
-			# Now we want to find the correct triangle and we don't want to
-			# interpolate through all the tris for every pixel because that is
-			# slow as hell.
-			# Problem is that UV2 layout and pixels are pretty different
-			var pixel := int(x + y)
-			var side := int(sqrt(_steps))
-			var column := (pixel % image.get_width()) / side
-			var row := (pixel / image.get_width()) / side
+			var pixel := int(x * image.get_width() + y)
+			var column := (pixel / image.get_width()) / (image.get_width() / side)
+			var row := (pixel % image.get_width()) / (image.get_width() / side)
 			var step_quad := column * side + row
+			if step_quad >= _steps:
+				break # we are in the empty part of UV2 so we break to the next column
 			
 			for tris in tris_in_step_quad:
-				var offset_tris = tris# + (tris_in_step_quad * step_quad) -- doesn't work currently, must be doing something wrong.
+				var offset_tris = (tris_in_step_quad * step_quad) + tris
 				var triangle : PoolVector2Array = []
 				triangle.append(uv2[offset_tris * 3])
 				triangle.append(uv2[offset_tris * 3 + 1])
@@ -567,9 +565,9 @@ func _generate_collisionmap(image : Image) -> Image:
 						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
 			else:
 				# If there is no correct triangle, we are in the empty space
-				# of UV2 and we break to skip into the next pixel row
+				# of UV2 and we break to skip into the next pixel column.
+				# this should not be needed any more after the new quad system
 				break
-	
 	return image
 
 

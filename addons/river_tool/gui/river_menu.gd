@@ -43,7 +43,7 @@ func _menu_item_selected(index : int) -> void:
 		RIVER_MENU.GENERATE:
 			print("Generate Pressed")
 			var dropdown = get_node("../BakeResolutionDialog/ResolutionPullDown")
-			dropdown.items.clear()
+			dropdown.clear()
 			for i in BAKE_RESOLUTIONS:
 				dropdown.add_item(str(i))
 			dropdown.select(2)
