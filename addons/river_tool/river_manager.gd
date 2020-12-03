@@ -98,23 +98,17 @@ func _enter_tree() -> void:
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
 		# Uncomment for debugging the MeshInstance object
-		new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
+		# new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
 		_mesh_instance = get_child(0)
 		
 		_material = ShaderMaterial.new()
+		_material.shader = _default_shader
 		set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
 		
 		_generate_river()
 	else:
 		_mesh_instance = get_child(0)
 		_material = _mesh_instance.mesh.surface_get_material(0)
-	
-	_baking_thread = Thread.new()
-
-
-func _exit_tree() -> void:
-	_baking_thread.wait_to_finish()
-
 
 func _get_configuration_warning() -> String:
 	if _valid_flowmap:
@@ -135,7 +129,6 @@ func add_point(position : Vector3, index : int):
 		curve.add_point(position, -dir, dir, index + 1)
 		widths.insert(index + 1, (widths[index] + widths[index + 1]) / 2.0) # We set the width to the average of the two surrounding widths
 	emit_signal("river_changed")
-	print("in add point before generate river")
 	_generate_river()
 
 
@@ -146,7 +139,6 @@ func remove_point(index):
 	curve.remove_point(index)
 	widths.remove(index)
 	emit_signal("river_changed")
-	print("in remove point before generate river")
 	_generate_river()
 
 
@@ -175,19 +167,16 @@ func get_closest_point_to(point : Vector3) -> int:
 # Setter Methods
 func set_curve_point_position(index : int, position : Vector3) -> void:
 	curve.set_point_position(index, position)
-	print("in set_curve_point_position before generate river")
 	_generate_river()
 
 
 func set_curve_point_in(index : int, position : Vector3) -> void:
 	curve.set_point_in(index, position)
-	print("in set_curve_point_in before generate river")
 	_generate_river()
 
 
 func set_curve_point_out(index : int, position : Vector3) -> void:
 	curve.set_point_out(index, position)
-	print("in set_curve_point_out before generate river")
 	_generate_river()
 
 
@@ -195,7 +184,6 @@ func set_widths(new_widths) -> void:
 	widths = new_widths
 	if _first_enter_tree:
 		return
-	print("in set_widths before generate river")
 	_generate_river()
 
 
@@ -293,20 +281,16 @@ func set_flowspeed(value : float) -> void:
 
 func bake_texture(resolution : float) -> void:
 	_generate_river()
-#	if _baking_thread.is_active():
-#		_baking_thread.wait_to_finish()
-#	_baking_thread.start(self, "_generate_flowmap", resolution)
 	_generate_flowmap(resolution)
 	
 
 func _generate_river() -> void:
-	print("Generate River is called")
 	_valid_flowmap = false # flow map is no longer valid as mesh has changed
 	update_configuration_warning()
 	_material.set_shader_param("flowmap_set", false)
 	if _debug_material:
 		_debug_material.set_shader_param("flowmap_set", false)
-	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size())
+	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size() / 2)
 	_steps = int( max(1, round(curve.get_baked_length() / average_width)) )
 
 	# generate widths

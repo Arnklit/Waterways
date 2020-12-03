@@ -72,10 +72,8 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		old_pos = river.curve.get_point_out(p_index) + base
 	if index % HANDLES_PER_POINT == 3:
 		old_pos = base + river.curve.get_point_out(p_index).cross(Vector3.UP).normalized() * river.widths[p_index]
-		print("(3) old pos is: ", old_pos)
 	if index % HANDLES_PER_POINT == 4:
 		old_pos = base + river.curve.get_point_out(p_index).cross(Vector3.DOWN).normalized() * river.widths[p_index]
-		print("(4) old pos is: ", old_pos)
 	
 	# Point, in and out handles
 	if index % HANDLES_PER_POINT <= 2:

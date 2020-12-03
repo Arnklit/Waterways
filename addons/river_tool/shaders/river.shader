@@ -9,7 +9,7 @@ uniform sampler2D texture_water : hint_black;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform vec4 foam_color : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform float foam_ammount : hint_range(0.0, 10.0) = 2.0;
+uniform float foam_amount : hint_range(0.0, 10.0) = 2.0;
 uniform sampler2D flowmap : hint_normal;
 uniform bool flowmap_set = false;
 uniform float uv_tiling = 1.0;
@@ -56,7 +56,7 @@ void fragment() {
 	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 	vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
 	vec3 waterFBM = water * 0.65 + waterx2 * 0.35;
-	float combined_foam = clamp(foam_mask * waterFBM.b * foam_ammount, 0.0, 1.0);
+	float combined_foam = clamp(foam_mask * waterFBM.b * foam_amount, 0.0, 1.0);
 	
 	
 	// Depthtest
