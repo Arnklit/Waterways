@@ -1,28 +1,6 @@
 # Copyright © 2020 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 
-const DEBUG_FLOWMAP_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_flowmap.shader"
-const DEBUG_FOAMMAP_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_foammap.shader"
-const DEBUG_FLOWARROWS_SHADER_PATH = "res://addons/river_tool/shaders/river_debug_flowarrows.shader"
-
-const DEBUG_ARROW_TEXTURE_PATH = "res://addons/river_tool/textures/flow_arrow.svg"
-
-static func get_debug_material(index : int, flowmap : Texture, flowmap_set : bool) -> Material:
-	var material := ShaderMaterial.new()
-	match(index):
-		1:
-			material.shader = load(DEBUG_FLOWMAP_SHADER_PATH) as Shader
-		2:
-			material.shader = load(DEBUG_FOAMMAP_SHADER_PATH) as Shader
-		3:
-			material.shader = load(DEBUG_FLOWARROWS_SHADER_PATH) as Shader
-			material.set_shader_param("arrows", load(DEBUG_ARROW_TEXTURE_PATH) as Texture)
-	
-	material.set_shader_param("flowmap", flowmap)
-	material.set_shader_param("flowmap_set", flowmap_set)
-	
-	return material
-
 
 static func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
 	var v0 := b - a

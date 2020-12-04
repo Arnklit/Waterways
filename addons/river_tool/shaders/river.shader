@@ -55,8 +55,9 @@ void fragment() {
 	vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy).rgb;
 	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 	vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
-	vec3 waterFBM = water * 0.65 + waterx2 * 0.35;
-	float combined_foam = clamp(foam_mask * waterFBM.b * foam_amount, 0.0, 1.0);
+	vec2 water_norFBM = water.rg * 0.65 + waterx2.rg * 0.35;
+	float water_foamFBM = water.b * waterx2.b;
+	float combined_foam = foam_mask * water_foamFBM * foam_amount * 3.0;
 	
 	
 	// Depthtest
@@ -72,7 +73,7 @@ void fragment() {
 
 	ALBEDO = mix(albedo.rgb, foam_color.rgb, combined_foam);
 	ROUGHNESS = roughness;
-	NORMALMAP = vec3(waterFBM.rg, 0);
+	NORMALMAP = vec3(water_norFBM, 0);
 	NORMALMAP_DEPTH = normal_scale;
 	EMISSION += textureLod(SCREEN_TEXTURE,ref_ofs,ROUGHNESS * 8.0).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;
