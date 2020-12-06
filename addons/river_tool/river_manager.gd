@@ -20,7 +20,8 @@ export(float, 0.1, 5.0) var smoothness = 0.5 setget set_smoothness
 # Material Properties
 export(Color, RGBA) var albedo = Color(0.1, 0.1, 0.1, 0.0) setget set_albedo
 export(Color, RGBA) var foam_color = Color.white setget set_foam_color
-export(float, 0.0, 10.0) var foam_amount = 2.0 setget set_foam_amount 
+export(float, 0.0, 4.0) var foam_amount = 1.0 setget set_foam_amount
+export(float, 0.0, 1.0) var foam_smoothness = 1.0 setget set_foam_smoothness
 export(float, 0.0, 1.0) var roughness = 0.2 setget set_roughness
 export(float, -1.0, 1.0) var refraction = 0.05 setget set_refraction
 export(Texture) var water_texture setget set_water_texture
@@ -28,9 +29,11 @@ export(float, 1.0, 20.0) var water_tiling = 1.0 setget set_water_tiling
 export(float, -16.0, 16.0) var normal_scale = 1.0 setget set_normal_scale
 export(float, 0.0, 1.0) var absorption = 0.0 setget set_absorption
 export(float, 0.0, 10.0) var flow_speed = 1.0 setget set_flowspeed
+export(float, 5.0, 100.0) var lod0_distance = 30.0 setget set_lod0_distance
 
 var curve : Curve3D
 var widths := [] setget set_widths
+var valid_flowmap := false
 
 var _steps := 2
 var _st : SurfaceTool
@@ -38,13 +41,11 @@ var _mdt : MeshDataTool
 var _mesh_instance : MeshInstance
 var _default_shader : Shader
 var _debug_shader : Shader
-var _material : Material
-var _debug_material : Material
+var _material : ShaderMaterial
+var _debug_material : ShaderMaterial
 var _first_enter_tree = true
 var _filter_renderer
 var _flow_foam_noise : Texture
-var _valid_flowmap = false
-var _baking_thread : Thread
 
 # Signal used to update handles when values are changed on script side
 signal river_changed
@@ -69,7 +70,7 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
-			name = "_valid_flowmap",
+			name = "valid_flowmap",
 			type = TYPE_BOOL,
 			usage = PROPERTY_USAGE_STORAGE
 		}
@@ -86,6 +87,9 @@ func _init() -> void:
 	_debug_material = ShaderMaterial.new()
 	_debug_material.shader = _debug_shader
 	_debug_material.set_shader_param("debug_pattern", load(DEBUG_PATTERN_PATH) as Texture)
+	_material = ShaderMaterial.new()
+	_material.shader = _default_shader
+	set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
 
 
 func _enter_tree() -> void:
@@ -106,20 +110,18 @@ func _enter_tree() -> void:
 		add_child(new_mesh_instance)
 		# Uncomment for debugging the MeshInstance object
 		# new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
-		_mesh_instance = get_child(0)
-		
-		_material = ShaderMaterial.new()
-		_material.shader = _default_shader
-		set_water_texture(load(DEFAULT_WATER_TEXTURE_PATH))
-		
+		_mesh_instance = get_child(0) as MeshInstance
 		_generate_river()
 	else:
-		_mesh_instance = get_child(0)
+		_mesh_instance = get_child(0) as MeshInstance
 		_material = _mesh_instance.mesh.surface_get_material(0)
+	
+	set_materials("valid_flowmap", valid_flowmap)
+	set_materials("flowmap", _flow_foam_noise)
 
 
 func _get_configuration_warning() -> String:
-	if _valid_flowmap:
+	if valid_flowmap:
 		return ""
 	else:
 		return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
@@ -199,6 +201,8 @@ func set_step_length_divs(value : int) -> void:
 	step_length_divs = value
 	if _first_enter_tree:
 		return
+	valid_flowmap = false
+	set_materials("valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
 
@@ -207,6 +211,8 @@ func set_step_width_divs(value : int) -> void:
 	step_width_divs = value
 	if _first_enter_tree:
 		return
+	valid_flowmap = false
+	set_materials("valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
 
@@ -215,79 +221,71 @@ func set_smoothness(value : float) -> void:
 	smoothness = value
 	if _first_enter_tree:
 		return
+	valid_flowmap = false
+	set_materials("valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
 
 
 func set_albedo(color : Color) -> void:
 	albedo = color
-	if _first_enter_tree:
-		return
-	_set_materials("albedo", color)
+	set_materials("albedo", color)
 
 
 func set_foam_color(color : Color) -> void:
 	foam_color = color
-	if _first_enter_tree:
-		return
-	_set_materials("foam_color", foam_color)
+	set_materials("foam_color", foam_color)
 
 
 func set_foam_amount(amount : float) -> void:
 	foam_amount = amount
-	if _first_enter_tree:
-		return
-	_set_materials("foam_amount", foam_amount)
+	set_materials("foam_amount", foam_amount)
+
+
+func set_foam_smoothness(amount : float) -> void:
+	foam_smoothness = amount
+	set_materials("foam_smoothness", amount)
 
 func set_roughness(value : float) -> void:
 	roughness = value
-	if _first_enter_tree:
-		return
-	_set_materials("roughness", value)
+	set_materials("roughness", value)
 
 
 func set_refraction(value : float) -> void:
 	refraction = value
-	if _first_enter_tree:
-		return
-	_set_materials("refraction", value)
+	set_materials("refraction", value)
 
 
 func set_water_texture(texture : Texture) -> void:
 	water_texture = texture
-	if _first_enter_tree:
-		return
-	_set_materials("texture_water", texture)
+	set_materials("texture_water", texture)
 
 
 func set_water_tiling(value : float) -> void:
 	water_tiling = value
-	if _first_enter_tree:
-		return
-	_set_materials("uv_tiling", water_tiling)
+	set_materials("uv_tiling", water_tiling)
 
 func set_normal_scale(value : float) -> void:
 	normal_scale = value
-	if _first_enter_tree:
-		return
-	_set_materials("normal_scale", value)
+	set_materials("normal_scale", value)
 
 
 func set_absorption(value : float) -> void:
 	absorption = value
-	if _first_enter_tree:
-		return
-	_set_materials("absorption", value)
+	set_materials("absorption", value)
 
 
 func set_flowspeed(value : float) -> void:
 	flow_speed = value
-	if _first_enter_tree:
-		return
-	_set_materials("flow_speed", value)
+	set_materials("flow_speed", value)
 
 
-func _set_materials(param : String, value) -> void:
+func set_lod0_distance(value : float) -> void:
+	lod0_distance = value
+	set_materials("lod0_distance", value)
+
+
+func set_materials(param : String, value) -> void:
 	_material.set_shader_param(param, value)
 	_debug_material.set_shader_param(param, value)
 
@@ -298,9 +296,6 @@ func bake_texture(resolution : float) -> void:
 	
 
 func _generate_river() -> void:
-	_valid_flowmap = false # flow map is no longer valid as mesh has changed
-	update_configuration_warning()
-	_set_materials("flowmap_set", false)
 	var average_width = WaterHelperMethods.sum_array(widths) / float(widths.size() / 2)
 	_steps = int( max(1, round(curve.get_baked_length() / average_width)) )
 
@@ -486,10 +481,10 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
 	
 	print("finished map bake")
-	_set_materials("flowmap", _flow_foam_noise)
-	_set_materials("flowmap_set", true)
+	set_materials("flowmap", _flow_foam_noise)
+	set_materials("valid_flowmap", true)
+	valid_flowmap = true;
 	
-	_valid_flowmap = true
 	update_configuration_warning()
 
 

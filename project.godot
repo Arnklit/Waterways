@@ -39,4 +39,5 @@ enabled=PoolStringArray( "godot-plugin-refresher", "river_tool", "zylann.hterrai
 
 [rendering]
 
+quality/filters/msaa=2
 environment/default_environment="res://test_assets/default_env.tres"

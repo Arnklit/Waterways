@@ -6,8 +6,7 @@ uniform float dilation = 0.1;
 
 
 float input_in(vec2 uv) {
-	vec4 lodded_texture = textureLod(input_texture, uv, 0.0);
-	return (dot((lodded_texture).rgb, vec3(1.0))/3.0);
+	return (dot(texture(input_texture, uv).rgb, vec3(1.0))/3.0);
 }
 
 vec3 distance_h(vec2 uv) {

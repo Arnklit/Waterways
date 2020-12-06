@@ -14,10 +14,12 @@ vec3 lighten(vec3 col1, vec3 col2) {
 }
 
 void fragment() {
-	vec4 lodded_texture1 = textureLod(input_texture, UV + vec2(1.0 / size, 0.0), 0.0);
-	vec4 lodded_texture2 = textureLod(input_texture, UV - vec2(1.0 / size, 0.0), 0.0);
-	vec3 flowmap1 = nm2flow(lodded_texture1.xy);
-	vec3 flowmap2 = nm2flow(lodded_texture2.xy);
+	// Create two copies of the flowmap sligtly offset by each other and combine
+	// them with lighten to remove seam
+	vec4 texture1 = texture(input_texture, UV + vec2(1.0 / size), 0.0);
+	vec4 texture2 = texture(input_texture, UV - vec2(1.0 / size), 0.0);
+	vec3 flowmap1 = nm2flow(texture1.xy);
+	vec3 flowmap2 = nm2flow(texture2.xy);
 	vec3 combined_texture = lighten(flowmap1, flowmap2);
 	COLOR = vec4(combined_texture, 1.0);
 }

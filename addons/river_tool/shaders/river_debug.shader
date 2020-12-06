@@ -9,10 +9,11 @@ const int FOAM_MIX = 4;
 uniform int mode = 1;
 uniform sampler2D texture_water : hint_black;
 uniform sampler2D flowmap : hint_black;
-uniform bool flowmap_set = false;
+uniform bool valid_flowmap = false;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform sampler2D debug_pattern : hint_black;
-uniform float foam_amount : hint_range(0.0, 10.0) = 2.0;
+uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
+uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
 uniform float uv_tiling = 1.0;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, float tiling, float time, bool flowB) {
@@ -31,18 +32,18 @@ void fragment() {
 	vec4 flow_foam_noise = texture(flowmap, UV2);
 	vec2 flow;
 	float foam_mask;
-	if (flowmap_set) {
+	if (valid_flowmap) {
 		flow = flow_foam_noise.xy;
 		foam_mask = flow_foam_noise.b;
 	} else {
 		flow = vec2(0.5, 0.572);
 		foam_mask = 0.0;
 	}
-	flow = (flow - 0.5) * 2.0; // remap
+	flow = (flow - 0.5) * 2.0; // unpack flowmap
 	
 	
 	if(mode == 1) {
-		ALBEDO = vec3(flow, 0.0);
+		ALBEDO = vec3((flow + 0.5) / 2.0, 0.0); // repack flowmap
 		
 	} else if(mode == 2) {
 		vec2 jump = vec2(0.24, 0.2083333);
@@ -75,10 +76,16 @@ void fragment() {
 		vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy).rgb;
 		vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
-		float water_foamFBM = water.b * waterx2.b;
-		float combined_foam = foam_mask * water_foamFBM * foam_amount * 3.0;
+		
+		float water_foamFBM = water.b; // LOD1
+		water_foamFBM *= waterx2.b * 2.0; // LOD0 - add second level of detail
+		
+		water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
+		
+		float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);
+		float foam_sharp = clamp(water_foamFBM - (1.0 - foam_mask), 0.0, 1.0);
+		float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 		
 		ALBEDO = vec3(combined_foam);
-		
 	}
 }

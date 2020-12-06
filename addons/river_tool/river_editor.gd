@@ -49,7 +49,6 @@ func handles(node):
 
 
 func edit(node):
-	print("edit is getting called")
 	_show_control_panel()
 	_edited_node = node as RiverManager
 
@@ -153,15 +152,21 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 					new_pos = plane.intersects_ray(ray_from, ray_from + ray_dir * 4096)
 				baked_closest_point = _edited_node.to_local(new_pos)
 			
-			var ur = get_undo_redo()
+			var ur := get_undo_redo()
 			ur.create_action("Add River point")
 			ur.add_do_method(_edited_node, "add_point", baked_closest_point, closest_segment)
 			ur.add_do_method(_edited_node, "properties_changed")
+			ur.add_do_method(_edited_node, "set_materials", "valid_flowmap", false)
+			ur.add_do_property(_edited_node, "valid_flowmap", false)
+			ur.add_do_method(_edited_node, "update_configuration_warning")
 			if closest_segment == -1:
 				ur.add_undo_method(_edited_node, "remove_point", _edited_node.curve.get_point_count()) # remove last
 			else:
 				ur.add_undo_method(_edited_node, "remove_point", closest_segment + 1)
 			ur.add_undo_method(_edited_node, "properties_changed")
+			ur.add_undo_method(_edited_node, "set_materials", "valid_flowmap", _edited_node.valid_flowmap)
+			ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
+			ur.add_undo_method(_edited_node, "update_configuration_warning")
 			ur.commit_action()
 		if _mode == "remove" and not event.pressed:
 			# A closest_segment of -1 means we didn't press close enough to a
@@ -173,11 +178,17 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				ur.create_action("Remove River point")
 				ur.add_do_method(_edited_node, "remove_point", closest_index)
 				ur.add_do_method(_edited_node, "properties_changed")
+				ur.add_do_method(_edited_node, "set_materials", "valid_flowmap", false)
+				ur.add_do_property(_edited_node, "valid_flowmap", false)
+				ur.add_do_method(_edited_node, "update_configuration_warning")
 				if closest_index == _edited_node.curve.get_point_count() - 1:
 					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), -1)
 				else:
 					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), closest_index - 1)
 				ur.add_undo_method(_edited_node, "properties_changed")
+				ur.add_undo_method(_edited_node, "set_materials", "valid_flowmap", _edited_node.valid_flowmap)
+				ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
+				ur.add_undo_method(_edited_node, "update_configuration_warning")
 				ur.commit_action()
 		return true
 	return false
