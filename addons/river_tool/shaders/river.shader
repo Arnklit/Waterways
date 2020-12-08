@@ -8,7 +8,7 @@ uniform float absorption : hint_range(0.0, 1.0) = 0.0;
 uniform sampler2D texture_water : hint_black;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
-uniform vec4 foam_color : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec4 foam_albedo : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
 uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
 uniform sampler2D flowmap : hint_normal;
@@ -85,7 +85,7 @@ void fragment() {
 	depthTest += VERTEX.z;
 
 
-	ALBEDO = mix(albedo.rgb, foam_color.rgb, combined_foam);
+	ALBEDO = mix(albedo.rgb, foam_albedo.rgb, combined_foam);
 	ROUGHNESS = roughness;
 	NORMALMAP = vec3(water_norFBM, 0);
 	NORMALMAP_DEPTH = normal_scale;
