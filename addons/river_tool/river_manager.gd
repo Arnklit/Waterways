@@ -21,8 +21,8 @@ var shape_smoothness := 0.5 setget set_smoothness
 var mat_flow_speed := 1.0 setget set_flowspeed
 var mat_texture : Texture setget set_texture
 var mat_tiling := 1.0 setget set_tiling
-var mat_albedo := Color(0.1, 0.1, 0.1, 0.0) setget set_albedo
-var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
+var mat_albedo := Color(0.3, 0.3, 0.2) setget set_albedo
+var mat_foam_albedo := Color(0.9, 0.9, 0.9) setget set_foam_albedo
 var mat_foam_amount := 1.0 setget set_foam_amount
 var mat_foam_smoothness := 1.0 setget set_foam_smoothness
 var mat_roughness := 0.2 setget set_roughness

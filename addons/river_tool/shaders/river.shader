@@ -86,6 +86,7 @@ void fragment() {
 
 
 	ALBEDO = mix(albedo.rgb, foam_albedo.rgb, combined_foam);
+	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
 	NORMALMAP = vec3(water_norFBM, 0);
 	NORMALMAP_DEPTH = normal_scale;
