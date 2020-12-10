@@ -12,6 +12,27 @@ const NOISE_TEXTURE_PATH = "res://addons/river_tool/textures/noise.png"
 const DEBUG_SHADER_PATH = "res://addons/river_tool/shaders/river_debug.shader"
 const DEBUG_PATTERN_PATH = "res://addons/river_tool/textures/debug_pattern.png"
 
+const DEFAULT_PARAMETERS = {
+	shape_step_length_divs = 1,
+	shape_step_width_divs = 1,
+	shape_smoothness = 0.5,
+	mat_flow_speed = 1.0,
+	mat_tiling = 1.0,
+	mat_normal_scale = 1.0,
+	mat_clarity = 10.0,
+	mat_albedo = Color(0.3, 0.25, 0.2),
+	mat_roughness = 0.2,
+	mat_refraction = 0.05,
+	mat_foam_albedo = Color(0.9, 0.9, 0.9),
+	mat_foam_amount = 2.0,
+	mat_foam_smoothness = 1.0,
+	lod_lod0_distance = 50.0,
+	baking_dilate = 0.6,
+	baking_flowmap_blur = 0.04,
+	baking_foam_offset = 0.05,
+	baking_foam_blur = 0.03
+}
+
 # Shape Properties
 var shape_step_length_divs := 1 setget set_step_length_divs
 var shape_step_width_divs := 1 setget set_step_width_divs
@@ -21,17 +42,17 @@ var shape_smoothness := 0.5 setget set_smoothness
 var mat_flow_speed := 1.0 setget set_flowspeed
 var mat_texture : Texture setget set_texture
 var mat_tiling := 1.0 setget set_tiling
-var mat_albedo := Color(0.3, 0.3, 0.2) setget set_albedo
-var mat_foam_albedo := Color(0.9, 0.9, 0.9) setget set_foam_albedo
-var mat_foam_amount := 1.0 setget set_foam_amount
-var mat_foam_smoothness := 1.0 setget set_foam_smoothness
+var mat_normal_scale := 1.0 setget set_normal_scale
+var mat_clarity := 10.0 setget set_clarity
+var mat_albedo := Color(0.3, 0.25, 0.2) setget set_albedo
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
-var mat_normal_scale := 1.0 setget set_normal_scale
-var mat_absorption := 0.0 setget set_absorption
+var mat_foam_albedo := Color(0.9, 0.9, 0.9) setget set_foam_albedo
+var mat_foam_amount := 2.0 setget set_foam_amount
+var mat_foam_smoothness := 1.0 setget set_foam_smoothness
 
 # LOD Properties
-var lod_lod0_distance := 30.0 setget set_lod0_distance
+var lod_lod0_distance := 50.0 setget set_lod0_distance
 
 # Bake Properties
 var baking_dilate = 0.6
@@ -39,10 +60,12 @@ var baking_flowmap_blur = 0.04
 var baking_foam_offset = 0.05
 var baking_foam_blur = 0.03
 
+# Public variables
 var curve : Curve3D
 var widths := [] setget set_widths
 var valid_flowmap := false
 
+# Private variables
 var _steps := 2
 var _st : SurfaceTool
 var _mdt : MeshDataTool
@@ -57,6 +80,18 @@ var _flow_foam_noise : Texture
 
 # Signal used to update handles when values are changed on script side
 signal river_changed
+
+
+func property_can_revert(p_name: String) -> bool:
+	if not DEFAULT_PARAMETERS.has(p_name):
+		return false
+	if get(p_name) != DEFAULT_PARAMETERS[p_name]:
+		return true
+	return false
+
+
+func property_get_revert(p_name: String): # returns Variant
+	return DEFAULT_PARAMETERS[p_name]
 
 
 func _get_property_list() -> Array:
@@ -116,29 +151,23 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
+			name = "mat_normal_scale",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "-16.0, 16.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
 			name = "mat_albedo",
 			type = TYPE_COLOR,
 			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_foam_albedo",
-			type = TYPE_COLOR,
-			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_foam_amount",
+			name = "mat_clarity",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 4.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_foam_smoothness",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
+			hint_string = "0.0, 200.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -156,14 +185,20 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_normal_scale",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "-16.0, 16.0",
+			name = "mat_foam_albedo",
+			type = TYPE_COLOR,
+			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_absorption",
+			name = "mat_foam_amount",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 4.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_foam_smoothness",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
@@ -415,9 +450,9 @@ func set_normal_scale(value : float) -> void:
 	set_materials("normal_scale", value)
 
 
-func set_absorption(value : float) -> void:
-	mat_absorption = value
-	set_materials("absorption", value)
+func set_clarity(value : float) -> void:
+	mat_clarity = value
+	set_materials("clarity", value)
 
 
 func set_flowspeed(value : float) -> void:

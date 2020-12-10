@@ -1,14 +1,14 @@
 tool
 extends Viewport
 
-const DILATE_PASS1_PATH = "res://addons/river_tool/shaders/dilate_filter_pass1.shader"
-const DILATE_PASS2_PATH = "res://addons/river_tool/shaders/dilate_filter_pass2.shader"
-const NORMAL_MAP_PASS_PATH = "res://addons/river_tool/shaders/normal_map_pass.shader"
-const NORMAL_TO_FLOW_PASS_PATH = "res://addons/river_tool/shaders/normal_to_flow_filter.shader"
-const BLUR_PASS1_PATH = "res://addons/river_tool/shaders/blur_pass1.shader"
-const BLUR_PASS2_PATH = "res://addons/river_tool/shaders/blur_pass2.shader"
-const FOAM_PASS_PATH = "res://addons/river_tool/shaders/foam_pass.shader"
-const COMBINE_PASS_PATH = "res://addons/river_tool/shaders/combine_pass.shader"
+const DILATE_PASS1_PATH = "res://addons/river_tool/shaders/filters/dilate_filter_pass1.shader"
+const DILATE_PASS2_PATH = "res://addons/river_tool/shaders/filters/dilate_filter_pass2.shader"
+const NORMAL_MAP_PASS_PATH = "res://addons/river_tool/shaders/filters/normal_map_pass.shader"
+const NORMAL_TO_FLOW_PASS_PATH = "res://addons/river_tool/shaders/filters/normal_to_flow_filter.shader"
+const BLUR_PASS1_PATH = "res://addons/river_tool/shaders/filters/blur_pass1.shader"
+const BLUR_PASS2_PATH = "res://addons/river_tool/shaders/filters/blur_pass2.shader"
+const FOAM_PASS_PATH = "res://addons/river_tool/shaders/filters/foam_pass.shader"
+const COMBINE_PASS_PATH = "res://addons/river_tool/shaders/filters/combine_pass.shader"
 
 var dilate_pass_1_shader : Shader
 var dilate_pass_2_shader : Shader
