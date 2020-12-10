@@ -11,6 +11,7 @@ const FILTER_RENDERER_PATH = "res://addons/river_tool/FilterRenderer.tscn"
 const NOISE_TEXTURE_PATH = "res://addons/river_tool/textures/noise.png"
 const DEBUG_SHADER_PATH = "res://addons/river_tool/shaders/river_debug.shader"
 const DEBUG_PATTERN_PATH = "res://addons/river_tool/textures/debug_pattern.png"
+const DEBUG_ARROW_PATH = "res://addons/river_tool/textures/debug_arrow.svg"
 
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
@@ -295,6 +296,7 @@ func _init() -> void:
 	_debug_material = ShaderMaterial.new()
 	_debug_material.shader = _debug_shader
 	_debug_material.set_shader_param("debug_pattern", load(DEBUG_PATTERN_PATH) as Texture)
+	_debug_material.set_shader_param("debug_arrow", load(DEBUG_ARROW_PATH) as Texture)
 	_material = ShaderMaterial.new()
 	_material.shader = _default_shader
 	set_texture(load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
