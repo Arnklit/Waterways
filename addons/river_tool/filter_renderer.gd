@@ -74,14 +74,15 @@ func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture
 	return result
 
 
-func apply_foam(input_texture : Texture, distance : float, resolution : float) -> ImageTexture:
+func apply_foam(input_texture : Texture, distance : float, cutoff : float, resolution : float) -> ImageTexture:
 	print("apply_foam called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = foam_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
-	$ColorRect.material.set_shader_param("distance", distance)
+	$ColorRect.material.set_shader_param("offset", distance)
+	$ColorRect.material.set_shader_param("cutoff", cutoff)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
 	yield(get_tree(), "idle_frame")

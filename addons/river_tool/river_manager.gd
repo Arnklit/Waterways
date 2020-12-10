@@ -29,6 +29,7 @@ const DEFAULT_PARAMETERS = {
 	lod_lod0_distance = 50.0,
 	baking_dilate = 0.6,
 	baking_flowmap_blur = 0.04,
+	baking_foam_cutoff = 0.9,
 	baking_foam_offset = 0.05,
 	baking_foam_blur = 0.03
 }
@@ -55,10 +56,11 @@ var mat_foam_smoothness := 1.0 setget set_foam_smoothness
 var lod_lod0_distance := 50.0 setget set_lod0_distance
 
 # Bake Properties
-var baking_dilate = 0.6
-var baking_flowmap_blur = 0.04
-var baking_foam_offset = 0.05
-var baking_foam_blur = 0.03
+var baking_dilate := 0.6
+var baking_flowmap_blur := 0.04
+var baking_foam_cutoff := 0.9
+var baking_foam_offset := 0.05
+var baking_foam_blur := 0.03
 
 # Public variables
 var curve : Curve3D
@@ -238,6 +240,13 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
+			name = "baking_foam_cutoff",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 1.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
 			name = "baking_foam_offset",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
@@ -327,16 +336,18 @@ func _get_configuration_warning() -> String:
 
 
 # Public Methods
-func add_point(position : Vector3, index : int):
+func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, width : float = 0.0):
 	if index == -1:
 		var last_index := curve.get_point_count() - 1
-		var dir := (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
-		curve.add_point(position, -dir, dir, -1)
+		var new_dir := dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
+		#var new_dir := (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
+		curve.add_point(position, -new_dir, new_dir, -1)
 		widths.append(widths[widths.size() - 1]) # If this is a new point at the end, add a width that's the same as last
 	else:
-		var dir := (curve.get_point_position(index + 1) - curve.get_point_position(index)).normalized() * 0.25
-		curve.add_point(position, -dir, dir, index + 1)
-		widths.insert(index + 1, (widths[index] + widths[index + 1]) / 2.0) # We set the width to the average of the two surrounding widths
+		var new_dir := dir if dir != Vector3.ZERO else (curve.get_point_position(index + 1) - curve.get_point_position(index)).normalized() * 0.25
+		curve.add_point(position, -new_dir, new_dir, index + 1)
+		var new_width = width if width != 0.0 else (widths[index] + widths[index + 1]) / 2.0
+		widths.insert(index + 1, new_width) # We set the width to the average of the two surrounding widths
 	emit_signal("river_changed")
 	_generate_river()
 
@@ -559,7 +570,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 
 	self.add_child(renderer_instance)
 
-	var dilate_amount = baking_dilate / float(grid_side)
+	var dilate_amount = baking_dilate / float(grid_side) 
 	var flowmap_blur_amount = baking_flowmap_blur / float(grid_side) * flowmap_resolution
 	var foam_offset_amount = baking_foam_offset / float(grid_side)
 	var foam_blur_amount = baking_foam_blur / float(grid_side) * flowmap_resolution
@@ -568,7 +579,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
 	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution), "completed")
 	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution), "completed")
-	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_amount, flowmap_resolution), "completed")
+	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution), "completed")
 	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution), "completed")
 	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
 

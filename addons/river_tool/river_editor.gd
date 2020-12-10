@@ -184,7 +184,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				if closest_index == _edited_node.curve.get_point_count() - 1:
 					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), -1)
 				else:
-					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), closest_index - 1)
+					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), closest_index - 1, _edited_node.curve.get_point_out(closest_index), _edited_node.widths[closest_index])
 				ur.add_undo_method(_edited_node, "properties_changed")
 				ur.add_undo_method(_edited_node, "set_materials", "valid_flowmap", _edited_node.valid_flowmap)
 				ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
