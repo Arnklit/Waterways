@@ -17,8 +17,10 @@ const BAKE_RESOLUTIONS = [
 	1024
 ]
 
+var debug_view_menu_selected := 0
+
 var _debug_view_menu : PopupMenu
-var _debug_view_menu_selected := 0
+
 
 func _enter_tree() -> void:
 	get_popup().clear()
@@ -41,7 +43,6 @@ func _exit_tree() -> void:
 func _menu_item_selected(index : int) -> void:
 	match index:
 		RIVER_MENU.GENERATE:
-			print("Generate Pressed")
 			var dropdown = get_node("../BakeResolutionDialog/ResolutionPullDown")
 			dropdown.clear()
 			for i in BAKE_RESOLUTIONS:
@@ -50,12 +51,11 @@ func _menu_item_selected(index : int) -> void:
 			get_node("../BakeResolutionDialog").rect_size = Vector2(300, 160)
 			get_node("../BakeResolutionDialog").popup_centered()
 		RIVER_MENU.DEBUG_VIEW_MENU:
-			print("Debug View Pressed")
+			pass
 
 
 func _debug_menu_item_selected(index: int) -> void:
-	print("debug_menu item pressed: ", index)
-	_debug_view_menu_selected = index
+	debug_view_menu_selected = index
 	emit_signal("debug_view_changed", index)
 
 
@@ -67,7 +67,7 @@ func _on_debug_view_menu_about_to_show() -> void:
 	_debug_view_menu.add_radio_check_item("Display Debug Flow Arrows")
 	_debug_view_menu.add_radio_check_item("Display Debug Foam Map")
 	_debug_view_menu.add_radio_check_item("Display Debug Foam Mix")
-	_debug_view_menu.set_item_checked(_debug_view_menu_selected, true)
+	_debug_view_menu.set_item_checked(debug_view_menu_selected, true)
 
 
 func _on_resolution_dialogue_ok_pressed() -> void:

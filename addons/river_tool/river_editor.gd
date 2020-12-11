@@ -63,6 +63,8 @@ func _on_selection_change() -> void:
 		_edited_node = null
 		if _river_controls.get_parent():
 			_hide_control_panel()
+	else:
+		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
 
 
 func _on_mode_change(mode) -> void:

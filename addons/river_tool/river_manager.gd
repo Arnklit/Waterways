@@ -67,6 +67,7 @@ var baking_foam_blur := 0.03
 var curve : Curve3D
 var widths := [] setget set_widths
 var valid_flowmap := false
+var debug_view := 0 setget set_debug_view
 
 # Private variables
 var _steps := 2
@@ -512,6 +513,7 @@ func set_materials(param : String, value) -> void:
 
 
 func set_debug_view(index : int) -> void:
+	debug_view = index
 	if index == 0:
 		_mesh_instance.material_override = null
 	else:

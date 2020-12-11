@@ -51,7 +51,6 @@ void fragment() {
 	}
 	flow = (flow - 0.5) * 2.0; // unpack flowmap
 	
-	
 	if(mode == FLOWMAP) {
 		ALBEDO = vec3((flow + 0.5) / 2.0, 0.0); // repack flowmap
 		
