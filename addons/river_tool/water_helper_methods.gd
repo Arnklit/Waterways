@@ -159,7 +159,10 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, s
 		world_verts.append( mesh_instance.global_transform.xform(verts[v]) )
 	
 	var tris_in_step_quad := step_length_divs * step_width_divs * 2
-	var side := int(sqrt(steps) + 1)
+	var side_float := sqrt(steps)
+	if fmod(side_float, 1.0) != 0.0:
+		side_float += 1
+	var side := int(side_float)
 	
 	for x in image.get_width():
 		for y in image.get_height():
