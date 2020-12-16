@@ -213,15 +213,8 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, s
 						true
 				
 				if result_up or result_down:
-					#print("hit something")
-					#image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
 					if not up_hit_frontface and result_down:
 						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
-			else:
-				# If there is no correct triangle, we are in the empty space
-				# of UV2 and we break to skip into the next pixel column.
-				# this should not be needed any more after the new quad system
-				break
 	return image
 
 
