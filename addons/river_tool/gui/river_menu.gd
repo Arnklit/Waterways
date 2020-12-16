@@ -2,10 +2,12 @@ tool
 extends MenuButton
 
 signal generate_flowmap
+signal generate_mesh
 signal debug_view_changed
 
 enum RIVER_MENU {
 	GENERATE,
+	GENERATE_MESH,
 	DEBUG_VIEW_MENU
 }
 
@@ -30,6 +32,7 @@ func _enter_tree() -> void:
 	_debug_view_menu.name = "DebugViewMenu"
 	_debug_view_menu.connect("about_to_show", self, "_on_debug_view_menu_about_to_show")
 	_debug_view_menu.connect("id_pressed", self, "_debug_menu_item_selected")
+	get_popup().add_item("Generate MeshInstance Sibling")
 	get_popup().add_child(_debug_view_menu)
 	get_popup().add_submenu_item("Debug View", _debug_view_menu.name)
 
@@ -50,6 +53,8 @@ func _menu_item_selected(index : int) -> void:
 			dropdown.select(2)
 			get_node("../BakeResolutionDialog").rect_size = Vector2(300, 160)
 			get_node("../BakeResolutionDialog").popup_centered()
+		RIVER_MENU.GENERATE_MESH:
+			emit_signal("generate_mesh")
 		RIVER_MENU.DEBUG_VIEW_MENU:
 			pass
 

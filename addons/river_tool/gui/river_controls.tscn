@@ -18,7 +18,7 @@ __meta__ = {
 margin_right = 44.0
 margin_bottom = 26.0
 text = "River"
-items = [ "Generate Flow & Foam Map", null, 0, false, false, 0, 0, null, "", false, "Debug View", null, 0, false, false, 1, 0, null, "DebugViewMenu", false ]
+items = [ "Generate Flow & Foam Map", null, 0, false, false, 0, 0, null, "", false, "Debug View", null, 0, false, false, 1, 0, null, "DebugViewMenu", false, "Item 2", null, 0, false, false, 2, 0, null, "", false ]
 script = ExtResource( 5 )
 
 [node name="VSeparator" type="VSeparator" parent="."]
@@ -94,7 +94,6 @@ margin_top = 50.0
 margin_right = 206.0
 margin_bottom = 70.0
 text = "256"
-selected = 2
 __meta__ = {
 "_edit_use_anchors_": false
 }

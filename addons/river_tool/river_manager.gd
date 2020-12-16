@@ -94,7 +94,7 @@ func property_can_revert(p_name: String) -> bool:
 	return false
 
 
-func property_get_revert(p_name: String): # returns Variant
+func property_get_revert(p_name: String): # returns variant
 	return DEFAULT_PARAMETERS[p_name]
 
 
@@ -319,8 +319,6 @@ func _enter_tree() -> void:
 		var new_mesh_instance := MeshInstance.new()
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
-		# Uncomment for debugging the MeshInstance object
-		# new_mesh_instance.set_owner(get_tree().get_edited_scene_root()) 
 		_mesh_instance = get_child(0) as MeshInstance
 		_generate_river()
 	else:
@@ -544,10 +542,8 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	image.unlock()
 	
 	# Calculate how many colums are in UV2
-	var grid_side_float := sqrt(_steps)
-	if fmod(grid_side_float, 1.0) != 0.0:
-		grid_side_float += 1
-	var grid_side := int(grid_side_float)
+	var grid_side := WaterHelperMethods.calculate_side(_steps)
+	print("grid side in _generate_flowmap: ", grid_side)
 	
 	var margin := int(round(float(flowmap_resolution) / float(grid_side)))
 	
@@ -600,6 +596,16 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	valid_flowmap = true;
 	
 	update_configuration_warning()
+
+
+func spawn_mesh() -> void:
+	if owner == null:
+		push_warning("Cannot create MeshInstance sibling when River is root.")
+		return
+	var sibling_mesh := _mesh_instance.duplicate(true)
+	get_parent().add_child(sibling_mesh)
+	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
+	sibling_mesh.translation = translation
 
 
 # Signal Methods

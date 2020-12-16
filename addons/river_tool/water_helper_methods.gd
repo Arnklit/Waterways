@@ -43,6 +43,13 @@ static func sum_array(array) -> float:
 	return sum
 
 
+static func calculate_side(steps : int) -> int:
+	var side_float : float = sqrt(steps)
+	if fmod(side_float, 1.0) != 0.0:
+		side_float += 1.0
+	return int(side_float)
+
+
 static func generate_river_width_values(curve : Curve3D, steps : int, step_length_divs : int, step_width_divs : int, widths : Array) -> Array:
 	var river_width_values := []
 	var length = curve.get_baked_length()
@@ -109,10 +116,8 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 
 	# Generate UV2
 	# Decide on grid size
-	var grid_side_float := sqrt(steps)
-	if fmod(grid_side_float, 1.0) != 0.0:
-		grid_side_float += 1
-	var grid_side := int(grid_side_float)
+	var grid_side := calculate_side(steps)
+	print("grid side in generate_river_mesh: ", grid_side)
 	var grid_side_length := 1.0 / float(grid_side)
 	var x_grid_sub_length := grid_side_length / float(step_width_divs)
 	var y_grid_sub_length := grid_side_length / float(step_length_divs)
@@ -159,10 +164,8 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, s
 		world_verts.append( mesh_instance.global_transform.xform(verts[v]) )
 	
 	var tris_in_step_quad := step_length_divs * step_width_divs * 2
-	var side_float := sqrt(steps)
-	if fmod(side_float, 1.0) != 0.0:
-		side_float += 1
-	var side := int(side_float)
+	var side := calculate_side(steps)
+	print("side in generate_collisionmap: ", side)
 	
 	for x in image.get_width():
 		for y in image.get_height():

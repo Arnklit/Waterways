@@ -24,11 +24,19 @@ func _enter_tree() -> void:
 	_river_controls.connect("options", self, "_on_option_change")
 	_editor_selection = get_editor_interface().get_selection()
 	_editor_selection.connect("selection_changed", self, "_on_selection_change")
+	connect("scene_changed", self, "_on_scene_changed");
+	connect("scene_closed", self, "_on_scene_closed");
+	
 
 
 func _on_generate_flowmap_pressed(resolution : float) -> void:
 	# set a working icon next to the river menu
 	_edited_node.bake_texture(resolution)
+
+
+func _on_generate_mesh_pressed() -> void:
+	# set a working icon next to the river menu
+	_edited_node.spawn_mesh()
 
 
 func _on_debug_view_changed(index : int) -> void:
@@ -41,6 +49,8 @@ func _exit_tree() -> void:
 	_river_controls.disconnect("mode", self, "_on_mode_change")
 	_river_controls.disconnect("options", self, "on_option_change")
 	_editor_selection.disconnect("selection_changed", self, "_on_selection_change")
+	disconnect("scene_changed", self, "_on_scene_changed");
+	disconnect("scene_closed", self, "_on_scene_closed");
 	_hide_control_panel()
 
 
@@ -65,6 +75,20 @@ func _on_selection_change() -> void:
 			_hide_control_panel()
 	else:
 		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
+
+
+func _on_scene_changed(scene_root : Node) -> void:
+	if _edited_node != null:
+		if _edited_node.owner == scene_root:
+			_show_control_panel()
+	else:
+		if _river_controls.get_parent():
+			_hide_control_panel()
+
+
+func _on_scene_closed(_value) -> void:
+	if _river_controls.get_parent():
+		_hide_control_panel()
 
 
 func _on_mode_change(mode) -> void:
@@ -200,6 +224,7 @@ func _show_control_panel() -> void:
 	if not _river_controls.get_parent():
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
 		_river_controls.menu.connect("generate_flowmap", self, "_on_generate_flowmap_pressed")
+		_river_controls.menu.connect("generate_mesh", self, "_on_generate_mesh_pressed")
 		_river_controls.menu.connect("debug_view_changed", self, "_on_debug_view_changed")
 
 
@@ -207,4 +232,5 @@ func _hide_control_panel() -> void:
 	if _river_controls.get_parent():
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
 		_river_controls.menu.disconnect("generate_flowmap", self, "_on_generate_flowmap_pressed")
+		_river_controls.menu.disconnect("generate_mesh", self, "_on_generate_mesh_pressed")
 		_river_controls.menu.disconnect("debug_view_changed", self, "_on_debug_view_changed")
