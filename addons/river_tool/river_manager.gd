@@ -86,18 +86,7 @@ var _flow_foam_noise : Texture
 signal river_changed
 
 
-func property_can_revert(p_name: String) -> bool:
-	if not DEFAULT_PARAMETERS.has(p_name):
-		return false
-	if get(p_name) != DEFAULT_PARAMETERS[p_name]:
-		return true
-	return false
-
-
-func property_get_revert(p_name: String): # returns variant
-	return DEFAULT_PARAMETERS[p_name]
-
-
+# Internal Methods
 func _get_property_list() -> Array:
 	return [
 		{
@@ -286,9 +275,19 @@ func _get_property_list() -> Array:
 	]
 
 
-# Internal Methods
+func property_can_revert(p_name: String) -> bool:
+	if not DEFAULT_PARAMETERS.has(p_name):
+		return false
+	if get(p_name) != DEFAULT_PARAMETERS[p_name]:
+		return true
+	return false
+
+
+func property_get_revert(p_name: String): # returns variant
+	return DEFAULT_PARAMETERS[p_name]
+
+
 func _init() -> void:
-	print("init called")
 	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
 	_debug_shader = load(DEBUG_SHADER_PATH) as Shader
 	_st = SurfaceTool.new()
@@ -336,8 +335,8 @@ func _get_configuration_warning() -> String:
 		return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
 
 
-# Public Methods
-func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, width : float = 0.0):
+# Public Methods - These should all be good to use as API from other scripts
+func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, width : float = 0.0) -> void:
 	if index == -1:
 		var last_index := curve.get_point_count() - 1
 		var new_dir := dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
@@ -353,7 +352,7 @@ func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, wi
 	_generate_river()
 
 
-func remove_point(index : int):
+func remove_point(index : int) -> void:
 	# We don't allow rivers shorter than 2 points
 	if curve.get_point_count() <= 2:
 		return
@@ -363,7 +362,11 @@ func remove_point(index : int):
 	_generate_river()
 
 
-# Setter Methods
+func bake_texture(resolution : float) -> void:
+	_generate_river()
+	_generate_flowmap(resolution)
+
+
 func set_curve_point_position(index : int, position : Vector3) -> void:
 	curve.set_point_position(index, position)
 	_generate_river()
@@ -384,6 +387,51 @@ func set_widths(new_widths : Array) -> void:
 	if _first_enter_tree:
 		return
 	_generate_river()
+
+
+func set_materials(param : String, value) -> void:
+	_material.set_shader_param(param, value)
+	_debug_material.set_shader_param(param, value)
+
+
+func set_debug_view(index : int) -> void:
+	debug_view = index
+	if index == 0:
+		_mesh_instance.material_override = null
+	else:
+		_debug_material.set_shader_param("mode", index)
+		_mesh_instance.material_override =_debug_material
+
+
+func spawn_mesh() -> void:
+	if owner == null:
+		push_warning("Cannot create MeshInstance sibling when River is root.")
+		return
+	var sibling_mesh := _mesh_instance.duplicate(true)
+	get_parent().add_child(sibling_mesh)
+	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
+	sibling_mesh.translation = translation
+
+
+func get_curve_points() -> PoolVector3Array:
+	var points : PoolVector3Array
+	for p in curve.get_point_count():
+		points.append(curve.get_point_position(p))
+	
+	return points
+
+
+func get_closest_point_to(point : Vector3) -> int:
+	var points = []
+	var closest_distance := 4096.0
+	var closest_index
+	for p in curve.get_point_count():
+		var dist := point.distance_to(curve.get_point_position(p))
+		if dist < closest_distance:
+			closest_distance = dist
+			closest_index = p
+	
+	return closest_index
 
 
 # Parameter Setters
@@ -477,48 +525,6 @@ func set_lod0_distance(value : float) -> void:
 	set_materials("lod0_distance", value)
 
 
-# Getter Methods
-func get_curve_points() -> PoolVector3Array:
-	var points : PoolVector3Array
-	for p in curve.get_point_count():
-		points.append(curve.get_point_position(p))
-	
-	return points
-
-
-func get_closest_point_to(point : Vector3) -> int:
-	var points = []
-	var closest_distance := 4096.0
-	var closest_index
-	for p in curve.get_point_count():
-		var dist := point.distance_to(curve.get_point_position(p))
-		if dist < closest_distance:
-			closest_distance = dist
-			closest_index = p
-	
-	return closest_index
-
-
-# Public Methods
-func bake_texture(resolution : float) -> void:
-	_generate_river()
-	_generate_flowmap(resolution)
-
-
-func set_materials(param : String, value) -> void:
-	_material.set_shader_param(param, value)
-	_debug_material.set_shader_param(param, value)
-
-
-func set_debug_view(index : int) -> void:
-	debug_view = index
-	if index == 0:
-		_mesh_instance.material_override = null
-	else:
-		_debug_material.set_shader_param("mode", index)
-		_mesh_instance.material_override =_debug_material
-
-
 # Private Methods
 func _generate_river() -> void:
 	var average_width := WaterHelperMethods.sum_array(widths) / float(widths.size() / 2)
@@ -538,12 +544,10 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	
 	image.lock()
 	image = WaterHelperMethods.generate_collisionmap(image, _mesh_instance, _steps, shape_step_length_divs, shape_step_width_divs)
-	print("finished collision map")
 	image.unlock()
 	
 	# Calculate how many colums are in UV2
 	var grid_side := WaterHelperMethods.calculate_side(_steps)
-	print("grid side in _generate_flowmap: ", grid_side)
 	
 	var margin := int(round(float(flowmap_resolution) / float(grid_side)))
 	
@@ -590,22 +594,11 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	_flow_foam_noise = ImageTexture.new()
 	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
 	
-	print("finished map bake")
 	set_materials("flowmap", _flow_foam_noise)
 	set_materials("valid_flowmap", true)
 	valid_flowmap = true;
 	
 	update_configuration_warning()
-
-
-func spawn_mesh() -> void:
-	if owner == null:
-		push_warning("Cannot create MeshInstance sibling when River is root.")
-		return
-	var sibling_mesh := _mesh_instance.duplicate(true)
-	get_parent().add_child(sibling_mesh)
-	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
-	sibling_mesh.translation = translation
 
 
 # Signal Methods

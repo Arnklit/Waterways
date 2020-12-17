@@ -1,3 +1,5 @@
+# Copyright © 2020 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 tool
 extends Viewport
 
@@ -32,10 +34,10 @@ func _enter_tree() -> void:
 	dilate_pass_2_shader = load(DILATE_PASS2_PATH) as Shader
 	normal_map_pass_shader = load(NORMAL_MAP_PASS_PATH) as Shader
 	normal_to_flow_pass_shader = load(NORMAL_TO_FLOW_PASS_PATH) as Shader
-	blur_pass1_shader = load(BLUR_PASS1_PATH)
-	blur_pass2_shader = load(BLUR_PASS2_PATH)
-	foam_pass_shader = load(FOAM_PASS_PATH)
-	combine_pass_shader = load(COMBINE_PASS_PATH)
+	blur_pass1_shader = load(BLUR_PASS1_PATH) as Shader
+	blur_pass2_shader = load(BLUR_PASS2_PATH) as Shader
+	foam_pass_shader = load(FOAM_PASS_PATH) as Shader
+	combine_pass_shader = load(COMBINE_PASS_PATH) as Shader
 	
 	dilate_pass_1_mat = ShaderMaterial.new()
 	dilate_pass_2_mat = ShaderMaterial.new()
@@ -56,7 +58,6 @@ func _enter_tree() -> void:
 	combine_pass_mat.shader = combine_pass_shader
 
 func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture : Texture) -> ImageTexture:
-	print("apply_combine called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = combine_pass_mat
@@ -67,7 +68,7 @@ func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture
 	update_worlds()
 	yield(get_tree(), "idle_frame")
 	yield(get_tree(), "idle_frame")
-	var image = get_texture().get_data()
+	var image := get_texture().get_data()
 	
 	var result := ImageTexture.new()
 	result.create_from_image(image)
@@ -75,7 +76,6 @@ func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture
 
 
 func apply_foam(input_texture : Texture, distance : float, cutoff : float, resolution : float) -> ImageTexture:
-	print("apply_foam called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = foam_pass_mat
@@ -87,7 +87,7 @@ func apply_foam(input_texture : Texture, distance : float, cutoff : float, resol
 	update_worlds()
 	yield(get_tree(), "idle_frame")
 	yield(get_tree(), "idle_frame")
-	var image = get_texture().get_data()
+	var image := get_texture().get_data()
 	
 	var result := ImageTexture.new()
 	result.create_from_image(image)
@@ -95,7 +95,6 @@ func apply_foam(input_texture : Texture, distance : float, cutoff : float, resol
 
 
 func apply_blur(input_texture : Texture, blur : float, resolution : float) -> ImageTexture:
-	print("apply_blur called")
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
@@ -119,15 +118,14 @@ func apply_blur(input_texture : Texture, blur : float, resolution : float) -> Im
 	update_worlds()
 	yield(get_tree(), "idle_frame")
 	yield(get_tree(), "idle_frame")
-	var image2 : Image = get_texture().get_data()
+	var image2 := get_texture().get_data()
+	
 	var pass2_result := ImageTexture.new()
 	pass2_result.create_from_image(image2)
-	
 	return pass2_result
 	
 
 func apply_normal_to_flow(input_texture : Texture, resolution : float) -> ImageTexture:
-	print("apply_normal_to_flow called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = normal_to_flow_pass_mat
@@ -137,7 +135,7 @@ func apply_normal_to_flow(input_texture : Texture, resolution : float) -> ImageT
 	update_worlds()
 	yield(get_tree(), "idle_frame")
 	yield(get_tree(), "idle_frame")
-	var image = get_texture().get_data()
+	var image := get_texture().get_data()
 	
 	var result := ImageTexture.new()
 	result.create_from_image(image)
@@ -145,7 +143,6 @@ func apply_normal_to_flow(input_texture : Texture, resolution : float) -> ImageT
 
 
 func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
-	print("apply_normal called")
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = normal_map_pass_mat
@@ -163,7 +160,6 @@ func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
 
 
 func apply_dilate(input_texture : Texture, dilation : float, resolution : float) -> ImageTexture:
-	print("apply_dilate called")
 	size = input_texture.get_size()
 	
 	$ColorRect.rect_position = Vector2(0, 0)
@@ -188,8 +184,8 @@ func apply_dilate(input_texture : Texture, dilation : float, resolution : float)
 	update_worlds()
 	yield(get_tree(), "idle_frame")
 	yield(get_tree(), "idle_frame")
-	var image2 = get_texture().get_data()
+	var image2 := get_texture().get_data()
+	
 	var pass2_result := ImageTexture.new()
 	pass2_result.create_from_image(image2)
-	
 	return pass2_result

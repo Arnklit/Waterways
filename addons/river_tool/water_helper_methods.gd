@@ -1,7 +1,6 @@
 # Copyright © 2020 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 
-
 static func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
 	var v0 := b - a
 	var v1 := c - a
@@ -117,7 +116,6 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 	# Generate UV2
 	# Decide on grid size
 	var grid_side := calculate_side(steps)
-	print("grid side in generate_river_mesh: ", grid_side)
 	var grid_side_length := 1.0 / float(grid_side)
 	var x_grid_sub_length := grid_side_length / float(step_width_divs)
 	var y_grid_sub_length := grid_side_length / float(step_length_divs)
@@ -165,7 +163,6 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, s
 	
 	var tris_in_step_quad := step_length_divs * step_width_divs * 2
 	var side := calculate_side(steps)
-	print("side in generate_collisionmap: ", side)
 	
 	for x in image.get_width():
 		for y in image.get_height():

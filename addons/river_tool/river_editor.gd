@@ -1,3 +1,5 @@
+# Copyright © 2020 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 tool
 extends EditorPlugin
 
@@ -64,7 +66,6 @@ func edit(node):
 
 
 func _on_selection_change() -> void:
-	#print("_on_selection_change() called")
 	_editor_selection = get_editor_interface().get_selection()
 	var selected = _editor_selection.get_selected_nodes()
 	if len(selected) == 0:
@@ -92,12 +93,10 @@ func _on_scene_closed(_value) -> void:
 
 
 func _on_mode_change(mode) -> void:
-	print("Selcted mode: ", mode)
 	_mode = mode
 
 
 func _on_option_change(option, value) -> void:
-	print("Snap to colliders: ", value)
 	snap_to_colliders = value
 	if snap_to_colliders:
 		WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
