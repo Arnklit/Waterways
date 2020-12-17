@@ -16,7 +16,11 @@ float remap(float origFrom, float origTo, float targetFrom, float targetTo, floa
 }
 
 void fragment() {
-	vec4 lodded_texture = textureLod(input_texture, UV - vec2(0.0, offset), 0.0);
-	float remapped = remap(cutoff, 1.0, 0.0, 1.0, lodded_texture.r);
-	COLOR = vec4(remapped, remapped, remapped, 1.0);
+	float combine;
+	for(int i; i < 10; i++) {
+		vec4 lodded_texture = textureLod(input_texture, UV - vec2(0.0, float(i) * (offset / 10.0)), 0.0);
+		float remapped = remap(cutoff, 1.0, 0.0, 1.0, lodded_texture.r);
+		combine = max(combine, remapped);
+	}
+	COLOR = vec4(combine, combine, combine, 1.0);
 }

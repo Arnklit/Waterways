@@ -13,14 +13,6 @@ enum RIVER_MENU {
 	DEBUG_VIEW_MENU
 }
 
-const BAKE_RESOLUTIONS = [
-	64,
-	128,
-	256,
-	512,
-	1024
-]
-
 var debug_view_menu_selected := 0
 
 var _debug_view_menu : PopupMenu
@@ -48,13 +40,7 @@ func _exit_tree() -> void:
 func _menu_item_selected(index : int) -> void:
 	match index:
 		RIVER_MENU.GENERATE:
-			var dropdown = get_node("../BakeResolutionDialog/ResolutionPullDown")
-			dropdown.clear()
-			for i in BAKE_RESOLUTIONS:
-				dropdown.add_item(str(i))
-			dropdown.select(2)
-			get_node("../BakeResolutionDialog").rect_size = Vector2(300, 160)
-			get_node("../BakeResolutionDialog").popup_centered()
+			emit_signal("generate_flowmap")
 		RIVER_MENU.GENERATE_MESH:
 			emit_signal("generate_mesh")
 		RIVER_MENU.DEBUG_VIEW_MENU:
@@ -75,13 +61,3 @@ func _on_debug_view_menu_about_to_show() -> void:
 	_debug_view_menu.add_radio_check_item("Display Debug Foam Map")
 	_debug_view_menu.add_radio_check_item("Display Debug Foam Mix")
 	_debug_view_menu.set_item_checked(debug_view_menu_selected, true)
-
-
-func _on_resolution_dialogue_ok_pressed() -> void:
-	get_node("../BakeResolutionDialog").hide()
-	var selected_resolution = BAKE_RESOLUTIONS[get_node("../BakeResolutionDialog/ResolutionPullDown").selected]
-	emit_signal("generate_flowmap", selected_resolution)
-
-
-func _on_resolution_dialogue_cancel_pressed() -> void:
-	get_node("../BakeResolutionDialog").hide()

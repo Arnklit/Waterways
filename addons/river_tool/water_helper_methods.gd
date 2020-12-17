@@ -152,7 +152,7 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 	return mesh2
 
 
-static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, steps : int, step_length_divs : int, step_width_divs : int) -> Image:
+static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, steps : int, step_length_divs : int, step_width_divs : int, river) -> Image:
 	var space_state := mesh_instance.get_world().direct_space_state
 	var uv2 := mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
 	var verts := mesh_instance.mesh.surface_get_arrays(0)[0] as PoolVector3Array
@@ -163,8 +163,15 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, s
 	
 	var tris_in_step_quad := step_length_divs * step_width_divs * 2
 	var side := calculate_side(steps)
-	
+	var percentage = 0.0
+	river.emit_signal("progress_notified", percentage, "Calculating Collisions (" + str(image.get_width()) + "x" + str(image.get_width()) + ")")
+	yield(river.get_tree(), "idle_frame")
 	for x in image.get_width():
+		var cur_percentage = float(x) / float(image.get_width())
+		if cur_percentage > percentage + 0.1:
+			percentage += 0.1
+			river.emit_signal("progress_notified", percentage, "Calculating Collisions (" + str(image.get_width()) + "x" + str(image.get_width()) + ")")
+			yield(river.get_tree(), "idle_frame")
 		for y in image.get_height():
 			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
 			var baryatric_coords : Vector3
@@ -174,6 +181,7 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, s
 			var column := (pixel / image.get_width()) / (image.get_width() / side)
 			var row := (pixel % image.get_width()) / (image.get_width() / side)
 			var step_quad := column * side + row
+				
 			if step_quad >= steps:
 				break # we are in the empty part of UV2 so we break to the next column
 			

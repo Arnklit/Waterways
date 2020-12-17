@@ -6,11 +6,13 @@ extends EditorPlugin
 const WaterHelperMethods = preload("res://addons/river_tool/water_helper_methods.gd")
 const RiverManager = preload("res://addons/river_tool/river_manager.gd")
 const RiverGizmo = preload("res://addons/river_tool/river_gizmo.gd")
+const ProgressWindow = preload("res://addons/river_tool/progress_window.tscn")
 
 var river_gizmo = RiverGizmo.new()
 
 var _river_controls = preload("res://addons/river_tool/gui/river_controls.tscn").instance()
 var _edited_node = null
+var _progress_window = null
 var _editor_selection : EditorSelection = null
 var _mode := "select"
 var snap_to_colliders := false
@@ -24,16 +26,17 @@ func _enter_tree() -> void:
 	river_gizmo.editor_plugin = self
 	_river_controls.connect("mode", self, "_on_mode_change")
 	_river_controls.connect("options", self, "_on_option_change")
+	_progress_window = ProgressWindow.instance()
+	_river_controls.add_child(_progress_window)
 	_editor_selection = get_editor_interface().get_selection()
 	_editor_selection.connect("selection_changed", self, "_on_selection_change")
 	connect("scene_changed", self, "_on_scene_changed");
 	connect("scene_closed", self, "_on_scene_closed");
-	
 
 
-func _on_generate_flowmap_pressed(resolution : float) -> void:
+func _on_generate_flowmap_pressed() -> void:
 	# set a working icon next to the river menu
-	_edited_node.bake_texture(resolution)
+	_edited_node.bake_texture()
 
 
 func _on_generate_mesh_pressed() -> void:
@@ -70,12 +73,14 @@ func _on_selection_change() -> void:
 	var selected = _editor_selection.get_selected_nodes()
 	if len(selected) == 0:
 		return
-	if not selected[0] is RiverManager:
+	if selected[0] is RiverManager:
+		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
+		_edited_node.connect("progress_notified", self, "_river_progress_notified")
+	else:
+		_edited_node.disconnect("progress_notified", self, "_river_progress_notified")
 		_edited_node = null
 		if _river_controls.get_parent():
 			_hide_control_panel()
-	else:
-		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
 
 
 func _on_scene_changed(scene_root : Node) -> void:
@@ -217,6 +222,17 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				ur.commit_action()
 		return true
 	return false
+
+
+func _river_progress_notified(progress : float, message : String) -> void:
+	if message == "finished":
+		_progress_window.hide()
+	
+	else:
+		if not _progress_window.visible:
+			_progress_window.popup_centered()
+		
+		_progress_window.show_progress(message, progress)
 
 
 func _show_control_panel() -> void:

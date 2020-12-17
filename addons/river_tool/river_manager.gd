@@ -28,11 +28,12 @@ const DEFAULT_PARAMETERS = {
 	mat_foam_amount = 2.0,
 	mat_foam_smoothness = 1.0,
 	lod_lod0_distance = 50.0,
+	baking_resolution = 2,
 	baking_dilate = 0.6,
 	baking_flowmap_blur = 0.04,
 	baking_foam_cutoff = 0.9,
-	baking_foam_offset = 0.05,
-	baking_foam_blur = 0.03
+	baking_foam_offset = 0.1,
+	baking_foam_blur = 0.02
 }
 
 # Shape Properties
@@ -57,11 +58,12 @@ var mat_foam_smoothness := 1.0 setget set_foam_smoothness
 var lod_lod0_distance := 50.0 setget set_lod0_distance
 
 # Bake Properties
+var baking_resolution := 2
 var baking_dilate := 0.6
 var baking_flowmap_blur := 0.04
 var baking_foam_cutoff := 0.9
-var baking_foam_offset := 0.05
-var baking_foam_blur := 0.03
+var baking_foam_offset := 0.1
+var baking_foam_blur := 0.02
 
 # Public variables
 var curve : Curve3D
@@ -82,9 +84,10 @@ var _first_enter_tree := true
 var _filter_renderer
 var _flow_foam_noise : Texture
 
-# Signal used to update handles when values are changed on script side
+# river_chaged used to update handles when values are changed on script side
+# progress_notified used to up progress bar when baking maps
 signal river_changed
-
+signal progress_notified
 
 # Internal Methods
 func _get_property_list() -> Array:
@@ -217,6 +220,13 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
+			name = "baking_resolution",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_ENUM,
+			hint_string = "64, 128, 256, 512, 1024",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
 			name = "baking_dilate",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
@@ -339,12 +349,14 @@ func _get_configuration_warning() -> String:
 func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, width : float = 0.0) -> void:
 	if index == -1:
 		var last_index := curve.get_point_count() - 1
-		var new_dir := dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
+		var dist = position.distance_to(curve.get_point_position(last_index))
+		var new_dir := dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25 * dist
 		#var new_dir := (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
 		curve.add_point(position, -new_dir, new_dir, -1)
 		widths.append(widths[widths.size() - 1]) # If this is a new point at the end, add a width that's the same as last
 	else:
-		var new_dir := dir if dir != Vector3.ZERO else (curve.get_point_position(index + 1) - curve.get_point_position(index)).normalized() * 0.25
+		var dist = curve.get_point_position(index).distance_to(curve.get_point_position(index + 1))
+		var new_dir := dir if dir != Vector3.ZERO else (curve.get_point_position(index + 1) - curve.get_point_position(index)).normalized() * 0.25 * dist
 		curve.add_point(position, -new_dir, new_dir, index + 1)
 		var new_width = width if width != 0.0 else (widths[index] + widths[index + 1]) / 2.0
 		widths.insert(index + 1, new_width) # We set the width to the average of the two surrounding widths
@@ -362,9 +374,9 @@ func remove_point(index : int) -> void:
 	_generate_river()
 
 
-func bake_texture(resolution : float) -> void:
+func bake_texture() -> void:
 	_generate_river()
-	_generate_flowmap(resolution)
+	_generate_flowmap(pow(2, 6 + baking_resolution))
 
 
 func set_curve_point_position(index : int, position : Vector3) -> void:
@@ -542,9 +554,15 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
 	image.fill(Color(0.0, 0.0, 0.0))
 	
+	emit_signal("progress_notified", 0.0, "Calculating Collisions (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
+	yield(get_tree(), "idle_frame")
+	
 	image.lock()
-	image = WaterHelperMethods.generate_collisionmap(image, _mesh_instance, _steps, shape_step_length_divs, shape_step_width_divs)
+	image = yield(WaterHelperMethods.generate_collisionmap(image, _mesh_instance, _steps, shape_step_length_divs, shape_step_width_divs, self), "completed")
 	image.unlock()
+	
+	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
+	yield(get_tree(), "idle_frame")
 	
 	# Calculate how many colums are in UV2
 	var grid_side := WaterHelperMethods.calculate_side(_steps)
@@ -597,7 +615,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	set_materials("flowmap", _flow_foam_noise)
 	set_materials("valid_flowmap", true)
 	valid_flowmap = true;
-	
+	emit_signal("progress_notified", 100.0, "finished")
 	update_configuration_warning()
 
 
