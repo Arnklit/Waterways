@@ -2,7 +2,7 @@
 
 ![image](https://user-images.githubusercontent.com/4955051/102626754-21c16680-413f-11eb-8dd8-f5a31d428fd1.png)
 
-A tool to generate river meshes with flow and foam maps based on bezier curves.
+A tool to generate river meshes with flow and foam maps based on bezier curves. Try out the [demo project](https://github.com/Arnklit/WaterGenGodotDemo) for an example.
 
 [Discord Server](https://discord.gg/mjGvWwQwv2)
 
