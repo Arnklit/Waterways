@@ -3,7 +3,7 @@
 extends EditorSpatialGizmoPlugin
 
 
-const RiverManager = preload("res://addons/river_tool/river_manager.gd")
+const RiverManager = preload("./river_manager.gd")
 const HANDLES_PER_POINT = 5
 
 var editor_plugin : EditorPlugin

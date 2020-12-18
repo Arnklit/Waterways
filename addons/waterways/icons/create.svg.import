@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/icon.svg-747cbd550139c250cfbca2a28f676ddf.stex"
+path="res://.import/create.svg-60b9f1716ebcb842a99e86316911f9a2.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/river_tool/icon.svg"
-dest_files=[ "res://.import/icon.svg-747cbd550139c250cfbca2a28f676ddf.stex" ]
+source_file="res://addons/waterways/icons/create.svg"
+dest_files=[ "res://.import/create.svg-60b9f1716ebcb842a99e86316911f9a2.stex" ]
 
 [params]
 
@@ -31,4 +31,4 @@ process/invert_color=false
 stream=false
 size_limit=0
 detect_3d=true
-svg/scale=1.25
+svg/scale=1.0

@@ -3,25 +3,23 @@
 tool
 extends EditorPlugin
 
-const WaterHelperMethods = preload("res://addons/river_tool/water_helper_methods.gd")
-const RiverManager = preload("res://addons/river_tool/river_manager.gd")
-const RiverGizmo = preload("res://addons/river_tool/river_gizmo.gd")
-const ProgressWindow = preload("res://addons/river_tool/progress_window.tscn")
+const WaterHelperMethods = preload("./water_helper_methods.gd")
+const RiverManager = preload("./river_manager.gd")
+const RiverGizmo = preload("./river_gizmo.gd")
+const ProgressWindow = preload("./progress_window.tscn")
 
 var river_gizmo = RiverGizmo.new()
 
-var _river_controls = preload("res://addons/river_tool/gui/river_controls.tscn").instance()
+var _river_controls = preload("./gui/river_controls.tscn").instance()
 var _edited_node = null
 var _progress_window = null
 var _editor_selection : EditorSelection = null
 var _mode := "select"
 var snap_to_colliders := false
 
-func get_name():
-	return "River Plugin"
 
 func _enter_tree() -> void:
-	add_custom_type("River", "Spatial", preload("res://addons/river_tool/river_manager.gd"), preload("icon.svg"))
+	add_custom_type("River", "Spatial", preload("./river_manager.gd"), preload("icon.svg"))
 	add_spatial_gizmo_plugin(river_gizmo)
 	river_gizmo.editor_plugin = self
 	_river_controls.connect("mode", self, "_on_mode_change")
@@ -75,9 +73,9 @@ func _on_selection_change() -> void:
 		return
 	if selected[0] is RiverManager:
 		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
-		_edited_node.connect("progress_notified", self, "_river_progress_notified")
+		if not _edited_node.is_connected("progress_notified", self, "_river_progress_notified"):
+			_edited_node.connect("progress_notified", self, "_river_progress_notified")
 	else:
-		_edited_node.disconnect("progress_notified", self, "_river_progress_notified")
 		_edited_node = null
 		if _river_controls.get_parent():
 			_hide_control_panel()

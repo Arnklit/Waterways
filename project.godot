@@ -35,7 +35,7 @@ default_bus_layout=""
 
 [editor_plugins]
 
-enabled=PoolStringArray( "godot-plugin-refresher", "river_tool", "zylann.hterrain" )
+enabled=PoolStringArray( "godot-plugin-refresher", "waterways", "zylann.hterrain" )
 
 [rendering]
 

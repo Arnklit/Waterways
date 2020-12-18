@@ -2,8 +2,8 @@
 
 importer="texture"
 type="StreamTexture"
-path.s3tc="res://.import/debug_arrow.svg-99b115b364c99dd1daf7a19271b3cabe.s3tc.stex"
-path.etc2="res://.import/debug_arrow.svg-99b115b364c99dd1daf7a19271b3cabe.etc2.stex"
+path.s3tc="res://.import/debug_pattern.png-8815a93bad40913da3c6be157d20d7c4.s3tc.stex"
+path.etc2="res://.import/debug_pattern.png-8815a93bad40913da3c6be157d20d7c4.etc2.stex"
 metadata={
 "imported_formats": [ "s3tc", "etc2" ],
 "vram_texture": true
@@ -11,8 +11,8 @@ metadata={
 
 [deps]
 
-source_file="res://addons/river_tool/textures/debug_arrow.svg"
-dest_files=[ "res://.import/debug_arrow.svg-99b115b364c99dd1daf7a19271b3cabe.s3tc.stex", "res://.import/debug_arrow.svg-99b115b364c99dd1daf7a19271b3cabe.etc2.stex" ]
+source_file="res://addons/waterways/textures/debug_pattern.png"
+dest_files=[ "res://.import/debug_pattern.png-8815a93bad40913da3c6be157d20d7c4.s3tc.stex", "res://.import/debug_pattern.png-8815a93bad40913da3c6be157d20d7c4.etc2.stex" ]
 
 [params]
 
@@ -21,7 +21,7 @@ compress/lossy_quality=0.7
 compress/hdr_mode=0
 compress/bptc_ldr=0
 compress/normal_map=0
-flags/repeat=0
+flags/repeat=true
 flags/filter=true
 flags/mipmaps=true
 flags/anisotropic=false

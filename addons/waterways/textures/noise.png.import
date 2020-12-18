@@ -2,19 +2,19 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/water1.png-7b000751c83419a4934cd47b79dfe6a3.stex"
+path="res://.import/noise.png-3ece119230590979953be34afdf0dc05.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/river_tool/textures/water1.png"
-dest_files=[ "res://.import/water1.png-7b000751c83419a4934cd47b79dfe6a3.stex" ]
+source_file="res://addons/waterways/textures/noise.png"
+dest_files=[ "res://.import/noise.png-3ece119230590979953be34afdf0dc05.stex" ]
 
 [params]
 
-compress/mode=0
+compress/mode=1
 compress/lossy_quality=0.7
 compress/hdr_mode=0
 compress/bptc_ldr=0
@@ -24,7 +24,7 @@ flags/filter=true
 flags/mipmaps=true
 flags/anisotropic=false
 flags/srgb=0
-process/fix_alpha_border=true
+process/fix_alpha_border=false
 process/premult_alpha=false
 process/HDR_as_SRGB=false
 process/invert_color=false

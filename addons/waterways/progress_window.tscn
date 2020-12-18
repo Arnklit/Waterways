@@ -1,6 +1,7 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://addons/river_tool/progress_window.gd" type="Script" id=1]
+[ext_resource path="res://addons/waterways/progress_window.gd" type="Script" id=1]
+
 
 [node name="WindowDialog" type="WindowDialog"]
 margin_left = 300.0

@@ -3,15 +3,15 @@
 tool
 extends Spatial
 
-const WaterHelperMethods = preload("res://addons/river_tool/water_helper_methods.gd")
+const WaterHelperMethods = preload("./water_helper_methods.gd")
 
-const DEFAULT_SHADER_PATH = "res://addons/river_tool/shaders/river.shader"
-const DEFAULT_WATER_TEXTURE_PATH = "res://addons/river_tool/textures/water1.png"
-const FILTER_RENDERER_PATH = "res://addons/river_tool/FilterRenderer.tscn"
-const NOISE_TEXTURE_PATH = "res://addons/river_tool/textures/noise.png"
-const DEBUG_SHADER_PATH = "res://addons/river_tool/shaders/river_debug.shader"
-const DEBUG_PATTERN_PATH = "res://addons/river_tool/textures/debug_pattern.png"
-const DEBUG_ARROW_PATH = "res://addons/river_tool/textures/debug_arrow.svg"
+const DEFAULT_SHADER_PATH = "res://addons/waterways/shaders/river.shader"
+const DEFAULT_WATER_TEXTURE_PATH = "res://addons/waterways/textures/water1.png"
+const FILTER_RENDERER_PATH = "res://addons/waterways/FilterRenderer.tscn"
+const NOISE_TEXTURE_PATH = "res://addons/waterways/textures/noise.png"
+const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
+const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
+const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
 
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
@@ -21,10 +21,10 @@ const DEFAULT_PARAMETERS = {
 	mat_tiling = 1.0,
 	mat_normal_scale = 1.0,
 	mat_clarity = 10.0,
-	mat_albedo = Color(0.3, 0.25, 0.2),
+	mat_albedo = Color(0.3, 0.25, 0.2, 1.0),
 	mat_roughness = 0.2,
 	mat_refraction = 0.05,
-	mat_foam_albedo = Color(0.9, 0.9, 0.9),
+	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
 	mat_foam_amount = 2.0,
 	mat_foam_smoothness = 1.0,
 	lod_lod0_distance = 50.0,
@@ -47,10 +47,10 @@ var mat_texture : Texture setget set_texture
 var mat_tiling := 1.0 setget set_tiling
 var mat_normal_scale := 1.0 setget set_normal_scale
 var mat_clarity := 10.0 setget set_clarity
-var mat_albedo := Color(0.3, 0.25, 0.2) setget set_albedo
+var mat_albedo := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
-var mat_foam_albedo := Color(0.9, 0.9, 0.9) setget set_foam_albedo
+var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
 var mat_foam_amount := 2.0 setget set_foam_amount
 var mat_foam_smoothness := 1.0 setget set_foam_smoothness
 
@@ -336,6 +336,8 @@ func _enter_tree() -> void:
 	
 	set_materials("valid_flowmap", valid_flowmap)
 	set_materials("flowmap", _flow_foam_noise)
+	# If a value is not set on the material, the values are not correct
+	set_albedo(mat_albedo) 
 
 
 func _get_configuration_warning() -> String:

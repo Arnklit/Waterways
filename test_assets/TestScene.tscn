@@ -1,6 +1,6 @@
 [gd_scene load_steps=16 format=2]
 
-[ext_resource path="res://addons/river_tool/textures/water1.png" type="Texture" id=1]
+[ext_resource path="res://addons/waterways/textures/water1.png" type="Texture" id=1]
 [ext_resource path="res://test_assets/tdata/data.hterrain" type="Resource" id=2]
 [ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=3]
 [ext_resource path="res://test_assets/terrain_textures/dirt_alb_bump.png" type="Texture" id=4]
@@ -8,7 +8,7 @@
 [ext_resource path="res://test_assets/terrain_textures/riverbed_nor_rough.png" type="Texture" id=6]
 [ext_resource path="res://test_assets/terrain_textures/riverbed_alb_bump.png" type="Texture" id=7]
 [ext_resource path="res://test_assets/terrain_textures/grass_nor_rough.png" type="Texture" id=8]
-[ext_resource path="res://addons/river_tool/river_manager.gd" type="Script" id=9]
+[ext_resource path="res://addons/waterways/river_manager.gd" type="Script" id=9]
 [ext_resource path="res://test_assets/rock.tscn" type="PackedScene" id=10]
 
 [sub_resource type="ProceduralSky" id=1]
@@ -53,9 +53,6 @@ shadow_enabled = true
 
 [node name="HTerrain" type="Spatial" parent="."]
 script = ExtResource( 3 )
-ambient_wind = 0.0
-lod_scale = 2.0
-map_scale = Vector3( 1, 1, 1 )
 _terrain_data = ExtResource( 2 )
 chunk_size = 32
 collision_enabled = true

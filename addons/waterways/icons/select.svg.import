@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/delete.svg-1667b98c92f5b98206b04f89cd34cd38.stex"
+path="res://.import/select.svg-76eee65280a05a4a0c6a5b26562361ea.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://addons/river_tool/icons/delete.svg"
-dest_files=[ "res://.import/delete.svg-1667b98c92f5b98206b04f89cd34cd38.stex" ]
+source_file="res://addons/waterways/icons/select.svg"
+dest_files=[ "res://.import/select.svg-76eee65280a05a4a0c6a5b26562361ea.stex" ]
 
 [params]
 

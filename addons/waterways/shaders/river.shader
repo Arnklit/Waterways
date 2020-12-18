@@ -4,17 +4,17 @@ render_mode depth_draw_always, specular_schlick_ggx;
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform sampler2D texture_water : hint_black;
 uniform float uv_tiling = 1.0;
-uniform float clarity : hint_range(0.0, 1.0) = 0.0;
-uniform vec4 albedo : hint_color = vec4(0.1, 0.1, 0.1, 0.0);
+uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
+uniform float clarity : hint_range(0.0, 200.0) = 10.0;
+uniform vec4 albedo : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float refraction : hint_range(-1.0, 1.0) = 0.05;
-uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
-uniform vec4 foam_albedo : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
+uniform vec4 foam_albedo : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
+uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
+uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
 uniform sampler2D flowmap : hint_normal;
 uniform bool valid_flowmap = false;
-uniform float lod0_distance = 30.0;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, float tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;

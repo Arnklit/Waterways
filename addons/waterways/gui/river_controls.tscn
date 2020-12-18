@@ -1,10 +1,11 @@
 [gd_scene load_steps=6 format=2]
 
-[ext_resource path="res://addons/river_tool/icons/create.svg" type="Texture" id=1]
-[ext_resource path="res://addons/river_tool/icons/select.svg" type="Texture" id=2]
-[ext_resource path="res://addons/river_tool/icons/delete.svg" type="Texture" id=3]
-[ext_resource path="res://addons/river_tool/gui/river_controls.gd" type="Script" id=4]
-[ext_resource path="res://addons/river_tool/gui/river_menu.gd" type="Script" id=5]
+[ext_resource path="res://addons/waterways/icons/create.svg" type="Texture" id=1]
+[ext_resource path="res://addons/waterways/icons/select.svg" type="Texture" id=2]
+[ext_resource path="res://addons/waterways/icons/delete.svg" type="Texture" id=3]
+[ext_resource path="res://addons/waterways/gui/river_controls.gd" type="Script" id=4]
+[ext_resource path="res://addons/waterways/gui/river_menu.gd" type="Script" id=5]
+
 
 [node name="HBoxContainer" type="HBoxContainer"]
 margin_right = 128.0
