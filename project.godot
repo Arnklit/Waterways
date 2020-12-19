@@ -26,7 +26,8 @@ _global_script_class_icons={
 
 [application]
 
-config/name="RiverTool"
+config/name="Waterways"
+config/description="A tool to generate river meshes with flow and foam maps based on bezier curves."
 config/icon="res://icon.png"
 
 [audio]
