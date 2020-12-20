@@ -1,5 +1,7 @@
 # Waterways Add-on for Godot Engine
 
+[![Waterways Add-on for Godot v0.1.0 Released - Feature Overview](https://raw.githubusercontent.com/Arnklit/media/main/WaterWaysAdd-on/screenshot01.jpg)](https://youtu.be/t54jUPFtRO8 "Waterways Add-on for Godot v0.1.0 Released - Feature Overview")
+
 ![image](https://user-images.githubusercontent.com/4955051/102626754-21c16680-413f-11eb-8dd8-f5a31d428fd1.png)
 
 A tool to generate river meshes with flow and foam maps based on bezier curves. Try out the [demo project](https://github.com/Arnklit/WaterGenGodotDemo) for an example.
