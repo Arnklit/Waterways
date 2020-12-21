@@ -46,7 +46,7 @@ var shape_smoothness := 0.5 setget set_smoothness
 # Material Properties
 var mat_flow_speed := 1.0 setget set_flowspeed
 var mat_texture : Texture setget set_texture
-var mat_uv_scaling := Vector3(1.0, 1.0, 1.0) setget set_uv_scaling
+var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
 var mat_clarity := 10.0 setget set_clarity
 var mat_edge_fade := 0.25 setget set_edge_fade
@@ -144,7 +144,7 @@ func _get_property_list() -> Array:
 			hint_string = "Texture"
 		},
 		{
-			name = "mat_uv_scaling",
+			name = "mat_uv_scale",
 			type = TYPE_VECTOR3,
 			hint = PROPERTY_HINT_NONE,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -546,9 +546,9 @@ func set_texture(texture : Texture) -> void:
 	set_materials("texture_water", texture)
 
 
-func set_uv_scaling(value : Vector3) -> void:
-	mat_uv_scaling = value
-	set_materials("uv_scaling", value)
+func set_uv_scale(value : Vector3) -> void:
+	mat_uv_scale = value
+	set_materials("uv_scale", value)
 
 
 func set_normal_scale(value : float) -> void:
