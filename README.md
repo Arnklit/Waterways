@@ -86,7 +86,7 @@ Current Limitations
 
 Acknowledgements
 ---------------
-* A special thanks to my first ever patron *Marcus Richter* for his support.
+* Thanks to my patrons *Marcus Richter, Dmitriy Keane, spacechace0 and Johannes Wuesnch* for all their support.
 
 Several people in the Godot community have helped me out with this.
 * *Zylann* has been really helpful, both with any issues I've had working on terrains, but also in that whenever I don't know how to do something in a plugin I generally find the answer somewhere in his code.
