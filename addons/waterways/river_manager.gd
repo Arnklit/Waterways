@@ -18,7 +18,7 @@ const DEFAULT_PARAMETERS = {
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
 	mat_flow_speed = 1.0,
-	mat_tiling = 1.0,
+	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
 	mat_clarity = 10.0,
 	mat_edge_fade = 0.25,
@@ -28,6 +28,7 @@ const DEFAULT_PARAMETERS = {
 	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
 	mat_foam_amount = 2.0,
 	mat_foam_smoothness = 1.0,
+	mat_custom_shader = null,
 	lod_lod0_distance = 50.0,
 	baking_resolution = 2,
 	baking_dilate = 0.6,
@@ -45,7 +46,7 @@ var shape_smoothness := 0.5 setget set_smoothness
 # Material Properties
 var mat_flow_speed := 1.0 setget set_flowspeed
 var mat_texture : Texture setget set_texture
-var mat_tiling := 1.0 setget set_tiling
+var mat_uv_scaling := Vector3(1.0, 1.0, 1.0) setget set_uv_scaling
 var mat_normal_scale := 1.0 setget set_normal_scale
 var mat_clarity := 10.0 setget set_clarity
 var mat_edge_fade := 0.25 setget set_edge_fade
@@ -55,6 +56,7 @@ var mat_refraction := 0.05 setget set_refraction
 var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
 var mat_foam_amount := 2.0 setget set_foam_amount
 var mat_foam_smoothness := 1.0 setget set_foam_smoothness
+var mat_custom_shader : Shader setget set_custom_shader
 
 # LOD Properties
 var lod_lod0_distance := 50.0 setget set_lod0_distance
@@ -142,10 +144,9 @@ func _get_property_list() -> Array:
 			hint_string = "Texture"
 		},
 		{
-			name = "mat_tiling",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "1.0, 20.0",
+			name = "mat_uv_scaling",
+			type = TYPE_VECTOR3,
+			hint = PROPERTY_HINT_NONE,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -208,6 +209,13 @@ func _get_property_list() -> Array:
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_custom_shader",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+			hint_string = "Shader"
 		},
 		{
 			name = "Lod",
@@ -508,6 +516,21 @@ func set_foam_smoothness(amount : float) -> void:
 	set_materials("foam_smoothness", amount)
 
 
+func set_custom_shader(shader : Shader) -> void:
+	if mat_custom_shader == shader:
+		return
+	mat_custom_shader = shader
+	if mat_custom_shader == null:
+		_material.shader = load(DEFAULT_SHADER_PATH)
+	else:
+		_material.shader = mat_custom_shader
+		
+		if Engine.editor_hint:
+			# Ability to fork default shader
+			if shader.code == "":
+				shader.code = _default_shader.code
+
+
 func set_roughness(value : float) -> void:
 	mat_roughness = value
 	set_materials("roughness", value)
@@ -523,9 +546,9 @@ func set_texture(texture : Texture) -> void:
 	set_materials("texture_water", texture)
 
 
-func set_tiling(value : float) -> void:
-	mat_tiling = value
-	set_materials("uv_tiling", value)
+func set_uv_scaling(value : Vector3) -> void:
+	mat_uv_scaling = value
+	set_materials("uv_scaling", value)
 
 
 func set_normal_scale(value : float) -> void:

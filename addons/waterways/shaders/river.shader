@@ -3,7 +3,7 @@ render_mode depth_draw_always, specular_schlick_ggx;
 
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform sampler2D texture_water : hint_black;
-uniform float uv_tiling = 1.0;
+uniform vec3 uv_scaling = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float clarity : hint_range(0.0, 200.0) = 10.0;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
@@ -17,12 +17,12 @@ uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
 uniform sampler2D flowmap : hint_normal;
 uniform bool valid_flowmap = false;
 
-vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, float tiling, float time, bool flowB) {
+vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
 	float progress = fract(time + phaseOffset);
 	vec3 uvw;
 	uvw.xy = uv_in - flowVector * (progress - 0.5);
-	uvw.xy *= tiling;
+	uvw.xy *= tiling.xy;
 	uvw.xy += phaseOffset;
 	uvw.xy += (time - progress) * jump;
 	uvw.z = 1.0 - abs(1.0 - 2.0 * progress);
@@ -48,12 +48,12 @@ void fragment() {
 	vec2 jump2 = vec2(0.20, 0.25);
 	vec2 jump3 = vec2(0.22, 0.27);
 	float time = TIME * flow_speed + flow_foam_noise.a;
-	vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_tiling, time, false);
-	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_tiling, time, true);
-	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_tiling * 2.0, time, false);
-	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_tiling * 2.0, time, true);
-	vec3 flowx4_uvA = FlowUVW(UV, flow, jump3, uv_tiling * 4.0, time, false);
-	vec3 flowx4_uvB = FlowUVW(UV, flow, jump3, uv_tiling * 4.0, time, true);
+	vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_scaling, time, false);
+	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scaling, time, true);
+	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scaling * 2.0, time, false);
+	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scaling * 2.0, time, true);
+	vec3 flowx4_uvA = FlowUVW(UV, flow, jump3, uv_scaling * 4.0, time, false);
+	vec3 flowx4_uvB = FlowUVW(UV, flow, jump3, uv_scaling * 4.0, time, true);
 
 	// Level 1 Water
 	vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
