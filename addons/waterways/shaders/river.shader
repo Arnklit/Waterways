@@ -6,6 +6,7 @@ uniform sampler2D texture_water : hint_black;
 uniform float uv_tiling = 1.0;
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float clarity : hint_range(0.0, 200.0) = 10.0;
+uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 uniform vec4 albedo : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float refraction : hint_range(-1.0, 1.0) = 0.05;
@@ -79,8 +80,8 @@ void fragment() {
 	float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 	
 	// Depthtest
-	float depthTest = texture(DEPTH_TEXTURE,SCREEN_UV).r;
-	depthTest = depthTest * 2.0 - 1.0;
+	float depth_tex = texture(DEPTH_TEXTURE,SCREEN_UV).r;
+	float depthTest = depth_tex * 2.0 - 1.0;
 	depthTest = PROJECTION_MATRIX[3][2] / (depthTest + PROJECTION_MATRIX[2][2]);
 	depthTest += VERTEX.z;
 
@@ -92,11 +93,16 @@ void fragment() {
 	NORMALMAP_DEPTH = normal_scale;
 	
 	// Refraction - has to be done after normal is set
-	vec3 ref_normal = normalize( mix(NORMAL, TANGENT * NORMALMAP.x + BINORMAL * NORMALMAP.y + NORMAL * NORMALMAP.z, NORMALMAP_DEPTH) );
+	vec3 unpacted_normals = NORMALMAP * 2.0 - 1.0;
+	vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
 	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction * depthTest * 0.2;
 	float ref_amount = 1.0 - clamp(depthTest / clarity + combined_foam, 0.0, 1.0);
 	
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * 8.0).rgb * ref_amount;
+	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * 2.5 * depthTest).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
+	
+	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
+	world_pos.xyz /= world_pos.w;
+	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
 }

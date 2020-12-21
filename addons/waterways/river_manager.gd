@@ -21,6 +21,7 @@ const DEFAULT_PARAMETERS = {
 	mat_tiling = 1.0,
 	mat_normal_scale = 1.0,
 	mat_clarity = 10.0,
+	mat_edge_fade = 0.25,
 	mat_albedo = Color(0.3, 0.25, 0.2, 1.0),
 	mat_roughness = 0.2,
 	mat_refraction = 0.05,
@@ -47,6 +48,7 @@ var mat_texture : Texture setget set_texture
 var mat_tiling := 1.0 setget set_tiling
 var mat_normal_scale := 1.0 setget set_normal_scale
 var mat_clarity := 10.0 setget set_clarity
+var mat_edge_fade := 0.25 setget set_edge_fade
 var mat_albedo := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
@@ -164,6 +166,13 @@ func _get_property_list() -> Array:
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 200.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_edge_fade",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -527,6 +536,11 @@ func set_normal_scale(value : float) -> void:
 func set_clarity(value : float) -> void:
 	mat_clarity = value
 	set_materials("clarity", value)
+
+
+func set_edge_fade(value : float) -> void:
+	mat_edge_fade = value
+	set_materials("edge_fade", value)
 
 
 func set_flowspeed(value : float) -> void:
