@@ -44,6 +44,8 @@ void fragment() {
 	}
 	flow = (flow - 0.5) * 2.0; // remap
 	
+	// ALBEDO =  vec3( NORMAL.y * 0.5); // Ahh we need a world normal instead for this
+	
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
 	vec2 jump3 = vec2(0.22, 0.27);
@@ -59,26 +61,26 @@ void fragment() {
 	vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
 	vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
 	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
-	
+
 	vec2 water_norFBM = water.rg;
 	float water_foamFBM = water.b;
-	
+
 	// Level 2 Water, only add in if closer than lod 0 distance
 	if (-VERTEX.z < lod0_distance) {
 		vec3 waterx2_a = texture(texture_water, flowx2_uvA.xy).rgb;
 		vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy).rgb;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
-		
+
 		water_norFBM *= 0.65;
 		water_norFBM += waterx2.rg * 0.35;
 		water_foamFBM *= waterx2.b * 2.0;
 	}
-	
+
 	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
 	float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);
 	float foam_sharp = clamp(water_foamFBM - (1.0 - foam_mask), 0.0, 1.0);
 	float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
-	
+
 	// Depthtest
 	float depth_tex = texture(DEPTH_TEXTURE,SCREEN_UV).r;
 	float depthTest = depth_tex * 2.0 - 1.0;
@@ -91,17 +93,17 @@ void fragment() {
 	ROUGHNESS = roughness;
 	NORMALMAP = vec3(water_norFBM, 0);
 	NORMALMAP_DEPTH = normal_scale;
-	
+
 	// Refraction - has to be done after normal is set
 	vec3 unpacted_normals = NORMALMAP * 2.0 - 1.0;
 	vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
 	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction * depthTest * 0.2;
 	float ref_amount = 1.0 - clamp(depthTest / clarity + combined_foam, 0.0, 1.0);
-	
+
 	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * 2.5 * depthTest).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
-	
+
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
