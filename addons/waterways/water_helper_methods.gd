@@ -90,9 +90,6 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 		for w_sub in step_width_divs + 1:
 			st.add_uv(Vector2(float(w_sub) / (float(step_width_divs)), float(step) / float(step_length_divs) ))
 			st.add_vertex(position + right_vector * width_lerp - 2.0 * right_vector * width_lerp * float(w_sub) / (float(step_width_divs)))
-		
-		# A way of stretching the UVs based on the steepness. This works, but I'm not thrilled with the result
-		#offset += 1.0 + clamp(forward_vector.normalized().y * 3.0, -0.9, 0.0)
 	
 	# Defining the tris
 	for step in steps * step_length_divs:

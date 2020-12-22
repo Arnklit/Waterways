@@ -18,6 +18,7 @@ const DEFAULT_PARAMETERS = {
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
 	mat_flow_speed = 1.0,
+	mat_steepness_multiplier = 1.0,
 	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
 	mat_clarity = 10.0,
@@ -45,6 +46,7 @@ var shape_smoothness := 0.5 setget set_smoothness
 
 # Material Properties
 var mat_flow_speed := 1.0 setget set_flowspeed
+var mat_steepness_multiplier := 1.0 setget set_steepness_multiplier
 var mat_texture : Texture setget set_texture
 var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
@@ -134,6 +136,13 @@ func _get_property_list() -> Array:
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 10.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_steepness_multiplier",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1.0, 8.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -569,6 +578,11 @@ func set_edge_fade(value : float) -> void:
 func set_flowspeed(value : float) -> void:
 	mat_flow_speed = value
 	set_materials("flow_speed", value)
+
+
+func set_steepness_multiplier(value : float) -> void:
+	mat_steepness_multiplier = value
+	set_materials("steepness_multiplier", value)
 
 
 func set_lod0_distance(value : float) -> void:
