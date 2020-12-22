@@ -58,6 +58,7 @@ func _on_debug_view_menu_about_to_show() -> void:
 	_debug_view_menu.add_radio_check_item("Display Debug Flow Map")
 	_debug_view_menu.add_radio_check_item("Display Debug Flow Pattern")
 	_debug_view_menu.add_radio_check_item("Display Debug Flow Arrows")
+	_debug_view_menu.add_radio_check_item("Display Debug Flow Steepnes")
 	_debug_view_menu.add_radio_check_item("Display Debug Foam Map")
 	_debug_view_menu.add_radio_check_item("Display Debug Foam Mix")
 	_debug_view_menu.set_item_checked(debug_view_menu_selected, true)

@@ -3,9 +3,10 @@ shader_type spatial;
 const int FLOWMAP = 1;
 const int FLOW_PATTERN = 2;
 const int FLOW_ARROWS = 3;
+const int FLOW_STEEPNESS = 4;
 
-const int FOAMMAP = 4;
-const int FOAM_MIX = 5;
+const int FOAMMAP = 5;
+const int FOAM_MIX = 6;
 
 uniform int mode = 1;
 uniform sampler2D texture_water : hint_black;
@@ -78,6 +79,10 @@ void fragment() {
 		float lod = mip_map_level(tiled_UV_raw * vec2(textureSize(debug_arrow, 0)));
 		ALBEDO = textureLod(debug_arrow, new_uv, lod).rgb;
 		
+	} else if(mode == FLOW_STEEPNESS) {
+		vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
+		vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+		ALBEDO = vec3(max(0.0, dot(flow_viewspace, up_viewspace)));
 	} else if(mode == FOAMMAP) {
 		ALBEDO = vec3(foam_mask);
 		

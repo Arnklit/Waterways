@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx;
 
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
-uniform float steepness_speed : hint_range(0.0, 100.0) = 30.0;
+uniform float steepness_multiplier : hint_range(1.0, 8.0) = 1.0;
 uniform sampler2D texture_water : hint_black;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
@@ -46,7 +46,7 @@ void fragment() {
 	flow = (flow - 0.5) * 2.0; // remap
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
-	flow *= max(1.0, dot(flow_viewspace, up_viewspace) * steepness_speed);
+	flow *= 1.0 + max(0.0, dot(flow_viewspace, up_viewspace)) * steepness_multiplier * 4.0;
 	
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
