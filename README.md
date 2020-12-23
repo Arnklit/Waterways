@@ -8,7 +8,7 @@ A tool to generate river meshes with flow and foam maps based on bezier curves. 
 
 [Patreon](https://www.patreon.com/arnklit)
 
-Instalation
+Installation
 -----------
 Copy the folder addons/waterways into your project and activate the add-on from the Project -> Project Settings... -> Plugins menu.
 
