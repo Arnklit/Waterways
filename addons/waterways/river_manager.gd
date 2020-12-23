@@ -18,7 +18,7 @@ const DEFAULT_PARAMETERS = {
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
 	mat_flow_speed = 1.0,
-	mat_steepness_multiplier = 1.0,
+	mat_steepness_multiplier = 2.0,
 	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
 	mat_clarity = 10.0,
@@ -28,7 +28,8 @@ const DEFAULT_PARAMETERS = {
 	mat_refraction = 0.05,
 	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
 	mat_foam_amount = 2.0,
-	mat_foam_smoothness = 1.0,
+	mat_foam_steepness = 2.0,
+	mat_foam_smoothness = 0.3,
 	mat_custom_shader = null,
 	lod_lod0_distance = 50.0,
 	baking_resolution = 2, 
@@ -47,7 +48,7 @@ var shape_smoothness := 0.5 setget set_smoothness
 
 # Material Properties
 var mat_flow_speed := 1.0 setget set_flowspeed
-var mat_steepness_multiplier := 1.0 setget set_steepness_multiplier
+var mat_steepness_multiplier := 2.0 setget set_steepness_multiplier
 var mat_texture : Texture setget set_texture
 var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
@@ -58,7 +59,8 @@ var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
 var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
 var mat_foam_amount := 2.0 setget set_foam_amount
-var mat_foam_smoothness := 1.0 setget set_foam_smoothness
+var mat_foam_steepness := 2.0 setget set_foam_steepness
+var mat_foam_smoothness := 0.3 setget set_foam_smoothness
 var mat_custom_shader : Shader setget set_custom_shader
 
 # LOD Properties
@@ -202,6 +204,12 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
+			name = "Material/Foam",
+			type = TYPE_NIL,
+			hint_string = "mat_foam_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
 			name = "mat_foam_albedo",
 			type = TYPE_COLOR,
 			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
@@ -212,6 +220,13 @@ func _get_property_list() -> Array:
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 4.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_foam_steepness",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 8.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -520,6 +535,11 @@ func set_foam_albedo(color : Color) -> void:
 func set_foam_amount(amount : float) -> void:
 	mat_foam_amount = amount
 	set_materials("foam_amount", amount)
+
+
+func set_foam_steepness(amount : float) -> void:
+	mat_foam_steepness = amount
+	set_materials("foam_steepness", amount)
 
 
 func set_foam_smoothness(amount : float) -> void:

@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx;
 
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
-uniform float steepness_multiplier : hint_range(1.0, 8.0) = 1.0;
+uniform float steepness_multiplier : hint_range(1.0, 8.0) = 2.0;
 uniform sampler2D texture_water : hint_black;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
@@ -13,8 +13,10 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float refraction : hint_range(-1.0, 1.0) = 0.05;
 uniform vec4 foam_albedo : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
 uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
-uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
+uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
+uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
 uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
+
 uniform sampler2D flowmap : hint_normal;
 uniform bool valid_flowmap = false;
 
@@ -46,8 +48,8 @@ void fragment() {
 	flow = (flow - 0.5) * 2.0; // remap
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
-	float steepness = max(0.0, dot(flow_viewspace, up_viewspace)) * steepness_multiplier * 4.0;
-	flow *= 1.0 + steepness;
+	float steepness = max(0.0, dot(flow_viewspace, up_viewspace));
+	flow *= 1.0 + steepness * steepness_multiplier * 4.0;
 	
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
@@ -81,7 +83,8 @@ void fragment() {
 		water_norFBM += waterx2.rg * 0.35;
 		water_foamFBM *= waterx2.b * 2.0;
 	}
-	foam_mask += steepness * foam_randomness;
+	foam_mask += steepness * foam_randomness * foam_steepness * 4.0;
+	foam_mask = clamp(foam_mask, 0.0, 1.0);
 	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
 	float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);
 	float foam_sharp = clamp(water_foamFBM - (1.0 - foam_mask), 0.0, 1.0);
