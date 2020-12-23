@@ -46,7 +46,8 @@ void fragment() {
 	flow = (flow - 0.5) * 2.0; // remap
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
-	flow *= 1.0 + max(0.0, dot(flow_viewspace, up_viewspace)) * steepness_multiplier * 4.0;
+	float steepness = max(0.0, dot(flow_viewspace, up_viewspace)) * steepness_multiplier * 4.0;
+	flow *= 1.0 + steepness;
 	
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
@@ -64,6 +65,9 @@ void fragment() {
 	vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
 	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 
+	// I don't see any way of getting a decently scaled noise texture in here
+	// without doing another texture fetch
+	float foam_randomness = texture(texture_water, UV * uv_scale.xy).a;
 	vec2 water_norFBM = water.rg;
 	float water_foamFBM = water.b;
 
@@ -77,7 +81,7 @@ void fragment() {
 		water_norFBM += waterx2.rg * 0.35;
 		water_foamFBM *= waterx2.b * 2.0;
 	}
-
+	foam_mask += steepness * foam_randomness;
 	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
 	float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);
 	float foam_sharp = clamp(water_foamFBM - (1.0 - foam_mask), 0.0, 1.0);
