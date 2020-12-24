@@ -18,6 +18,7 @@ uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
 uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
 
 uniform sampler2D flowmap : hint_normal;
+uniform sampler2D bunchmap : hint_normal;
 uniform bool valid_flowmap = false;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {

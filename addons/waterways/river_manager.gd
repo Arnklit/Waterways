@@ -93,6 +93,7 @@ var _debug_material : ShaderMaterial
 var _first_enter_tree := true
 var _filter_renderer
 var _flow_foam_noise : Texture
+var _bunchnorm_bunchheight_dist : Texture
 
 # river_chaged used to update handles when values are changed on script side
 # progress_notified used to up progress bar when baking maps
@@ -317,6 +318,11 @@ func _get_property_list() -> Array:
 		},
 		{
 			name = "_flow_foam_noise",
+			type = TYPE_OBJECT,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "_bunchnorm_bunchheight_dist",
 			type = TYPE_OBJECT,
 			usage = PROPERTY_USAGE_STORAGE
 		},
@@ -674,20 +680,29 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	
 	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount, flowmap_resolution), "completed")
 	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
+	var bunching_map = yield(renderer_instance.apply_dotproduct(normal_map, flowmap_resolution), "completed")
+	var blurred_bunching_map = yield(renderer_instance.apply_blur(bunching_map, flowmap_blur_amount, flowmap_resolution), "completed")
+	var bunching_normal_map = yield(renderer_instance.apply_normal(blurred_bunching_map, flowmap_resolution), "completed")
 	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution), "completed")
 	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution), "completed")
 	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution), "completed")
 	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution), "completed")
 	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
+	var combined_map2 = yield(renderer_instance.apply_combine(bunching_normal_map, bunching_map, dilated_texture), "completed")
 
 	remove_child(renderer_instance) # cleanup
 
 	var flow_foam_noise_result = combined_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var bunchnorm_bunchheight_distance = combined_map2.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 
 	_flow_foam_noise = ImageTexture.new()
 	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
 	
+	_bunchnorm_bunchheight_dist = ImageTexture.new()
+	_bunchnorm_bunchheight_dist.create_from_image(bunchnorm_bunchheight_distance, 5)
+	
 	set_materials("flowmap", _flow_foam_noise)
+	set_materials("bunchmap", _bunchnorm_bunchheight_dist)
 	set_materials("valid_flowmap", true)
 	valid_flowmap = true;
 	emit_signal("progress_notified", 100.0, "finished")

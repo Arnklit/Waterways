@@ -11,6 +11,7 @@ const BLUR_PASS1_PATH = "res://addons/waterways/shaders/filters/blur_pass1.shade
 const BLUR_PASS2_PATH = "res://addons/waterways/shaders/filters/blur_pass2.shader"
 const FOAM_PASS_PATH = "res://addons/waterways/shaders/filters/foam_pass.shader"
 const COMBINE_PASS_PATH = "res://addons/waterways/shaders/filters/combine_pass.shader"
+const DOTPRODUCT_PASS_PATH = "res://addons/waterways/shaders/filters/dotproduct.shader"
 
 var dilate_pass_1_shader : Shader
 var dilate_pass_2_shader : Shader
@@ -20,6 +21,7 @@ var blur_pass1_shader : Shader
 var blur_pass2_shader : Shader
 var foam_pass_shader : Shader
 var combine_pass_shader : Shader
+var dotproduct_pass_shader : Shader
 var dilate_pass_1_mat : Material
 var dilate_pass_2_mat : Material
 var normal_map_pass_mat : Material
@@ -28,6 +30,7 @@ var blur_pass1_mat : Material
 var blur_pass2_mat : Material
 var foam_pass_mat : Material
 var combine_pass_mat : Material
+var dotproduct_pass_mat : Material
 
 func _enter_tree() -> void:
 	dilate_pass_1_shader = load(DILATE_PASS1_PATH) as Shader
@@ -38,6 +41,7 @@ func _enter_tree() -> void:
 	blur_pass2_shader = load(BLUR_PASS2_PATH) as Shader
 	foam_pass_shader = load(FOAM_PASS_PATH) as Shader
 	combine_pass_shader = load(COMBINE_PASS_PATH) as Shader
+	dotproduct_pass_shader = load(DOTPRODUCT_PASS_PATH) as Shader
 	
 	dilate_pass_1_mat = ShaderMaterial.new()
 	dilate_pass_2_mat = ShaderMaterial.new()
@@ -47,6 +51,7 @@ func _enter_tree() -> void:
 	blur_pass2_mat = ShaderMaterial.new()
 	foam_pass_mat = ShaderMaterial.new()
 	combine_pass_mat = ShaderMaterial.new()
+	dotproduct_pass_mat = ShaderMaterial.new()
 	
 	dilate_pass_1_mat.shader = dilate_pass_1_shader
 	dilate_pass_2_mat.shader = dilate_pass_2_shader
@@ -56,6 +61,7 @@ func _enter_tree() -> void:
 	blur_pass2_mat.shader = blur_pass2_shader
 	foam_pass_mat.shader = foam_pass_shader
 	combine_pass_mat.shader = combine_pass_shader
+	dotproduct_pass_mat.shader = dotproduct_pass_shader
 
 func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture : Texture) -> ImageTexture:
 	$ColorRect.rect_position = Vector2(0, 0)
@@ -64,6 +70,22 @@ func apply_combine(flow_texture : Texture, foam_texture : Texture, noise_texture
 	$ColorRect.material.set_shader_param("flow_texture", flow_texture)
 	$ColorRect.material.set_shader_param("foam_texture", foam_texture)
 	$ColorRect.material.set_shader_param("noise_texture", noise_texture)
+	render_target_update_mode = Viewport.UPDATE_ONCE
+	update_worlds()
+	yield(get_tree(), "idle_frame")
+	yield(get_tree(), "idle_frame")
+	var image := get_texture().get_data()
+	
+	var result := ImageTexture.new()
+	result.create_from_image(image)
+	return result
+
+
+func apply_dotproduct(input_texture : Texture, resolution : float) -> ImageTexture:
+	$ColorRect.rect_position = Vector2(0, 0)
+	$ColorRect.rect_size = size
+	$ColorRect.material = dotproduct_pass_mat
+	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
 	yield(get_tree(), "idle_frame")
@@ -161,7 +183,6 @@ func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
 
 func apply_dilate(input_texture : Texture, dilation : float, resolution : float) -> ImageTexture:
 	size = input_texture.get_size()
-	
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
 	$ColorRect.material = dilate_pass_1_mat
