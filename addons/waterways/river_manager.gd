@@ -17,8 +17,6 @@ const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
-	mat_flow_speed = 1.0,
-	mat_steepness_multiplier = 2.0,
 	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
 	mat_clarity = 10.0,
@@ -26,6 +24,10 @@ const DEFAULT_PARAMETERS = {
 	mat_albedo = Color(0.3, 0.25, 0.2, 1.0),
 	mat_roughness = 0.2,
 	mat_refraction = 0.05,
+	mat_flow_speed = 1.0,
+	mat_flow_steepness = 0.0,
+	mat_flow_distance = 0.0,
+	mat_flow_pressure = 0.0,
 	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
 	mat_foam_amount = 2.0,
 	mat_foam_steepness = 2.0,
@@ -47,8 +49,6 @@ var shape_step_width_divs := 1 setget set_step_width_divs
 var shape_smoothness := 0.5 setget set_smoothness
 
 # Material Properties
-var mat_flow_speed := 1.0 setget set_flowspeed
-var mat_steepness_multiplier := 2.0 setget set_steepness_multiplier
 var mat_texture : Texture setget set_texture
 var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
@@ -57,6 +57,10 @@ var mat_edge_fade := 0.25 setget set_edge_fade
 var mat_albedo := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
+var mat_flow_speed := 1.0 setget set_flowspeed
+var mat_flow_steepness := 0.0 setget set_flow_steepness
+var mat_flow_distance := 0.0 setget set_flow_distance
+var mat_flow_pressure := 0.0 setget set_flow_pressure
 var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
 var mat_foam_amount := 2.0 setget set_foam_amount
 var mat_foam_steepness := 2.0 setget set_foam_steepness
@@ -93,7 +97,7 @@ var _debug_material : ShaderMaterial
 var _first_enter_tree := true
 var _filter_renderer
 var _flow_foam_noise : Texture
-var _bunchnorm_bunchheight_dist : Texture
+var _dist_pressure : Texture
 
 # river_chaged used to update handles when values are changed on script side
 # progress_notified used to up progress bar when baking maps
@@ -135,20 +139,6 @@ func _get_property_list() -> Array:
 			type = TYPE_NIL,
 			hint_string = "mat_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_speed",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 10.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_steepness_multiplier",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "1.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
 			name = "mat_texture",
@@ -202,6 +192,40 @@ func _get_property_list() -> Array:
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "-1.0, 1.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "Material/Flow",
+			type = TYPE_NIL,
+			hint_string = "mat_flow_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_flow_speed",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 10.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_flow_steepness",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 8.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_flow_distance",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 8.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_flow_pressure",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 8.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -322,7 +346,7 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
-			name = "_bunchnorm_bunchheight_dist",
+			name = "_dist_pressure",
 			type = TYPE_OBJECT,
 			usage = PROPERTY_USAGE_STORAGE
 		},
@@ -384,6 +408,7 @@ func _enter_tree() -> void:
 		_material = _mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 	
 	set_materials("valid_flowmap", valid_flowmap)
+	set_materials("distmap", _dist_pressure)
 	set_materials("flowmap", _flow_foam_noise)
 	# If a value is not set on the material, the values are not correct
 	set_albedo(mat_albedo) 
@@ -608,9 +633,19 @@ func set_flowspeed(value : float) -> void:
 	set_materials("flow_speed", value)
 
 
-func set_steepness_multiplier(value : float) -> void:
-	mat_steepness_multiplier = value
-	set_materials("steepness_multiplier", value)
+func set_flow_steepness(value : float) -> void:
+	mat_flow_steepness = value
+	set_materials("flow_steepness", value)
+
+
+func set_flow_distance(value : float) -> void:
+	mat_flow_distance = value
+	set_materials("flow_distance", value)
+
+
+func set_flow_pressure(value : float) -> void:
+	mat_flow_pressure = value
+	set_materials("flow_pressure", value)
 
 
 func set_lod0_distance(value : float) -> void:
@@ -652,8 +687,8 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	
 	image = WaterHelperMethods.add_margins(image, flowmap_resolution, margin)
 
-	var texture_to_dilate := ImageTexture.new()
-	texture_to_dilate.create_from_image(image)
+	var collision_with_margins := ImageTexture.new()
+	collision_with_margins.create_from_image(image)
 
 	# Create correctly tiling noise for A channel
 	var noise_texture := load(NOISE_TEXTURE_PATH) as Texture
@@ -673,36 +708,36 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 
 	self.add_child(renderer_instance)
 
+	var flow_pressure_blur_amount = 0.04 / float(grid_side) * flowmap_resolution
 	var dilate_amount = baking_dilate / float(grid_side) 
 	var flowmap_blur_amount = baking_flowmap_blur / float(grid_side) * flowmap_resolution
 	var foam_offset_amount = baking_foam_offset / float(grid_side)
 	var foam_blur_amount = baking_foam_blur / float(grid_side) * flowmap_resolution
 	
-	var dilated_texture = yield(renderer_instance.apply_dilate(texture_to_dilate, dilate_amount, flowmap_resolution), "completed")
+	var flow_pressure_map = yield(renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, grid_side + 2.0), "completed")
+	var blurred_flow_pressure_map = yield(renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution), "completed")
+	var dilated_texture = yield(renderer_instance.apply_dilate(collision_with_margins, dilate_amount, flowmap_resolution), "completed")
 	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
-	var bunching_map = yield(renderer_instance.apply_dotproduct(normal_map, flowmap_resolution), "completed")
-	var blurred_bunching_map = yield(renderer_instance.apply_blur(bunching_map, flowmap_blur_amount, flowmap_resolution), "completed")
-	var bunching_normal_map = yield(renderer_instance.apply_normal(blurred_bunching_map, flowmap_resolution), "completed")
 	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution), "completed")
 	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution), "completed")
 	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution), "completed")
 	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution), "completed")
-	var combined_map = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
-	var combined_map2 = yield(renderer_instance.apply_combine(bunching_normal_map, bunching_map, dilated_texture), "completed")
+	var flow_foam_noise_img = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
+	var dist_pressure_img = yield(renderer_instance.apply_combine(dilated_texture, blurred_flow_pressure_map), "completed")
 
 	remove_child(renderer_instance) # cleanup
 
-	var flow_foam_noise_result = combined_map.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var bunchnorm_bunchheight_distance = combined_map2.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var flow_foam_noise_result = flow_foam_noise_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
+	var dist_pressure_result = dist_pressure_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 
 	_flow_foam_noise = ImageTexture.new()
 	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
 	
-	_bunchnorm_bunchheight_dist = ImageTexture.new()
-	_bunchnorm_bunchheight_dist.create_from_image(bunchnorm_bunchheight_distance, 5)
+	_dist_pressure = ImageTexture.new()
+	_dist_pressure.create_from_image(dist_pressure_result, 5)
 	
 	set_materials("flowmap", _flow_foam_noise)
-	set_materials("bunchmap", _bunchnorm_bunchheight_dist)
+	set_materials("distmap", _dist_pressure)
 	set_materials("valid_flowmap", true)
 	valid_flowmap = true;
 	emit_signal("progress_notified", 100.0, "finished")

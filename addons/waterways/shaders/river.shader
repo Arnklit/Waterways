@@ -1,8 +1,12 @@
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx;
 
+// flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
-uniform float steepness_multiplier : hint_range(1.0, 8.0) = 2.0;
+uniform float flow_steepness : hint_range(0.0, 8.0) = 0.0;
+uniform float flow_distance : hint_range(0.0, 8.0) = 0.0;
+uniform float flow_pressure : hint_range(0.0, 8.0) = 0.0;
+
 uniform sampler2D texture_water : hint_black;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
@@ -18,7 +22,7 @@ uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
 uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
 
 uniform sampler2D flowmap : hint_normal;
-uniform sampler2D bunchmap : hint_normal;
+uniform sampler2D distmap : hint_white;
 uniform bool valid_flowmap = false;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
@@ -36,6 +40,7 @@ vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bo
 void fragment() {
 	// Setup for flow_maps
 	vec4 flow_foam_noise = texture(flowmap, UV2);
+	vec2 dist_pressure = texture(distmap, UV2).xy;
 	
 	vec2 flow;
 	float foam_mask;
@@ -50,7 +55,9 @@ void fragment() {
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness = max(0.0, dot(flow_viewspace, up_viewspace));
-	flow *= 1.0 + steepness * steepness_multiplier * 4.0;
+	flow *= 1.0 + steepness * flow_steepness * 4.0;
+	flow *= 1.0 + (1.0 - dist_pressure.r) * flow_distance;
+	flow *= 1.0 + dist_pressure.g * flow_pressure;
 	
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
@@ -96,8 +103,7 @@ void fragment() {
 	float depthTest = depth_tex * 2.0 - 1.0;
 	depthTest = PROJECTION_MATRIX[3][2] / (depthTest + PROJECTION_MATRIX[2][2]);
 	depthTest += VERTEX.z;
-
-
+	
 	ALBEDO = mix(albedo.rgb, foam_albedo.rgb, combined_foam);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
@@ -117,4 +123,5 @@ void fragment() {
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
+
 }
