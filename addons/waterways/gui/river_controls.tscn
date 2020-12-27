@@ -6,7 +6,6 @@
 [ext_resource path="res://addons/waterways/gui/river_controls.gd" type="Script" id=4]
 [ext_resource path="res://addons/waterways/gui/river_menu.gd" type="Script" id=5]
 
-
 [node name="HBoxContainer" type="HBoxContainer"]
 margin_right = 128.0
 margin_bottom = 26.0

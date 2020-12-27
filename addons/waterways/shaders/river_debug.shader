@@ -3,21 +3,34 @@ shader_type spatial;
 const int FLOWMAP = 1;
 const int FLOW_PATTERN = 2;
 const int FLOW_ARROWS = 3;
-const int FLOW_STEEPNESS = 4;
+const int FLOW_FORCE = 4;
 
 const int FOAMMAP = 5;
 const int FOAM_MIX = 6;
 
+const int DISTANCEMAP = 7;
+const int PRESSUREMAP = 8;
+
 uniform int mode = 1;
 uniform sampler2D texture_water : hint_black;
-uniform sampler2D flowmap : hint_black;
 uniform sampler2D debug_pattern : hint_black;
 uniform sampler2D debug_arrow : hint_black;
-uniform bool valid_flowmap = false;
+
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
+uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
+uniform float flow_steepness : hint_range(0.0, 8.0) = 2.0;
+uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
+uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
+uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
+
 uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
 uniform float uv_tiling = 1.0;
+
+uniform sampler2D flowmap : hint_black;
+uniform sampler2D distmap : hint_white;
+uniform bool valid_flowmap = false;
+
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, float tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
@@ -39,18 +52,40 @@ float mip_map_level(in vec2 texture_coordinate) {
     return max(0, mml);
 }
 
+vec3 grayscale_to_gradient(float gradient) {
+	float red = clamp(mix(0.0, 2.0, gradient), 0.0, 1.0);
+	float green = clamp(mix(2.0, 0.0, gradient),0.0, 1.0);
+	return vec3(red, green, 0.0);
+}
+
 void fragment() {
-	vec4 flow_foam_noise = texture(flowmap, UV2);
+	vec4 flow_foam_noise = textureLod(flowmap, UV2, 0.0);
+	vec2 dist_pressure = textureLod(distmap, UV2, 0.0).xy;
+	
 	vec2 flow;
+	float distance_map;
+	float pressure_map;
 	float foam_mask;
 	if (valid_flowmap) {
 		flow = flow_foam_noise.xy;
+		distance_map = (1.0 - dist_pressure.r) * 2.0;
+		pressure_map = dist_pressure.g * 2.0;
 		foam_mask = flow_foam_noise.b;
 	} else {
 		flow = vec2(0.5, 0.572);
+		distance_map = 0.5;
+		pressure_map = 0.5;
 		foam_mask = 0.0;
 	}
 	flow = (flow - 0.5) * 2.0; // unpack flowmap
+	
+	// calculate the steepness map
+	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
+	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 8.0;
+	
+	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
+	flow *= flow_force;
 	
 	if(mode == FLOWMAP) {
 		ALBEDO = vec3((flow + 0.5) / 2.0, 0.0); // repack flowmap
@@ -79,11 +114,11 @@ void fragment() {
 		float lod = mip_map_level(tiled_UV_raw * vec2(textureSize(debug_arrow, 0)));
 		ALBEDO = textureLod(debug_arrow, new_uv, lod).rgb;
 		
-	} else if(mode == FLOW_STEEPNESS) {
-		vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
-		vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
-		ALBEDO = vec3(max(0.0, dot(flow_viewspace, up_viewspace)));
+	} else if(mode == FLOW_FORCE) {
+		float gradient = clamp(mix(0.0, 1.0, flow_force / flow_max), 0.0, 1.0);
+		ALBEDO = grayscale_to_gradient(gradient);
 	} else if(mode == FOAMMAP) {
+		
 		ALBEDO = vec3(foam_mask);
 		
 	} else if(mode == FOAM_MIX) {
@@ -113,5 +148,9 @@ void fragment() {
 		float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 		
 		ALBEDO = vec3(combined_foam);
+	} else if(mode == DISTANCEMAP) {
+		ALBEDO = vec3(dist_pressure.r)
+	} else if(mode == PRESSUREMAP) {
+		ALBEDO = vec3(dist_pressure.g)
 	}
 }

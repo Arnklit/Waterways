@@ -3,9 +3,11 @@ render_mode depth_draw_always, specular_schlick_ggx;
 
 // flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
-uniform float flow_steepness : hint_range(0.0, 8.0) = 0.0;
-uniform float flow_distance : hint_range(0.0, 8.0) = 0.0;
-uniform float flow_pressure : hint_range(0.0, 8.0) = 0.0;
+uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
+uniform float flow_steepness : hint_range(0.0, 8.0) = 2.0;
+uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
+uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
+uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
 uniform sampler2D texture_water : hint_black;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
@@ -38,26 +40,35 @@ vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bo
 }
 
 void fragment() {
-	// Setup for flow_maps
-	vec4 flow_foam_noise = texture(flowmap, UV2);
-	vec2 dist_pressure = texture(distmap, UV2).xy;
+	// Sample the UV2 textures
+	vec4 flow_foam_noise = textureLod(flowmap, UV2, 0.0);
+	vec2 dist_pressure = textureLod(distmap, UV2, 0.0).xy;
 	
 	vec2 flow;
+	float distance_map;
+	float pressure_map;
 	float foam_mask;
 	if (valid_flowmap) {
 		flow = flow_foam_noise.xy;
+		distance_map = (1.0 - dist_pressure.r) * 2.0;
+		pressure_map = dist_pressure.g * 2.0;
 		foam_mask = flow_foam_noise.b;
 	} else {
 		flow = vec2(0.5, 0.572);
+		distance_map = 0.5;
+		pressure_map = 0.5;
 		foam_mask = 0.0;
 	}
+	
 	flow = (flow - 0.5) * 2.0; // remap
+	
+	// calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
-	float steepness = max(0.0, dot(flow_viewspace, up_viewspace));
-	flow *= 1.0 + steepness * flow_steepness * 4.0;
-	flow *= 1.0 + (1.0 - dist_pressure.r) * flow_distance;
-	flow *= 1.0 + dist_pressure.g * flow_pressure;
+	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
+	
+	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
+	flow *= flow_force;
 	
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
@@ -67,8 +78,8 @@ void fragment() {
 	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
 	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
 	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
-	vec3 flowx4_uvA = FlowUVW(UV, flow, jump3, uv_scale * 4.0, time, false);
-	vec3 flowx4_uvB = FlowUVW(UV, flow, jump3, uv_scale * 4.0, time, true);
+//	vec3 flowx4_uvA = FlowUVW(UV, flow, jump3, uv_scale * 4.0, time, false);
+//	vec3 flowx4_uvB = FlowUVW(UV, flow, jump3, uv_scale * 4.0, time, true);
 
 	// Level 1 Water
 	vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
@@ -84,14 +95,14 @@ void fragment() {
 	// Level 2 Water, only add in if closer than lod 0 distance
 	if (-VERTEX.z < lod0_distance) {
 		vec3 waterx2_a = texture(texture_water, flowx2_uvA.xy).rgb;
-		vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy).rgb;
+		vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy, 0.0).rgb;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
 
 		water_norFBM *= 0.65;
 		water_norFBM += waterx2.rg * 0.35;
 		water_foamFBM *= waterx2.b * 2.0;
 	}
-	foam_mask += steepness * foam_randomness * foam_steepness * 4.0;
+	foam_mask += steepness_map * foam_randomness * foam_steepness;
 	foam_mask = clamp(foam_mask, 0.0, 1.0);
 	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
 	float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);

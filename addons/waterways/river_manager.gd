@@ -25,9 +25,11 @@ const DEFAULT_PARAMETERS = {
 	mat_roughness = 0.2,
 	mat_refraction = 0.05,
 	mat_flow_speed = 1.0,
-	mat_flow_steepness = 0.0,
-	mat_flow_distance = 0.0,
-	mat_flow_pressure = 0.0,
+	mat_flow_base_strength = 0.0,
+	mat_flow_steepness_strength = 2.0,
+	mat_flow_distance_strength = 1.0,
+	mat_flow_pressure_strength = 1.0,
+	mat_flow_max_strength = 4.0,
 	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
 	mat_foam_amount = 2.0,
 	mat_foam_steepness = 2.0,
@@ -58,9 +60,11 @@ var mat_albedo := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
 var mat_flow_speed := 1.0 setget set_flowspeed
-var mat_flow_steepness := 0.0 setget set_flow_steepness
-var mat_flow_distance := 0.0 setget set_flow_distance
-var mat_flow_pressure := 0.0 setget set_flow_pressure
+var mat_flow_base_strength := 0.0 setget set_flow_base
+var mat_flow_steepness_strength := 2.0 setget set_flow_steepness
+var mat_flow_distance_strength := 1.0 setget set_flow_distance
+var mat_flow_pressure_strength := 1.0 setget set_flow_pressure
+var mat_flow_max_strength := 4.0 setget set_flow_max
 var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
 var mat_foam_amount := 2.0 setget set_foam_amount
 var mat_foam_steepness := 2.0 setget set_foam_steepness
@@ -208,21 +212,35 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_flow_steepness",
+			name = "mat_flow_base_strength",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 8.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_flow_distance",
+			name = "mat_flow_steepness_strength",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 8.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_flow_pressure",
+			name = "mat_flow_distance_strength",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 8.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_flow_pressure_strength",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 8.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_flow_max_strength",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 8.0",
@@ -633,19 +651,29 @@ func set_flowspeed(value : float) -> void:
 	set_materials("flow_speed", value)
 
 
+func set_flow_base(value : float) -> void:
+	mat_flow_base_strength = value
+	set_materials("flow_base", value)
+
+
 func set_flow_steepness(value : float) -> void:
-	mat_flow_steepness = value
+	mat_flow_steepness_strength = value
 	set_materials("flow_steepness", value)
 
 
 func set_flow_distance(value : float) -> void:
-	mat_flow_distance = value
+	mat_flow_distance_strength = value
 	set_materials("flow_distance", value)
 
 
 func set_flow_pressure(value : float) -> void:
-	mat_flow_pressure = value
+	mat_flow_pressure_strength = value
 	set_materials("flow_pressure", value)
+
+
+func set_flow_max(value : float) -> void:
+	mat_flow_max_strength = value
+	set_materials("flow_max", value)
 
 
 func set_lod0_distance(value : float) -> void:

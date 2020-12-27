@@ -108,6 +108,7 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 
 	var mesh := ArrayMesh.new()
 	var mesh2 :=  ArrayMesh.new()
+	var mesh3 := ArrayMesh.new()
 	mesh = st.commit()
 
 	var mdt := MeshDataTool.new()
@@ -149,11 +150,16 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 		x_offset += grid_side_length
 	
 	mdt.commit_to_surface(mesh2)
-	return mesh2
+	st.clear()
+	st.create_from(mesh2, 0)
+	st.index()
+	mesh3 = st.commit()
+	return mesh3
 
 
 static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, raycast_dist : float, steps : int, step_length_divs : int, step_width_divs : int, river) -> Image:
 	var space_state := mesh_instance.get_world().direct_space_state
+	
 	var uv2 := mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
 	var verts := mesh_instance.mesh.surface_get_arrays(0)[0] as PoolVector3Array
 	# We need to move the verts into world space
