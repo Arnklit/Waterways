@@ -14,7 +14,9 @@ uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float clarity : hint_range(0.0, 200.0) = 10.0;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
-uniform vec4 albedo : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
+uniform vec4 albedo1 : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
+uniform vec4 albedo2 : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
+uniform float gradient_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float refraction : hint_range(-1.0, 1.0) = 0.05;
 uniform vec4 foam_albedo : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
@@ -115,7 +117,9 @@ void fragment() {
 	depthTest = PROJECTION_MATRIX[3][2] / (depthTest + PROJECTION_MATRIX[2][2]);
 	depthTest += VERTEX.z;
 	
-	ALBEDO = mix(albedo.rgb, foam_albedo.rgb, combined_foam);
+	float alb_t = clamp(depthTest / gradient_depth, 0.0, 1.0);
+	vec3 alb_mix = mix(albedo1.rgb, albedo2.rgb, alb_t);
+	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
 	NORMALMAP = vec3(water_norFBM, 0);
