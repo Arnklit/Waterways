@@ -45,6 +45,8 @@ const DEFAULT_PARAMETERS = {
 	baking_foam_blur = 0.02
 }
 
+#export var gradient_test : PoolColorArray
+
 # Shape Properties
 var shape_step_length_divs := 1 setget set_step_length_divs
 var shape_step_width_divs := 1 setget set_step_width_divs
@@ -517,6 +519,7 @@ func spawn_mesh() -> void:
 	get_parent().add_child(sibling_mesh)
 	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
 	sibling_mesh.translation = translation
+	sibling_mesh.material_override = null;
 
 
 func get_curve_points() -> PoolVector3Array:

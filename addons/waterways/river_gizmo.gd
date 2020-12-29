@@ -13,8 +13,6 @@ var _handle_lines_mat
 
 func _init() -> void:
 	create_handle_material("handles")
-	#create_material("path", Color(1.0, 1.0, 0.0))
-	#create_material("handle_lines", Color(1.0, 1.0, 0.0))
 	var mat = SpatialMaterial.new()
 	mat.set_flag(SpatialMaterial.FLAG_UNSHADED, true)
 	mat.set_flag(SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
@@ -92,7 +90,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 				return
 		else:
 			var plane := Plane(old_pos_global, old_pos_global + camera.transform.basis.x, old_pos_global + camera.transform.basis.y)
-			new_pos = plane.intersects_ray(ray_from, ray_from + ray_dir * 4096)
+			new_pos = plane.intersects_ray(ray_from, ray_dir)
 			if not new_pos:
 				return
 		var new_pos_local := river.to_local(new_pos)

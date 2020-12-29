@@ -229,6 +229,18 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, r
 	return image
 
 
+# first parameter should be an array for all the water objects, just a single 
+# river for now
+static func generate_heightmap(river, resolution : float):
+	# so what do we need to do here.
+	# take the river, put it into it's own scene.
+	# figure out the rivers AABB
+	# set up a camera that covers the AABB
+	# render out the depth from the camera
+	# give back the depth map and some info on the AABB and depth scale
+	pass
+
+
 # Adds offset margins so filters will correctly extend across UV edges
 static func add_margins(image : Image, resolution : float, margin : float) -> Image:
 	var with_margins_size := resolution + 2 * margin

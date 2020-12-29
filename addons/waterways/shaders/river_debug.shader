@@ -25,19 +25,19 @@ uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
 uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
-uniform float uv_tiling = 1.0;
+uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 
 uniform sampler2D flowmap : hint_black;
 uniform sampler2D distmap : hint_white;
 uniform bool valid_flowmap = false;
 
 
-vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, float tiling, float time, bool flowB) {
+vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
 	float progress = fract(time + phaseOffset);
 	vec3 uvw;
 	uvw.xy = uv_in - flowVector * (progress - 0.5);
-	uvw.xy *= tiling;
+	uvw.xy *= tiling.xy;
 	uvw.xy += phaseOffset;
 	uvw.xy += (time - progress) * jump;
 	uvw.z = 1.0 - abs(1.0 - 2.0 * progress);
@@ -93,8 +93,8 @@ void fragment() {
 	} else if(mode == FLOW_PATTERN) {
 		vec2 jump = vec2(0.24, 0.2083333);
 		float time = TIME * flow_speed + flow_foam_noise.a;
-		vec3 flow_uvA = FlowUVW(UV, flow, jump, uv_tiling, time, false);
-		vec3 flow_uvB = FlowUVW(UV, flow, jump, uv_tiling, time, true);
+		vec3 flow_uvA = FlowUVW(UV, flow, jump, uv_scale, time, false);
+		vec3 flow_uvB = FlowUVW(UV, flow, jump, uv_scale, time, true);
 
 		vec3 pattern_a = texture(debug_pattern, flow_uvA.xy).rgb;
 		vec3 pattern_b = texture(debug_pattern, flow_uvB.xy).rgb;
@@ -104,7 +104,7 @@ void fragment() {
 		ALBEDO = pattern;
 		
 	} else if(mode == FLOW_ARROWS) {
-		vec2 tiled_UV_raw = UV * uv_tiling * 10.0;
+		vec2 tiled_UV_raw = UV * uv_scale.xy * 10.0;
 		vec2 tiled_UV = fract(tiled_UV_raw) - 0.5;
 		float rotation = atan(flow.y, flow.x) - 3.14 / 2.0;
 		float cosine = cos(rotation);
@@ -126,10 +126,10 @@ void fragment() {
 		vec2 jump1 = vec2(0.24, 0.2083333);
 		vec2 jump2 = vec2(0.20, 0.25);
 		float time = TIME * flow_speed + flow_foam_noise.a;
-		vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_tiling, time, false);
-		vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_tiling, time, true);
-		vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_tiling * 2.0, time, false);
-		vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_tiling * 2.0, time, true);
+		vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_scale, time, false);
+		vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
+		vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
+		vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
 		
 		vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
 		vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
