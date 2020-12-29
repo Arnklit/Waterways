@@ -6,9 +6,11 @@ extends EditorPlugin
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const RiverManager = preload("./river_manager.gd")
 const RiverGizmo = preload("./river_gizmo.gd")
+const GradientInspector = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./progress_window.tscn")
 
 var river_gizmo = RiverGizmo.new()
+var gradient_inspector = GradientInspector.new()
 
 var _river_controls = preload("./gui/river_controls.tscn").instance()
 var _edited_node = null
@@ -21,6 +23,7 @@ var snap_to_colliders := false
 func _enter_tree() -> void:
 	add_custom_type("River", "Spatial", preload("./river_manager.gd"), preload("icon.svg"))
 	add_spatial_gizmo_plugin(river_gizmo)
+	add_inspector_plugin(gradient_inspector)
 	river_gizmo.editor_plugin = self
 	_river_controls.connect("mode", self, "_on_mode_change")
 	_river_controls.connect("options", self, "_on_option_change")
@@ -49,6 +52,7 @@ func _on_debug_view_changed(index : int) -> void:
 func _exit_tree() -> void:
 	remove_custom_type("River")
 	remove_spatial_gizmo_plugin(river_gizmo)
+	remove_inspector_plugin(gradient_inspector)
 	_river_controls.disconnect("mode", self, "_on_mode_change")
 	_river_controls.disconnect("options", self, "on_option_change")
 	_editor_selection.disconnect("selection_changed", self, "_on_selection_change")

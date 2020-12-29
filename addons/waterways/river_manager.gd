@@ -22,6 +22,8 @@ const DEFAULT_PARAMETERS = {
 	mat_clarity = 10.0,
 	mat_edge_fade = 0.25,
 	mat_albedo = Color(0.3, 0.25, 0.2, 1.0),
+	mat_albedo1 = Color(0.3, 0.25, 0.2, 1.0),
+	mat_albedo2 = Color(0.3, 0.25, 0.2, 1.0),
 	mat_roughness = 0.2,
 	mat_refraction = 0.05,
 	mat_flow_speed = 1.0,
@@ -45,7 +47,7 @@ const DEFAULT_PARAMETERS = {
 	baking_foam_blur = 0.02
 }
 
-#export var gradient_test : PoolColorArray
+export var gradient_test : PoolColorArray
 
 # Shape Properties
 var shape_step_length_divs := 1 setget set_step_length_divs
@@ -59,6 +61,8 @@ var mat_normal_scale := 1.0 setget set_normal_scale
 var mat_clarity := 10.0 setget set_clarity
 var mat_edge_fade := 0.25 setget set_edge_fade
 var mat_albedo := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo
+var mat_albedo1 := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo1
+var mat_albedo2 := Color(0.3, 0.25, 0.2, 1.0) setget set_albedo2
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
 var mat_flow_speed := 1.0 setget set_flowspeed
@@ -584,6 +588,16 @@ func set_smoothness(value : float) -> void:
 func set_albedo(color : Color) -> void:
 	mat_albedo = color
 	set_materials("albedo", color)
+
+
+func set_albedo1(color : Color) -> void:
+	mat_albedo1 = color
+	set_materials("albedo1", color)
+
+
+func set_albedo2(color : Color) -> void:
+	mat_albedo2 = color
+	set_materials("albedo2", color)
 
 
 func set_foam_albedo(color : Color) -> void:

@@ -1,0 +1,19 @@
+extends EditorInspectorPlugin
+
+const RiverManager = preload("res://addons/waterways/river_manager.gd")
+var _editor = load("res://addons/waterways/editor_property.gd")
+
+
+func can_handle(object: Object) -> bool:
+	return object is RiverManager
+
+
+func parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int) -> bool:
+	
+	if type == TYPE_COLOR_ARRAY:
+		var editor_property = _editor.new()
+		editor_property.set_node(object)
+		add_property_editor(path, editor_property)
+	
+		return true
+	return false

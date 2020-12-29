@@ -1,13 +1,57 @@
-[gd_scene format=2]
+[gd_scene load_steps=4 format=2]
 
-[node name="Control" type="Control"]
-anchor_right = 1.0
-anchor_bottom = 1.0
+[ext_resource path="res://addons/waterways/gui/gradient_inspector.gd" type="Script" id=1]
+
+[sub_resource type="Shader" id=1]
+code = "shader_type canvas_item;
+
+uniform vec4 color1 = vec4(1.0, 0.0, 0.0, 1.0);
+uniform vec4 color2 = vec4(0.0, 1.0, 0.0, 1.0);
+
+void fragment() {
+	vec4 mixed_color = mix(color1, color2, UV.x);
+	COLOR = mixed_color;
+}"
+
+[sub_resource type="ShaderMaterial" id=2]
+shader = SubResource( 1 )
+shader_param/color1 = Color( 0.968627, 1, 0, 1 )
+shader_param/color2 = Color( 1, 0, 0, 1 )
+
+[node name="HBoxContainer" type="HBoxContainer"]
+margin_right = 400.0
+margin_bottom = 24.0
+script = ExtResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="Label" type="Label" parent="."]
-margin_right = 40.0
-margin_bottom = 14.0
-text = "custom inspector"
+[node name="Color1" type="ColorPickerButton" parent="."]
+margin_right = 130.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+flat = true
+color = Color( 1, 0, 0, 1 )
+edit_alpha = false
+
+[node name="Gradient" type="ColorRect" parent="."]
+material = SubResource( 2 )
+margin_left = 134.0
+margin_right = 265.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+color = Color( 0.945098, 1, 0, 1 )
+
+[node name="Color2" type="ColorPickerButton" parent="."]
+margin_left = 269.0
+margin_right = 400.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+flat = true
+color = Color( 0, 1, 0.0392157, 1 )
+edit_alpha = false
+[connection signal="color_changed" from="Color1" to="." method="_on_color1_changed"]
+[connection signal="color_changed" from="Color2" to="." method="_on_color2_changed"]
