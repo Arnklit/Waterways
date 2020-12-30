@@ -43,6 +43,11 @@ func _on_generate_flowmap_pressed() -> void:
 func _on_generate_mesh_pressed() -> void:
 	# set a working icon next to the river menu
 	_edited_node.spawn_mesh()
+	
+
+func _on_generate_heightmap_pressed() -> void:
+	# set a working icon next to the river menu
+	_edited_node.generate_heightmap()
 
 
 func _on_debug_view_changed(index : int) -> void:
@@ -242,6 +247,7 @@ func _show_control_panel() -> void:
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
 		_river_controls.menu.connect("generate_flowmap", self, "_on_generate_flowmap_pressed")
 		_river_controls.menu.connect("generate_mesh", self, "_on_generate_mesh_pressed")
+		_river_controls.menu.connect("generate_heightmap", self, "_on_generate_heightmap_pressed")
 		_river_controls.menu.connect("debug_view_changed", self, "_on_debug_view_changed")
 
 
@@ -250,4 +256,5 @@ func _hide_control_panel() -> void:
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
 		_river_controls.menu.disconnect("generate_flowmap", self, "_on_generate_flowmap_pressed")
 		_river_controls.menu.disconnect("generate_mesh", self, "_on_generate_mesh_pressed")
+		_river_controls.menu.disconnect("generate_heightmap", self, "_on_generate_heightmap_pressed")
 		_river_controls.menu.disconnect("debug_view_changed", self, "_on_debug_view_changed")

@@ -5,11 +5,13 @@ extends MenuButton
 
 signal generate_flowmap
 signal generate_mesh
+signal generate_heightmap
 signal debug_view_changed
 
 enum RIVER_MENU {
 	GENERATE,
 	GENERATE_MESH,
+	GENERATE_HEIGHTMAP,
 	DEBUG_VIEW_MENU
 }
 
@@ -22,11 +24,12 @@ func _enter_tree() -> void:
 	get_popup().clear()
 	get_popup().connect("id_pressed", self, "_menu_item_selected")
 	get_popup().add_item("Generate Flow & Foam Map")
+	get_popup().add_item("Generate MeshInstance Sibling")
+	get_popup().add_item("Generate Heightmap")
 	_debug_view_menu = PopupMenu.new()
 	_debug_view_menu.name = "DebugViewMenu"
 	_debug_view_menu.connect("about_to_show", self, "_on_debug_view_menu_about_to_show")
 	_debug_view_menu.connect("id_pressed", self, "_debug_menu_item_selected")
-	get_popup().add_item("Generate MeshInstance Sibling")
 	get_popup().add_child(_debug_view_menu)
 	get_popup().add_submenu_item("Debug View", _debug_view_menu.name)
 
@@ -43,6 +46,8 @@ func _menu_item_selected(index : int) -> void:
 			emit_signal("generate_flowmap")
 		RIVER_MENU.GENERATE_MESH:
 			emit_signal("generate_mesh")
+		RIVER_MENU.GENERATE_HEIGHTMAP:
+			emit_signal("generate_heightmap")
 		RIVER_MENU.DEBUG_VIEW_MENU:
 			pass
 

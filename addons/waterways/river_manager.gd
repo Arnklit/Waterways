@@ -94,12 +94,12 @@ var curve : Curve3D
 var widths := [] setget set_widths
 var valid_flowmap := false
 var debug_view := 0 setget set_debug_view
+var mesh_instance : MeshInstance
 
 # Private variables
 var _steps := 2
 var _st : SurfaceTool
 var _mdt : MeshDataTool
-var _mesh_instance : MeshInstance
 var _default_shader : Shader
 var _debug_shader : Shader
 var _material : ShaderMaterial
@@ -456,11 +456,11 @@ func _enter_tree() -> void:
 		var new_mesh_instance := MeshInstance.new()
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
-		_mesh_instance = get_child(0) as MeshInstance
+		mesh_instance = get_child(0) as MeshInstance
 		_generate_river()
 	else:
-		_mesh_instance = get_child(0) as MeshInstance
-		_material = _mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
+		mesh_instance = get_child(0) as MeshInstance
+		_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 	
 	set_materials("valid_flowmap", valid_flowmap)
 	set_materials("distmap", _dist_pressure)
@@ -541,17 +541,21 @@ func set_materials(param : String, value) -> void:
 func set_debug_view(index : int) -> void:
 	debug_view = index
 	if index == 0:
-		_mesh_instance.material_override = null
+		mesh_instance.material_override = null
 	else:
 		_debug_material.set_shader_param("mode", index)
-		_mesh_instance.material_override =_debug_material
+		mesh_instance.material_override =_debug_material
+
+
+func generate_heightmap() -> void:
+	WaterHelperMethods.generate_heightmap(self, 512.0)
 
 
 func spawn_mesh() -> void:
 	if owner == null:
 		push_warning("Cannot create MeshInstance sibling when River is root.")
 		return
-	var sibling_mesh := _mesh_instance.duplicate(true)
+	var sibling_mesh := mesh_instance.duplicate(true)
 	get_parent().add_child(sibling_mesh)
 	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
 	sibling_mesh.translation = translation
@@ -736,8 +740,8 @@ func _generate_river() -> void:
 	_steps = int( max(1.0, round(curve.get_baked_length() / average_width)) )
 	
 	var river_width_values := WaterHelperMethods.generate_river_width_values(curve, _steps, shape_step_length_divs, shape_step_width_divs, widths)
-	_mesh_instance.mesh = WaterHelperMethods.generate_river_mesh(curve, _steps, shape_step_length_divs, shape_step_width_divs, shape_smoothness, river_width_values)
-	_mesh_instance.mesh.surface_set_material(0, _material)
+	mesh_instance.mesh = WaterHelperMethods.generate_river_mesh(curve, _steps, shape_step_length_divs, shape_step_width_divs, shape_smoothness, river_width_values)
+	mesh_instance.mesh.surface_set_material(0, _material)
 
 
 func _generate_flowmap(flowmap_resolution : float) -> void:
@@ -751,7 +755,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	yield(get_tree(), "idle_frame")
 	
 	image.lock()
-	image = yield(WaterHelperMethods.generate_collisionmap(image, _mesh_instance, baking_raycast_distance, _steps, shape_step_length_divs, shape_step_width_divs, self), "completed")
+	image = yield(WaterHelperMethods.generate_collisionmap(image, mesh_instance, baking_raycast_distance, _steps, shape_step_length_divs, shape_step_width_divs, self), "completed")
 	image.unlock()
 	
 	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
