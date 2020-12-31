@@ -7,7 +7,7 @@ const WaterHelperMethods = preload("./water_helper_methods.gd")
 
 const DEFAULT_SHADER_PATH = "res://addons/waterways/shaders/river.shader"
 const DEFAULT_WATER_TEXTURE_PATH = "res://addons/waterways/textures/water1.png"
-const FILTER_RENDERER_PATH = "res://addons/waterways/FilterRenderer.tscn"
+const FILTER_RENDERER_PATH = "res://addons/waterways/filter_renderer.tscn"
 const NOISE_TEXTURE_PATH = "res://addons/waterways/textures/noise.png"
 const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
 const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"

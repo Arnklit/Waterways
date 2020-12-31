@@ -53,6 +53,10 @@ func _on_debug_view_changed(index : int) -> void:
 	_edited_node.set_debug_view(index)
 
 
+func _on_generate_system_maps_pressed() -> void:
+	_edited_node.generate_system_maps()
+
+
 func _exit_tree() -> void:
 	remove_custom_type("River")
 	remove_spatial_gizmo_plugin(river_gizmo)
@@ -265,10 +269,10 @@ func _hide_river_control_panel() -> void:
 func _show_water_system_control_panel() -> void:
 	if not _water_system_controls.get_parent():
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _water_system_controls)
-		_water_system_controls.menu.connect("generate_system_maps", self, "on_generate_system_maps_pressed")
+		_water_system_controls.menu.connect("generate_system_maps", self, "_on_generate_system_maps_pressed")
 
 
 func _hide_water_system_control_panel() -> void:
 	if _water_system_controls.get_parent():
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _water_system_controls)
-		_water_system_controls.menu.disconnect("generate_system_maps", self, "on_generate_system_maps_pressed")
+		_water_system_controls.menu.disconnect("generate_system_maps", self, "_on_generate_system_maps_pressed")

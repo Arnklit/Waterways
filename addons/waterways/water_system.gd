@@ -1,18 +1,19 @@
 tool
 extends Spatial
 
-const WaterHelperMethods = preload("./water_helper_methods.gd")
+const SystemMapRenderer = preload("res://addons/waterways/system_map_renderer.tscn")
 
 
-export var heightmap : ImageTexture = null
-export var flowmap : ImageTexture = null
+export var system_map : ImageTexture = null
 export var resolution := 512.0
 
 func generate_system_maps() -> void:
-	# Get all the waterways nodes that are children of this water system
-	# and send them to the system baker
-	pass
-
+	var rivers = get_children()
+	var renderer = SystemMapRenderer.instance()
+	add_child(renderer)
+	system_map = yield(renderer.grab_height(rivers, resolution), "completed")
+	remove_child(renderer)
+	print("generate_system_maps called")
 
 
 # Returns the flow vector from the system flowmap
