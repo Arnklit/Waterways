@@ -1,8 +1,6 @@
 # Copyright © 2020 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 
-const HEIGHTMAP_RENDERER_PATH = "res://addons/waterways/heightmap_renderer.tscn"
-
 static func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:
 	var v0 := b - a
 	var v1 := c - a
@@ -229,25 +227,6 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, r
 					if not up_hit_frontface and result_down:
 						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
 	return image
-
-
-# first parameter should be an array for all the water objects, just a single 
-# river for now
-static func generate_heightmap(river, resolution : float):
-	print("Here is the AABB:")
-	print(river.mesh_instance.get_transformed_aabb())
-	# so what do we need to do here.
-	# take the river, put it into it's own scene.
-	# figure out the rivers AABB
-	# set up a camera that covers the AABB
-	# render out the depth from the camera
-	# give back the depth map and some info on the AABB and depth scale
-	#var renderer_instance = load(HEIGHTMAP_RENDERER_PATH).instance()
-
-	#river.add_child(renderer_instance)
-	#renderer_instance.add_river(river)
-	#var heightmap = renderer_instance.grab_height()
-	#river.remove_child(renderer_instance)
 
 
 # Adds offset margins so filters will correctly extend across UV edges

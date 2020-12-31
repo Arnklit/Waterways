@@ -547,10 +547,6 @@ func set_debug_view(index : int) -> void:
 		mesh_instance.material_override =_debug_material
 
 
-func generate_heightmap() -> void:
-	WaterHelperMethods.generate_heightmap(self, 512.0)
-
-
 func spawn_mesh() -> void:
 	if owner == null:
 		push_warning("Cannot create MeshInstance sibling when River is root.")
