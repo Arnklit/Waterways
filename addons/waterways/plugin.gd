@@ -9,7 +9,6 @@ const RiverManager = preload("./river_manager.gd")
 const RiverGizmo = preload("./river_gizmo.gd")
 const GradientInspector = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./progress_window.tscn")
-const HeightmapRenderer = preload("./heightmap_renderer.gd")
 
 var river_gizmo = RiverGizmo.new()
 var gradient_inspector = GradientInspector.new()
@@ -36,7 +35,6 @@ func _enter_tree() -> void:
 	_river_controls.add_child(_progress_window)
 	_editor_selection = get_editor_interface().get_selection()
 	_editor_selection.connect("selection_changed", self, "_on_selection_change")
-	_heightmap_renderer = HeightmapRenderer.new()
 	connect("scene_changed", self, "_on_scene_changed");
 	connect("scene_closed", self, "_on_scene_closed");
 
