@@ -5,7 +5,7 @@ const SystemMapRenderer = preload("res://addons/waterways/system_map_renderer.ts
 
 
 export var system_map : ImageTexture = null
-export var resolution := 512.0
+export(int, "128", "256", "512", "1024", "2048") var resolution := 2
 export var wet_group_name : String = "water_system"
 
 var system_aabb : AABB
@@ -16,7 +16,8 @@ func generate_system_maps() -> void:
 	system_aabb = rivers[0].mesh_instance.get_transformed_aabb()
 	var renderer = SystemMapRenderer.instance()
 	add_child(renderer)
-	system_map = yield(renderer.grab_height(rivers, resolution), "completed")
+	var res = pow(2, resolution + 7)
+	system_map = yield(renderer.grab_height(rivers, res), "completed")
 	remove_child(renderer)
 	# give the map and coordinates to all nodes in the wet_group
 	var wet_nodes = get_tree().get_nodes_in_group(wet_group_name)

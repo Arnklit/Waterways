@@ -5,9 +5,9 @@ var _object;
 
 func set_node(object) -> void:
 	_object = object
-	_object.connect("albedo_reverted", self, "_on_revert")
-	$Color1.color = _object.mat_albedo1
-	$Color2.color = _object.mat_albedo2
+	_object.connect("albedo_set", self, "_on_set")
+	$Color1.color = _object.mat_albedo[0]
+	$Color2.color = _object.mat_albedo[1]
 	$Gradient.material.set_shader_param("color1", $Color1.color)
 	$Gradient.material.set_shader_param("color2", $Color2.color)
 
@@ -22,8 +22,8 @@ func _on_color2_changed(color: Color) -> void:
 	_object.set_albedo2(color)
 
 
-func _on_revert(color1 : Color, color2 : Color) -> void:
-	$Color1.color = color1
-	$Color2.color = color2
-	_on_color1_changed(color1)
-	_on_color2_changed(color2)
+func _on_set(colors) -> void:
+	$Color1.color = colors[0]
+	$Color2.color = colors[1]
+	_on_color1_changed(colors[0])
+	_on_color2_changed(colors[1])

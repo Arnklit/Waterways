@@ -36,7 +36,7 @@ default_bus_layout=""
 
 [editor_plugins]
 
-enabled=PoolStringArray( "Todo_Manager", "godot-plugin-refresher", "waterways", "zylann.hterrain" )
+enabled=PoolStringArray( "godot-plugin-refresher", "waterways", "zylann.hterrain" )
 
 [rendering]
 

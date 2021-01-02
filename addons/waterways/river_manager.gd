@@ -19,9 +19,9 @@ const DEFAULT_PARAMETERS = {
 	shape_smoothness = 0.5,
 	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
-	mat_albedo = null, # I have to manage these values manually
 	mat_clarity = 10.0,
 	mat_edge_fade = 0.25,
+	mat_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
 	mat_gradient_depth = 10.0,
 	mat_roughness = 0.2,
 	mat_refraction = 0.05,
@@ -46,7 +46,6 @@ const DEFAULT_PARAMETERS = {
 	adv_custom_shader = null
 }
 
-
 # Shape Properties
 var shape_step_length_divs := 1 setget set_step_length_divs
 var shape_step_width_divs := 1 setget set_step_width_divs
@@ -58,7 +57,7 @@ var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
 var mat_clarity := 10.0 setget set_clarity
 var mat_edge_fade := 0.25 setget set_edge_fade
-var mat_albedo := PoolColorArray([Color(0.3, 0.25, 0.2, 1.0), Color(0.3, 0.25, 0.2, 1.0)])
+var mat_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
 var mat_gradient_depth := 10.0 setget set_gradient_depth
 var mat_roughness := 0.2 setget set_roughness
 var mat_refraction := 0.05 setget set_refraction
@@ -110,10 +109,10 @@ var _dist_pressure : Texture
 
 # river_changed used to update handles when values are changed on script side
 # progress_notified used to up progress bar when baking maps
-# albedo_reverted is needed since the gradient is a custom inspector that needs a signal to update from script side
+# albedo_set is needed since the gradient is a custom inspector that needs a signal to update from script side
 signal river_changed
 signal progress_notified
-signal albedo_reverted
+signal albedo_set
 
 # Internal Methods
 func _get_property_list() -> Array:
@@ -411,8 +410,6 @@ func property_can_revert(p_name: String) -> bool:
 
 
 func property_get_revert(p_name: String): # returns variant
-	if p_name == "mat_albedo":
-		emit_signal("albedo_reverted", Color(1.0, 0.0, 0.0), Color(0.0, 1.0, 0.0))
 	return DEFAULT_PARAMETERS[p_name]
 
 
@@ -459,6 +456,7 @@ func _enter_tree() -> void:
 	# If a value is not set on the material, the values are not correct
 	set_albedo1(mat_albedo[0])
 	set_albedo2(mat_albedo[1])
+	emit_signal("albedo_set", mat_albedo[0], mat_albedo[1])
 
 
 func _get_configuration_warning() -> String:
@@ -604,13 +602,17 @@ func set_smoothness(value : float) -> void:
 func set_albedo1(color : Color) -> void:
 	mat_albedo[0] = color
 	set_materials("albedo1", color)
-	print(var2str(mat_albedo))
 
 
 func set_albedo2(color : Color) -> void:
 	mat_albedo[1] = color
 	set_materials("albedo2", color)
-	print(var2str(mat_albedo))
+
+
+func set_albedo(colors : PoolColorArray) -> void:
+	set_albedo1(colors[0])
+	set_albedo2(colors[1])
+	emit_signal("albedo_set", colors)
 
 
 func set_gradient_depth(value : float) -> void:
