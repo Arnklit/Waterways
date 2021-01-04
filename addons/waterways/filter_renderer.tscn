@@ -2,7 +2,6 @@
 
 [ext_resource path="res://addons/waterways/filter_renderer.gd" type="Script" id=1]
 
-
 [node name="Renderer" type="Viewport"]
 size = Vector2( 256, 256 )
 own_world = true
