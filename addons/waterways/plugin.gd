@@ -4,7 +4,7 @@ tool
 extends EditorPlugin
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
-const WaterSystem = preload("./water_system.gd")
+const WaterSystem = preload("./water_system_manager.gd")
 const RiverManager = preload("./river_manager.gd")
 const RiverGizmo = preload("./river_gizmo.gd")
 const GradientInspector = preload("./inspector_plugin.gd")
@@ -25,7 +25,8 @@ var snap_to_colliders := false
 
 func _enter_tree() -> void:
 	add_custom_type("River", "Spatial", preload("./river_manager.gd"), preload("./icons/icon.svg"))
-	add_custom_type("Water System", "Spatial", preload("./water_system.gd"), preload("./icons/icon.svg"))
+	add_custom_type("Water System", "Spatial", preload("./water_system_manager.gd"), preload("./icons/icon.svg"))
+	add_custom_type("Bouyant", "Spatial", preload("./buoyant_manager.gd"), preload("./icons/icon.svg"))
 	add_spatial_gizmo_plugin(river_gizmo)
 	add_inspector_plugin(gradient_inspector)
 	river_gizmo.editor_plugin = self
@@ -57,6 +58,8 @@ func _on_generate_system_maps_pressed() -> void:
 
 func _exit_tree() -> void:
 	remove_custom_type("River")
+	remove_custom_type("Water System")
+	remove_custom_type("Buoyant")
 	remove_spatial_gizmo_plugin(river_gizmo)
 	remove_inspector_plugin(gradient_inspector)
 	_river_controls.disconnect("mode", self, "_on_mode_change")
