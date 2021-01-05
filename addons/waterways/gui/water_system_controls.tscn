@@ -12,8 +12,8 @@ __meta__ = {
 }
 
 [node name="WaterSystemMenu" type="MenuButton" parent="."]
-margin_right = 101.0
+margin_right = 97.0
 margin_bottom = 26.0
-text = "Water System"
-items = [ "Generate Height Map", null, 0, false, false, 0, 0, null, "", false, "Generate Flowmap", null, 0, false, false, 1, 0, null, "", false ]
+text = "WaterSystem"
+items = [ "Generate System Maps", null, 0, false, false, 0, 0, null, "", false ]
 script = ExtResource( 2 )

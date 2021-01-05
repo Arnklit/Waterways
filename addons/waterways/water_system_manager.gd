@@ -7,7 +7,7 @@ const SystemMapRenderer = preload("res://addons/waterways/system_map_renderer.ts
 const FilterRenderer = preload("res://addons/waterways/filter_renderer.tscn")
 const RiverManager = preload("res://addons/waterways/river_manager.gd")
 
-var system_map : ImageTexture = null
+var system_map : ImageTexture = null setget set_system_map
 var system_bake_resolution := 2
 # Auto assign
 var wet_group_name : String = "water_system"
@@ -16,17 +16,30 @@ var material_override : bool = false
 
 var _system_aabb : AABB
 var _system_img : Image
+var _first_enter_tree := true
 
 func _enter_tree() -> void:
+	if Engine.editor_hint and _first_enter_tree:
+		_first_enter_tree = false
 	add_to_group("waterways_systems")
 
 
 func _ready() -> void:
-	_system_img = system_map.get_data()
-	_system_img.lock()
+	if system_map != null:
+		_system_img = system_map.get_data()
+		_system_img.lock()
+	else:
+		push_warning("No WaterSystem map!")
+
 
 func _exit_tree() -> void:
 	remove_from_group("waterways_systems")
+
+
+func _get_configuration_warning() -> String:
+	if system_map == null:
+		return "No System Map is set. Select WaterSystem -> Generate System Map to generate and assign one."
+	return ""
 
 
 func _get_property_list() -> Array:
@@ -75,7 +88,6 @@ func _get_property_list() -> Array:
 
 
 func generate_system_maps() -> void:
-	print("generate_system_maps called")
 	var rivers := []
 
 	for child in get_children():
@@ -90,12 +102,9 @@ func generate_system_maps() -> void:
 		var river_aabb = river.mesh_instance.get_transformed_aabb()
 		_system_aabb = _system_aabb.merge(river_aabb)
 	
-	print("system_aabb: ", _system_aabb)
-	
 	var renderer = SystemMapRenderer.instance()
 	add_child(renderer)
 	var resolution = pow(2, system_bake_resolution + 7)
-	print("resolution is: ", resolution)
 	var flow_map = yield(renderer.grab_flow(rivers, _system_aabb, resolution), "completed")
 	var height_map = yield(renderer.grab_height(rivers, _system_aabb, resolution), "completed")
 	
@@ -104,7 +113,7 @@ func generate_system_maps() -> void:
 	var filter_renderer = FilterRenderer.instance()
 	add_child(filter_renderer)
 	
-	system_map = yield(filter_renderer.apply_combine(flow_map, flow_map, height_map), "completed")
+	self.system_map = yield(filter_renderer.apply_combine(flow_map, flow_map, height_map), "completed")
 	
 	remove_child(filter_renderer)
 	
@@ -126,6 +135,8 @@ func generate_system_maps() -> void:
 # Returns the vetical distance to the water, positive values above water level,
 # negative numbers below the water
 func get_water_altitude(query_pos : Vector3) -> float:
+	if _system_img == null:
+		return 0.0
 	var position_in_aabb = query_pos - _system_aabb.position
 	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
@@ -143,6 +154,8 @@ func get_water_altitude(query_pos : Vector3) -> float:
 
 # Returns the flow vector from the system flowmap
 func get_water_flow(query_pos : Vector3) -> Vector3:
+	if _system_img == null:
+		return Vector3.ZERO
 	var position_in_aabb = query_pos - _system_aabb.position
 	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
@@ -164,3 +177,11 @@ func get_system_map_coordinates() -> Transform:
 	# storing the AABB info in a transform, seems dodgy
 	var offset = Transform(_system_aabb.position, _system_aabb.size, _system_aabb.end, Vector3())
 	return offset
+
+
+func set_system_map(texture : ImageTexture) -> void:
+	system_map = texture
+	if _first_enter_tree:
+		return
+	property_list_changed_notify()
+	update_configuration_warning()

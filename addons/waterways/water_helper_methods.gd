@@ -157,7 +157,7 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 	return mesh3
 
 
-static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, raycast_dist : float, steps : int, step_length_divs : int, step_width_divs : int, river) -> Image:
+static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, raycast_dist : float, raycast_layers : int, steps : int, step_length_divs : int, step_width_divs : int, river) -> Image:
 	var space_state := mesh_instance.get_world().direct_space_state
 	
 	var uv2 := mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
@@ -215,8 +215,8 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, r
 				var real_pos := bary2cart(vert0, vert1, vert2, baryatric_coords)
 				var real_pos_up := real_pos + Vector3.UP * raycast_dist
 				
-				var result_up = space_state.intersect_ray(real_pos, real_pos_up)
-				var result_down = space_state.intersect_ray(real_pos_up, real_pos)
+				var result_up = space_state.intersect_ray(real_pos, real_pos_up, [], raycast_layers)
+				var result_down = space_state.intersect_ray(real_pos_up, real_pos, [], raycast_layers)
 				
 				var up_hit_frontface := false
 				if result_up:

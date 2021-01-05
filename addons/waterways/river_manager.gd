@@ -38,6 +38,7 @@ const DEFAULT_PARAMETERS = {
 	lod_lod0_distance = 50.0,
 	baking_resolution = 2, 
 	baking_raycast_distance = 10.0,
+	baking_raycast_layers = 1,
 	baking_dilate = 0.6,
 	baking_flowmap_blur = 0.04,
 	baking_foam_cutoff = 0.9,
@@ -78,6 +79,7 @@ var lod_lod0_distance := 50.0 setget set_lod0_distance
 # Bake Properties
 var baking_resolution := 2
 var baking_raycast_distance := 10.0
+var baking_raycast_layers := 1
 var baking_dilate := 0.6
 var baking_flowmap_blur := 0.04
 var baking_foam_cutoff := 0.9
@@ -322,6 +324,12 @@ func _get_property_list() -> Array:
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 100.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},		
+		{
+			name = "baking_raycast_layers",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_LAYERS_3D_PHYSICS,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -746,7 +754,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	yield(get_tree(), "idle_frame")
 	
 	image.lock()
-	image = yield(WaterHelperMethods.generate_collisionmap(image, mesh_instance, baking_raycast_distance, _steps, shape_step_length_divs, shape_step_width_divs, self), "completed")
+	image = yield(WaterHelperMethods.generate_collisionmap(image, mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, shape_step_length_divs, shape_step_width_divs, self), "completed")
 	image.unlock()
 	
 	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
