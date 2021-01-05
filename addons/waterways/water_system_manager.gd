@@ -1,3 +1,5 @@
+# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 tool
 extends Spatial
 
@@ -5,14 +7,71 @@ const SystemMapRenderer = preload("res://addons/waterways/system_map_renderer.ts
 const FilterRenderer = preload("res://addons/waterways/filter_renderer.tscn")
 const RiverManager = preload("res://addons/waterways/river_manager.gd")
 
-export var system_map : ImageTexture = null
-export(int, "128", "256", "512", "1024", "2048") var resolution := 2
-export var wet_group_name : String = "water_system"
+var system_map : ImageTexture = null
+var system_bake_resolution := 2
+# Auto assign
+var wet_group_name : String = "water_system"
+var surface_index : int = -1
+var material_override : bool = false
 
 var _system_aabb : AABB
+var _system_img : Image
 
-#func _enter_tree() -> void:
-#	add_to_group("waterways_systems")
+func _enter_tree() -> void:
+	add_to_group("waterways_systems")
+
+
+func _ready() -> void:
+	_system_img = system_map.get_data()
+	_system_img.lock()
+
+func _exit_tree() -> void:
+	remove_from_group("waterways_systems")
+
+
+func _get_property_list() -> Array:
+	return [
+		{
+			name = "system_map",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+			hint_string = "Texture"
+		},
+		{
+			name = "system_bake_resolution",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_ENUM,
+			hint_string = "128, 256, 512, 1024, 2048",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "Auto assign texture & coordinates on generate",
+			type = TYPE_NIL,
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "wet_group_name",
+			type = TYPE_STRING,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "surface_index",
+			type = TYPE_INT,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "material_override",
+			type = TYPE_BOOL,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		# values that need to be serialized, but should not be exposed
+		{
+			name = "_system_aabb",
+			type = TYPE_AABB,
+			usage = PROPERTY_USAGE_STORAGE
+		}
+	]
 
 
 func generate_system_maps() -> void:
@@ -23,7 +82,7 @@ func generate_system_maps() -> void:
 		if child is RiverManager:
 			rivers.append(child)
 	
-	# We need to make the aabb out of the first river, so we don't includee 0,0
+	# We need to make the aabb out of the first river, so we don't include 0,0
 	if rivers.size() > 0:
 		_system_aabb = rivers[0].mesh_instance.get_transformed_aabb()
 	
@@ -35,10 +94,10 @@ func generate_system_maps() -> void:
 	
 	var renderer = SystemMapRenderer.instance()
 	add_child(renderer)
-	var res = pow(2, resolution + 7)
-	print("resolution is: ", res)
-	var flow_map = yield(renderer.grab_flow(rivers, _system_aabb, res), "completed")
-	var height_map = yield(renderer.grab_height(rivers, _system_aabb, res), "completed")
+	var resolution = pow(2, system_bake_resolution + 7)
+	print("resolution is: ", resolution)
+	var flow_map = yield(renderer.grab_flow(rivers, _system_aabb, resolution), "completed")
+	var height_map = yield(renderer.grab_height(rivers, _system_aabb, resolution), "completed")
 	
 	remove_child(renderer)
 	
@@ -52,32 +111,29 @@ func generate_system_maps() -> void:
 	# give the map and coordinates to all nodes in the wet_group
 	var wet_nodes = get_tree().get_nodes_in_group(wet_group_name)
 	for node in wet_nodes:
-		node.get_surface_material(0).set_shader_param("water_systemmap", system_map)
-		node.get_surface_material(0).set_shader_param("water_systemmap_coords", get_system_map_coordinates())
-
-
-# Returns the flow vector from the system flowmap
-func get_flow_vector(position : Vector3) -> Vector2:
-	
-	# Throw a warning if the map is not baked
-	return Vector2(0.0, 0.0)
+		var material
+		if surface_index != -1:
+			if node.get_surface_material_count() > surface_index:
+				material = node.get_surface_material(surface_index)
+		if material_override:
+			material = node.material_override
+		
+		if material != null:
+			material.set_shader_param("water_systemmap", system_map)
+			material.set_shader_param("water_systemmap_coords", get_system_map_coordinates())
 
 
 # Returns the vetical distance to the water, positive values above water level,
 # negative numbers below the water
 func get_water_altitude(query_pos : Vector3) -> float:
-	var img = system_map.get_data()
-	
 	var position_in_aabb = query_pos - _system_aabb.position
 	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
 		return 0.0 # TODO return ocean level / minimum water level
 	
-	pos_2d = pos_2d * img.get_width()
-	img.lock()
-	var col = img.get_pixelv(pos_2d)
-	img.unlock()
+	pos_2d = pos_2d * _system_img.get_width()
+	var col = _system_img.get_pixelv(pos_2d)
 	if col.a == 0.0:
 		return 0.0 # TODO return ocean level / minimum water level
 	# Throw a warning if the map is not baked
@@ -85,19 +141,16 @@ func get_water_altitude(query_pos : Vector3) -> float:
 	return query_pos.y - height
 
 
+# Returns the flow vector from the system flowmap
 func get_water_flow(query_pos : Vector3) -> Vector3:
-	var img = system_map.get_data()
-	
 	var position_in_aabb = query_pos - _system_aabb.position
 	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
 		return Vector3.ZERO
 	
-	pos_2d = pos_2d * img.get_width()
-	img.lock()
-	var col = img.get_pixelv(pos_2d)
-	img.unlock()
+	pos_2d = pos_2d * _system_img.get_width()
+	var col = _system_img.get_pixelv(pos_2d)
 	
 	var flow = Vector3(col.r, 0.5, col.g) * 2.0 - Vector3(1.0, 1.0, 1.0)
 	return flow
