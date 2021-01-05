@@ -1,0 +1,25 @@
+[gd_scene load_steps=5 format=2]
+
+[ext_resource path="res://addons/waterways/buoyant_manager.gd" type="Script" id=1]
+
+[sub_resource type="BoxShape" id=1]
+extents = Vector3( 0.5, 0.5, 0.5 )
+
+[sub_resource type="CubeMesh" id=2]
+size = Vector3( 1, 1, 1 )
+
+[sub_resource type="SpatialMaterial" id=3]
+albedo_color = Color( 1, 0, 0, 1 )
+
+[node name="RigidBody" type="RigidBody"]
+
+[node name="CollisionShape" type="CollisionShape" parent="."]
+shape = SubResource( 1 )
+
+[node name="MeshInstance" type="MeshInstance" parent="."]
+mesh = SubResource( 2 )
+material/0 = SubResource( 3 )
+
+[node name="Bouyant" type="Spatial" parent="."]
+script = ExtResource( 1 )
+water_resistance = 3.0

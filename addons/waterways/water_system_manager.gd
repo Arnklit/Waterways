@@ -21,7 +21,7 @@ var _first_enter_tree := true
 func _enter_tree() -> void:
 	if Engine.editor_hint and _first_enter_tree:
 		_first_enter_tree = false
-	add_to_group("waterways_systems")
+	add_to_group("waterways_system")
 
 
 func _ready() -> void:
@@ -33,7 +33,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	remove_from_group("waterways_systems")
+	remove_from_group("waterways_system")
 
 
 func _get_configuration_warning() -> String:
