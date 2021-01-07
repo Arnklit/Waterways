@@ -1,3 +1,5 @@
+# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 tool
 extends Control
 

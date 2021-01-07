@@ -25,6 +25,6 @@ vec3 distance_v(vec2 uv) {
 }
 
 void fragment() {
-	vec3 dilated_uv = distance_v((UV)).xxx;
+	vec3 dilated_uv = distance_v((UV));
 	COLOR = vec4(dilated_uv, 1.0);
 }

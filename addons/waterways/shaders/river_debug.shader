@@ -1,3 +1,5 @@
+// Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+// See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
 
 const int FLOWMAP = 1;
@@ -24,6 +26,7 @@ uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
 uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
+uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 
@@ -140,6 +143,9 @@ void fragment() {
 		
 		float water_foamFBM = water.b; // LOD1
 		water_foamFBM *= waterx2.b * 2.0; // LOD0 - add second level of detail
+		float foam_randomness = texture(texture_water, UV * uv_scale.xy).a;
+		foam_mask += steepness_map * foam_randomness * foam_steepness;
+		foam_mask = clamp(foam_mask, 0.0, 1.0);
 		
 		water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
 		

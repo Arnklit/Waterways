@@ -1,3 +1,5 @@
+// Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+// See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx;
 

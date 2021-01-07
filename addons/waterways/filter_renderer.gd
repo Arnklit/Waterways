@@ -5,6 +5,7 @@ extends Viewport
 
 const DILATE_PASS1_PATH = "res://addons/waterways/shaders/filters/dilate_filter_pass1.shader"
 const DILATE_PASS2_PATH = "res://addons/waterways/shaders/filters/dilate_filter_pass2.shader"
+const DILATE_PASS3_PATH = "res://addons/waterways/shaders/filters/dilate_filter_pass3.shader"
 const NORMAL_MAP_PASS_PATH = "res://addons/waterways/shaders/filters/normal_map_pass.shader"
 const NORMAL_TO_FLOW_PASS_PATH = "res://addons/waterways/shaders/filters/normal_to_flow_filter.shader"
 const BLUR_PASS1_PATH = "res://addons/waterways/shaders/filters/blur_pass1.shader"
@@ -16,6 +17,7 @@ const FLOW_PRESSURE_PASS_PATH = "res://addons/waterways/shaders/filters/flow_pre
 
 var dilate_pass_1_shader : Shader
 var dilate_pass_2_shader : Shader
+var dilate_pass_3_shader : Shader
 var normal_map_pass_shader : Shader
 var normal_to_flow_pass_shader : Shader
 var blur_pass1_shader : Shader
@@ -26,6 +28,7 @@ var dotproduct_pass_shader : Shader
 var flow_pressure_pass_shader : Shader
 var dilate_pass_1_mat : Material
 var dilate_pass_2_mat : Material
+var dilate_pass_3_mat : Material
 var normal_map_pass_mat : Material
 var normal_to_flow_pass_mat : Material
 var blur_pass1_mat : Material
@@ -38,6 +41,7 @@ var flow_pressure_pass_mat : Material
 func _enter_tree() -> void:
 	dilate_pass_1_shader = load(DILATE_PASS1_PATH) as Shader
 	dilate_pass_2_shader = load(DILATE_PASS2_PATH) as Shader
+	dilate_pass_3_shader = load(DILATE_PASS3_PATH) as Shader
 	normal_map_pass_shader = load(NORMAL_MAP_PASS_PATH) as Shader
 	normal_to_flow_pass_shader = load(NORMAL_TO_FLOW_PASS_PATH) as Shader
 	blur_pass1_shader = load(BLUR_PASS1_PATH) as Shader
@@ -49,6 +53,7 @@ func _enter_tree() -> void:
 	
 	dilate_pass_1_mat = ShaderMaterial.new()
 	dilate_pass_2_mat = ShaderMaterial.new()
+	dilate_pass_3_mat = ShaderMaterial.new()
 	normal_map_pass_mat = ShaderMaterial.new()
 	normal_to_flow_pass_mat = ShaderMaterial.new()
 	blur_pass1_mat = ShaderMaterial.new()
@@ -60,6 +65,7 @@ func _enter_tree() -> void:
 	
 	dilate_pass_1_mat.shader = dilate_pass_1_shader
 	dilate_pass_2_mat.shader = dilate_pass_2_shader
+	dilate_pass_3_mat.shader = dilate_pass_3_shader
 	normal_map_pass_mat.shader = normal_map_pass_shader
 	normal_to_flow_pass_mat.shader = normal_to_flow_pass_shader
 	blur_pass1_mat.shader = blur_pass1_shader
@@ -231,7 +237,7 @@ func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
 	return result
 
 
-func apply_dilate(input_texture : Texture, dilation : float, resolution : float) -> ImageTexture:
+func apply_dilate(input_texture : Texture, dilation : float, fill : float, resolution : float, fill_texture : Texture = null) -> ImageTexture:
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
@@ -256,7 +262,20 @@ func apply_dilate(input_texture : Texture, dilation : float, resolution : float)
 	yield(get_tree(), "idle_frame")
 	yield(get_tree(), "idle_frame")
 	var image2 := get_texture().get_data()
-	
 	var pass2_result := ImageTexture.new()
 	pass2_result.create_from_image(image2)
-	return pass2_result
+	# Pass 3
+	$ColorRect.material = dilate_pass_3_mat
+	$ColorRect.material.set_shader_param("distance_texture", pass2_result)
+	if fill_texture != null:
+		$ColorRect.material.set_shader_param("color_texture", fill_texture)
+	$ColorRect.material.set_shader_param("size", resolution)
+	$ColorRect.material.set_shader_param("fill", fill)
+	render_target_update_mode = Viewport.UPDATE_ONCE
+	update_worlds()
+	yield(get_tree(), "idle_frame")
+	yield(get_tree(), "idle_frame")
+	var image3 := get_texture().get_data()
+	var pass3_result := ImageTexture.new()
+	pass3_result.create_from_image(image3)
+	return pass3_result
