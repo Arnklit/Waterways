@@ -41,6 +41,6 @@ transform = Transform( 0.622291, 0, 0, 0, 0.622291, 0, 0, 0, 0.622291, 0.482973,
 mesh = SubResource( 2 )
 material/0 = SubResource( 5 )
 
-[node name="Bouyant" type="Spatial" parent="."]
+[node name="Buoyant" type="Spatial" parent="."]
 script = ExtResource( 1 )
 water_resistance = 3.0

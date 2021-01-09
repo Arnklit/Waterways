@@ -9,6 +9,7 @@ const RiverManager = preload("res://addons/waterways/river_manager.gd")
 
 var system_map : ImageTexture = null setget set_system_map
 var system_bake_resolution := 2
+var system_group_name := "waterways_system"
 # Auto assign
 var wet_group_name : String = "waterways_wet"
 var surface_index : int = -1
@@ -21,7 +22,7 @@ var _first_enter_tree := true
 func _enter_tree() -> void:
 	if Engine.editor_hint and _first_enter_tree:
 		_first_enter_tree = false
-	add_to_group("waterways_system")
+	add_to_group(system_group_name)
 
 
 func _ready() -> void:
@@ -56,6 +57,11 @@ func _get_property_list() -> Array:
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_ENUM,
 			hint_string = "128, 256, 512, 1024, 2048",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "system_group_name",
+			type = TYPE_STRING,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
