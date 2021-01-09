@@ -1,7 +1,7 @@
 // Copyright © 2021 Kasper Arnklit Frandsen - MIT License
 // See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
-render_mode depth_draw_always, specular_schlick_ggx;
+render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
 
 // flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
@@ -136,6 +136,7 @@ void fragment() {
 	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * 2.5 * depthTest).rgb * ref_amount;
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
+	TRANSMISSION = vec3(0.9);
 
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;

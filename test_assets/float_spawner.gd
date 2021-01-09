@@ -15,4 +15,6 @@ func _process(delta: float) -> void:
 		var obj = _spawn_object.instance() as RigidBody
 		owner.add_child(obj)
 		obj.translation = global_transform.origin
+		obj.rotation = Vector3(randf() * TAU, randf() * TAU, randf() * TAU)
 		obj.apply_central_impulse(global_transform.basis.z * -10.0)
+		obj.angular_velocity = Vector3( (-.5 + randf() ) * 3.0, (-.5 + randf() ) * 3.0, (-.5 + randf() ) * 3.0)

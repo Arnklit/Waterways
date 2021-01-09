@@ -10,7 +10,7 @@ const RiverManager = preload("res://addons/waterways/river_manager.gd")
 var system_map : ImageTexture = null setget set_system_map
 var system_bake_resolution := 2
 # Auto assign
-var wet_group_name : String = "water_system"
+var wet_group_name : String = "waterways_wet"
 var surface_index : int = -1
 var material_override : bool = false
 
