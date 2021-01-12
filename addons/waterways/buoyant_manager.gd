@@ -42,11 +42,11 @@ func _get_rotation_correction() -> Vector3:
 	var rotation_transform := Transform()
 	var up_vector := global_transform.basis.y
 	var angle := up_vector.angle_to(Vector3.UP)
+	if angle < 0.1:
+		# Don't reaturn a rotation as object is almost upright, since the cross 
+		# product at an angle that small might cause precission errors.
+		return Vector3.ZERO
 	var cross := up_vector.cross(Vector3.UP).normalized()
-	if not cross.is_normalized():
-		print("cross is not normalized. What is it?")
-		print(cross)
-		print(cross.length())
 	rotation_transform = rotation_transform.rotated(cross, angle)
 	return rotation_transform.basis.get_euler()
 
