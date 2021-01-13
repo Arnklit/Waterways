@@ -15,6 +15,7 @@ const COMBINE_PASS_PATH = "res://addons/waterways/shaders/filters/combine_pass.s
 const DOTPRODUCT_PASS_PATH = "res://addons/waterways/shaders/filters/dotproduct.shader"
 const FLOW_PRESSURE_PASS_PATH = "res://addons/waterways/shaders/filters/flow_pressure_pass.shader"
 
+
 var dilate_pass_1_shader : Shader
 var dilate_pass_2_shader : Shader
 var dilate_pass_3_shader : Shader
@@ -26,17 +27,9 @@ var foam_pass_shader : Shader
 var combine_pass_shader : Shader
 var dotproduct_pass_shader : Shader
 var flow_pressure_pass_shader : Shader
-var dilate_pass_1_mat : Material
-var dilate_pass_2_mat : Material
-var dilate_pass_3_mat : Material
-var normal_map_pass_mat : Material
-var normal_to_flow_pass_mat : Material
-var blur_pass1_mat : Material
-var blur_pass2_mat : Material
-var foam_pass_mat : Material
-var combine_pass_mat : Material
-var dotproduct_pass_mat : Material
-var flow_pressure_pass_mat : Material
+
+var filter_mat : Material
+
 
 func _enter_tree() -> void:
 	dilate_pass_1_shader = load(DILATE_PASS1_PATH) as Shader
@@ -51,36 +44,16 @@ func _enter_tree() -> void:
 	dotproduct_pass_shader = load(DOTPRODUCT_PASS_PATH) as Shader
 	flow_pressure_pass_shader = load(FLOW_PRESSURE_PASS_PATH) as Shader
 	
-	dilate_pass_1_mat = ShaderMaterial.new()
-	dilate_pass_2_mat = ShaderMaterial.new()
-	dilate_pass_3_mat = ShaderMaterial.new()
-	normal_map_pass_mat = ShaderMaterial.new()
-	normal_to_flow_pass_mat = ShaderMaterial.new()
-	blur_pass1_mat = ShaderMaterial.new()
-	blur_pass2_mat = ShaderMaterial.new()
-	foam_pass_mat = ShaderMaterial.new()
-	combine_pass_mat = ShaderMaterial.new()
-	dotproduct_pass_mat = ShaderMaterial.new()
-	flow_pressure_pass_mat = ShaderMaterial.new()
+	filter_mat = ShaderMaterial.new()
 	
-	dilate_pass_1_mat.shader = dilate_pass_1_shader
-	dilate_pass_2_mat.shader = dilate_pass_2_shader
-	dilate_pass_3_mat.shader = dilate_pass_3_shader
-	normal_map_pass_mat.shader = normal_map_pass_shader
-	normal_to_flow_pass_mat.shader = normal_to_flow_pass_shader
-	blur_pass1_mat.shader = blur_pass1_shader
-	blur_pass2_mat.shader = blur_pass2_shader
-	foam_pass_mat.shader = foam_pass_shader
-	combine_pass_mat.shader = combine_pass_shader
-	dotproduct_pass_mat.shader = dotproduct_pass_shader
-	flow_pressure_pass_mat.shader = flow_pressure_pass_shader
+	$ColorRect.material = filter_mat
 
 
 func apply_combine(r_texture : Texture, g_texture : Texture, b_texture : Texture = null, a_texture : Texture = null) -> ImageTexture:
+	filter_mat.shader = combine_pass_shader
 	size = r_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = combine_pass_mat
 	$ColorRect.material.set_shader_param("r_texture", r_texture)
 	$ColorRect.material.set_shader_param("g_texture", g_texture)
 	$ColorRect.material.set_shader_param("b_texture", b_texture)
@@ -97,10 +70,10 @@ func apply_combine(r_texture : Texture, g_texture : Texture, b_texture : Texture
 
 
 func apply_dotproduct(input_texture : Texture, resolution : float) -> ImageTexture:
+	filter_mat.shader = dotproduct_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = dotproduct_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	render_target_update_mode = Viewport.UPDATE_ONCE
 	update_worlds()
@@ -114,10 +87,10 @@ func apply_dotproduct(input_texture : Texture, resolution : float) -> ImageTextu
 
 
 func apply_flow_pressure(input_texture : Texture, resolution : float, rows : float) -> ImageTexture:
+	filter_mat.shader = flow_pressure_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = flow_pressure_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("rows", rows)
@@ -133,10 +106,10 @@ func apply_flow_pressure(input_texture : Texture, resolution : float, rows : flo
 
 
 func apply_foam(input_texture : Texture, distance : float, cutoff : float, resolution : float) -> ImageTexture:
+	filter_mat.shader = foam_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = foam_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("offset", distance)
@@ -153,10 +126,10 @@ func apply_foam(input_texture : Texture, distance : float, cutoff : float, resol
 
 
 func apply_blur(input_texture : Texture, blur : float, resolution : float) -> ImageTexture:
+	filter_mat.shader = blur_pass1_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = blur_pass1_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("blur", blur)
@@ -168,7 +141,7 @@ func apply_blur(input_texture : Texture, blur : float, resolution : float) -> Im
 	var pass1_result := ImageTexture.new()
 	pass1_result.create_from_image(image)
 	# Pass 2
-	$ColorRect.material = blur_pass2_mat
+	filter_mat.shader = blur_pass2_shader
 	$ColorRect.material.set_shader_param("input_texture", pass1_result)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("blur", blur)
@@ -184,10 +157,10 @@ func apply_blur(input_texture : Texture, blur : float, resolution : float) -> Im
 
 
 func apply_vertical_blur(input_texture : Texture, blur : float, resolution : float) -> ImageTexture:
+	filter_mat.shader = blur_pass2_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = blur_pass2_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("blur", blur)
@@ -202,10 +175,10 @@ func apply_vertical_blur(input_texture : Texture, blur : float, resolution : flo
 
 
 func apply_normal_to_flow(input_texture : Texture, resolution : float) -> ImageTexture:
+	filter_mat.shader = normal_to_flow_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = normal_to_flow_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	render_target_update_mode = Viewport.UPDATE_ONCE
@@ -220,10 +193,10 @@ func apply_normal_to_flow(input_texture : Texture, resolution : float) -> ImageT
 
 
 func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
+	filter_mat.shader = normal_map_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = normal_map_pass_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	render_target_update_mode = Viewport.UPDATE_ONCE
@@ -238,10 +211,10 @@ func apply_normal(input_texture : Texture, resolution : float) -> ImageTexture:
 
 
 func apply_dilate(input_texture : Texture, dilation : float, fill : float, resolution : float, fill_texture : Texture = null) -> ImageTexture:
+	filter_mat.shader = dilate_pass_1_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.rect_size = size
-	$ColorRect.material = dilate_pass_1_mat
 	$ColorRect.material.set_shader_param("input_texture", input_texture)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("dilation", dilation)
@@ -253,7 +226,7 @@ func apply_dilate(input_texture : Texture, dilation : float, fill : float, resol
 	var pass1_result := ImageTexture.new()
 	pass1_result.create_from_image(image)
 	# Pass 2
-	$ColorRect.material = dilate_pass_2_mat
+	filter_mat.shader = dilate_pass_2_shader
 	$ColorRect.material.set_shader_param("input_texture", pass1_result)
 	$ColorRect.material.set_shader_param("size", resolution)
 	$ColorRect.material.set_shader_param("dilation", dilation)
@@ -265,7 +238,7 @@ func apply_dilate(input_texture : Texture, dilation : float, fill : float, resol
 	var pass2_result := ImageTexture.new()
 	pass2_result.create_from_image(image2)
 	# Pass 3
-	$ColorRect.material = dilate_pass_3_mat
+	filter_mat.shader = dilate_pass_3_shader
 	$ColorRect.material.set_shader_param("distance_texture", pass2_result)
 	if fill_texture != null:
 		$ColorRect.material.set_shader_param("color_texture", fill_texture)
