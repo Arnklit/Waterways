@@ -3,17 +3,21 @@
 shader_type spatial;
 
 const int FLOWMAP = 1;
-const int FLOW_PATTERN = 2;
-const int FLOW_ARROWS = 3;
-const int FLOW_FORCE = 4;
+const int FOAMMAP = 2;
+const int NOISEMAP = 3;
 
-const int FOAMMAP = 5;
-const int FOAM_MIX = 6;
+const int DISTANCEMAP = 4;
+const int PRESSUREMAP = 5;
 
-const int DISTANCEMAP = 7;
-const int PRESSUREMAP = 8;
+const int FLOW_PATTERN = 6;
+const int FLOW_ARROWS = 7;
+const int FLOW_FORCE = 8;
+
+const int FOAM_MIX = 9;
+
 
 uniform int mode = 1;
+
 uniform sampler2D texture_water : hint_black;
 uniform sampler2D debug_pattern : hint_black;
 uniform sampler2D debug_arrow : hint_black;
@@ -33,6 +37,7 @@ uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform sampler2D flowmap : hint_black;
 uniform sampler2D distmap : hint_white;
 uniform bool valid_flowmap = false;
+uniform int uv2_sides = 2;
 
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
@@ -62,23 +67,27 @@ vec3 grayscale_to_gradient(float gradient) {
 }
 
 void fragment() {
-	vec4 flow_foam_noise = textureLod(flowmap, UV2, 0.0);
-	vec2 dist_pressure = textureLod(distmap, UV2, 0.0).xy;
+	vec2 custom_UV = (UV2 + 1.0 / 4.0) * (4.0 / 6.0);
+	vec4 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0);
+	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
 	
 	vec2 flow;
+	float foam_mask;
+	float noise_mask;
 	float distance_map;
 	float pressure_map;
-	float foam_mask;
 	if (valid_flowmap) {
 		flow = flow_foam_noise.xy;
+		foam_mask = flow_foam_noise.b;
+		noise_mask = flow_foam_noise.a;
 		distance_map = (1.0 - dist_pressure.r) * 2.0;
 		pressure_map = dist_pressure.g * 2.0;
-		foam_mask = flow_foam_noise.b;
 	} else {
 		flow = vec2(0.5, 0.572);
+		foam_mask = 0.0;
+		noise_mask = 0.0;
 		distance_map = 0.5;
 		pressure_map = 0.5;
-		foam_mask = 0.0;
 	}
 	flow = (flow - 0.5) * 2.0; // unpack flowmap
 	
@@ -92,6 +101,12 @@ void fragment() {
 	
 	if(mode == FLOWMAP) {
 		ALBEDO = vec3((flow + 0.5) / 2.0, 0.0); // repack flowmap
+		
+	} else if(mode == FOAMMAP) {
+		ALBEDO = vec3(foam_mask);
+		
+	} else if(mode == NOISEMAP) {
+		ALBEDO = vec3(noise_mask);
 		
 	} else if(mode == FLOW_PATTERN) {
 		vec2 jump = vec2(0.24, 0.2083333);
@@ -120,9 +135,6 @@ void fragment() {
 	} else if(mode == FLOW_FORCE) {
 		float gradient = clamp(mix(0.0, 1.0, flow_force / flow_max), 0.0, 1.0);
 		ALBEDO = grayscale_to_gradient(gradient);
-	} else if(mode == FOAMMAP) {
-		
-		ALBEDO = vec3(foam_mask);
 		
 	} else if(mode == FOAM_MIX) {
 		
@@ -154,9 +166,12 @@ void fragment() {
 		float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 		
 		ALBEDO = vec3(combined_foam);
+		
 	} else if(mode == DISTANCEMAP) {
-		ALBEDO = vec3(dist_pressure.r)
+		ALBEDO = vec3(dist_pressure.r);
+		
 	} else if(mode == PRESSUREMAP) {
-		ALBEDO = vec3(dist_pressure.g)
+		ALBEDO = vec3(dist_pressure.g);
+		
 	}
 }

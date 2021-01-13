@@ -30,6 +30,7 @@ uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
 uniform sampler2D flowmap : hint_normal;
 uniform sampler2D distmap : hint_white;
 uniform bool valid_flowmap = false;
+uniform int uv2_sides = 2;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
@@ -45,8 +46,9 @@ vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bo
 
 void fragment() {
 	// Sample the UV2 textures
-	vec4 flow_foam_noise = textureLod(flowmap, UV2, 0.0);
-	vec2 dist_pressure = textureLod(distmap, UV2, 0.0).xy;
+	vec2 custom_UV = (UV2 + 1.0 / float(uv2_sides)) * (float(uv2_sides) / float(uv2_sides + 2));
+	vec4 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0);
+	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
 	
 	vec2 flow;
 	float distance_map;

@@ -778,7 +778,8 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	noise_with_tiling.lock()
 	var slice_width := float(noise_texture.get_width()) / float(grid_side)
 	for x in grid_side:
-		noise_with_tiling.blend_rect(noise_texture.get_data(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width))
+		noise_with_tiling.blend_rect(noise_texture.get_data(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width - (noise_texture.get_width() / 2.0)))
+		noise_with_tiling.blend_rect(noise_texture.get_data(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width + (noise_texture.get_width() / 2.0)))
 	noise_with_tiling.unlock()
 	var tiled_noise := ImageTexture.new()
 	tiled_noise.create_from_image(noise_with_tiling)
@@ -810,15 +811,16 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	var flow_foam_noise_result = flow_foam_noise_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	var dist_pressure_result = dist_pressure_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 
-	_flow_foam_noise = ImageTexture.new()
-	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
+#	_flow_foam_noise = ImageTexture.new()
+#	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
+#
+#	_dist_pressure = ImageTexture.new()
+#	_dist_pressure.create_from_image(dist_pressure_result, 5)
 	
-	_dist_pressure = ImageTexture.new()
-	_dist_pressure.create_from_image(dist_pressure_result, 5)
-	
-	set_materials("flowmap", _flow_foam_noise)
-	set_materials("distmap", _dist_pressure)
+	set_materials("flowmap", flow_foam_noise_img)
+	set_materials("distmap", dist_pressure_img)
 	set_materials("valid_flowmap", true)
+	set_materials("uv2_sides", grid_side)
 	valid_flowmap = true;
 	emit_signal("progress_notified", 100.0, "finished")
 	update_configuration_warning()

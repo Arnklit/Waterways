@@ -179,7 +179,6 @@ func _check_actions(actions=[]):
 
 func set_privot(value):
 	privot = value
-	# TODO: fix parenting.
 #	if privot:
 #		if get_parent():
 #			get_parent().remove_child(self)
