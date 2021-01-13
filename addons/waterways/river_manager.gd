@@ -108,6 +108,7 @@ var _first_enter_tree := true
 var _filter_renderer
 var _flow_foam_noise : Texture
 var _dist_pressure : Texture
+var _uv2_sides : int
 
 # river_changed used to update handles when values are changed on script side
 # progress_notified used to up progress bar when baking maps
@@ -405,6 +406,11 @@ func _get_property_list() -> Array:
 			name = "valid_flowmap",
 			type = TYPE_BOOL,
 			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "uv2_sides",
+			type = TYPE_INT,
+			usage = PROPERTY_USAGE_STORAGE
 		}
 	]
 
@@ -459,6 +465,7 @@ func _enter_tree() -> void:
 		_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 	
 	set_materials("valid_flowmap", valid_flowmap)
+	set_materials("uv2_sides", _uv2_sides)
 	set_materials("distmap", _dist_pressure)
 	set_materials("flowmap", _flow_foam_noise)
 	# If a value is not set on the material, the values are not correct
@@ -761,9 +768,9 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	yield(get_tree(), "idle_frame")
 	
 	# Calculate how many colums are in UV2
-	var grid_side := WaterHelperMethods.calculate_side(_steps)
+	_uv2_sides = WaterHelperMethods.calculate_side(_steps)
 	
-	var margin := int(round(float(flowmap_resolution) / float(grid_side)))
+	var margin := int(round(float(flowmap_resolution) / float(_uv2_sides)))
 	
 	image = WaterHelperMethods.add_margins(image, flowmap_resolution, margin)
 
@@ -773,11 +780,11 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	# Create correctly tiling noise for A channel
 	var noise_texture := load(NOISE_TEXTURE_PATH) as Texture
 	var noise_with_tiling := Image.new()
-	var noise_with_margin_size := float(grid_side + 2) * (float(noise_texture.get_width()) / float(grid_side))
+	var noise_with_margin_size := float(_uv2_sides + 2) * (float(noise_texture.get_width()) / float(_uv2_sides))
 	noise_with_tiling.create(noise_with_margin_size, noise_with_margin_size, false, Image.FORMAT_RGB8)
 	noise_with_tiling.lock()
-	var slice_width := float(noise_texture.get_width()) / float(grid_side)
-	for x in grid_side:
+	var slice_width := float(noise_texture.get_width()) / float(_uv2_sides)
+	for x in _uv2_sides:
 		noise_with_tiling.blend_rect(noise_texture.get_data(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width - (noise_texture.get_width() / 2.0)))
 		noise_with_tiling.blend_rect(noise_texture.get_data(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width + (noise_texture.get_width() / 2.0)))
 	noise_with_tiling.unlock()
@@ -789,13 +796,13 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 
 	self.add_child(renderer_instance)
 
-	var flow_pressure_blur_amount = 0.04 / float(grid_side) * flowmap_resolution
-	var dilate_amount = baking_dilate / float(grid_side) 
-	var flowmap_blur_amount = baking_flowmap_blur / float(grid_side) * flowmap_resolution
-	var foam_offset_amount = baking_foam_offset / float(grid_side)
-	var foam_blur_amount = baking_foam_blur / float(grid_side) * flowmap_resolution
+	var flow_pressure_blur_amount = 0.04 / float(_uv2_sides) * flowmap_resolution
+	var dilate_amount = baking_dilate / float(_uv2_sides) 
+	var flowmap_blur_amount = baking_flowmap_blur / float(_uv2_sides) * flowmap_resolution
+	var foam_offset_amount = baking_foam_offset / float(_uv2_sides)
+	var foam_blur_amount = baking_foam_blur / float(_uv2_sides) * flowmap_resolution
 	
-	var flow_pressure_map = yield(renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, grid_side + 2.0), "completed")
+	var flow_pressure_map = yield(renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, _uv2_sides + 2.0), "completed")
 	var blurred_flow_pressure_map = yield(renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution), "completed")
 	var dilated_texture = yield(renderer_instance.apply_dilate(collision_with_margins, dilate_amount, 0.0, flowmap_resolution), "completed")
 	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
@@ -820,7 +827,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	set_materials("flowmap", flow_foam_noise_img)
 	set_materials("distmap", dist_pressure_img)
 	set_materials("valid_flowmap", true)
-	set_materials("uv2_sides", grid_side)
+	set_materials("uv2_sides", _uv2_sides)
 	valid_flowmap = true;
 	emit_signal("progress_notified", 100.0, "finished")
 	update_configuration_warning()

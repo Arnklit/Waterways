@@ -67,7 +67,7 @@ vec3 grayscale_to_gradient(float gradient) {
 }
 
 void fragment() {
-	vec2 custom_UV = (UV2 + 1.0 / 4.0) * (4.0 / 6.0);
+	vec2 custom_UV = (UV2 + 1.0 / float(uv2_sides)) * (float(uv2_sides) / float(uv2_sides + 2));
 	vec4 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0);
 	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
 	
