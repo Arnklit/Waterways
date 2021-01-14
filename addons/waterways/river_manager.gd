@@ -408,7 +408,7 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
-			name = "uv2_sides",
+			name = "_uv2_sides",
 			type = TYPE_INT,
 			usage = PROPERTY_USAGE_STORAGE
 		}
@@ -812,20 +812,18 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution), "completed")
 	var flow_foam_noise_img = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
 	var dist_pressure_img = yield(renderer_instance.apply_combine(dilated_texture, blurred_flow_pressure_map), "completed")
-
+	
 	remove_child(renderer_instance) # cleanup
-
+	
 	var flow_foam_noise_result = flow_foam_noise_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	var dist_pressure_result = dist_pressure_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-
-#	_flow_foam_noise = ImageTexture.new()
-#	_flow_foam_noise.create_from_image(flow_foam_noise_result, 5)
-#
-#	_dist_pressure = ImageTexture.new()
-#	_dist_pressure.create_from_image(dist_pressure_result, 5)
 	
-	set_materials("flowmap", flow_foam_noise_img)
-	set_materials("distmap", dist_pressure_img)
+	_flow_foam_noise = flow_foam_noise_img
+	
+	_dist_pressure = dist_pressure_img
+	
+	set_materials("flowmap", _flow_foam_noise)
+	set_materials("distmap", _dist_pressure)
 	set_materials("valid_flowmap", true)
 	set_materials("uv2_sides", _uv2_sides)
 	valid_flowmap = true;

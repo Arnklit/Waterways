@@ -45,7 +45,9 @@ vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bo
 }
 
 void fragment() {
-	// Sample the UV2 textures
+	// Sample the UV2 textures. To avoid issues with the UV2 seams, margins
+	// are left on the textures, so the UV2 needs to be rescaled to cut off
+	// the margins.
 	vec2 custom_UV = (UV2 + 1.0 / float(uv2_sides)) * (float(uv2_sides) / float(uv2_sides + 2));
 	vec4 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0);
 	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
@@ -66,9 +68,9 @@ void fragment() {
 		foam_mask = 0.0;
 	}
 	
-	flow = (flow - 0.5) * 2.0; // remap
+	flow = (flow - 0.5) * 2.0; // unpack the flow vectors
 	
-	// calculate the steepness map
+	// Calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
@@ -84,17 +86,12 @@ void fragment() {
 	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
 	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
 	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
-//	vec3 flowx4_uvA = FlowUVW(UV, flow, jump3, uv_scale * 4.0, time, false);
-//	vec3 flowx4_uvB = FlowUVW(UV, flow, jump3, uv_scale * 4.0, time, true);
-
+	
 	// Level 1 Water
 	vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
 	vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
 	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 
-	// I don't see any way of getting a decently scaled noise texture in here
-	// without doing another texture fetch
-	float foam_randomness = texture(texture_water, UV * uv_scale.xy).a;
 	vec2 water_norFBM = water.rg;
 	float water_foamFBM = water.b;
 
@@ -108,7 +105,12 @@ void fragment() {
 		water_norFBM += waterx2.rg * 0.35;
 		water_foamFBM *= waterx2.b * 2.0;
 	}
-	foam_mask += steepness_map * foam_randomness * foam_steepness;
+	
+	// I don't see any way of getting a decently scaled noise texture in here
+	// without doing another texture fetch
+	float foam_randomness = texture(texture_water, UV * uv_scale.xy).a;
+	
+	foam_mask += steepness_map * foam_steepness * foam_randomness;
 	foam_mask = clamp(foam_mask, 0.0, 1.0);
 	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
 	float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);
@@ -116,12 +118,12 @@ void fragment() {
 	float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 
 	// Depthtest
-	float depth_tex = texture(DEPTH_TEXTURE,SCREEN_UV).r;
-	float depthTest = depth_tex * 2.0 - 1.0;
-	depthTest = PROJECTION_MATRIX[3][2] / (depthTest + PROJECTION_MATRIX[2][2]);
-	depthTest += VERTEX.z;
+	float depth_tex = texture(DEPTH_TEXTURE, SCREEN_UV).r;
+	float depth_tex_unpacked = depth_tex * 2.0 - 1.0;
+	float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
+	float water_depth = surface_dist + VERTEX.z;
 	
-	float alb_t = clamp(depthTest / gradient_depth, 0.0, 1.0);
+	float alb_t = clamp(water_depth / gradient_depth, 0.0, 1.0);
 	vec3 alb_mix = mix(albedo1.rgb, albedo2.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
@@ -129,13 +131,23 @@ void fragment() {
 	NORMALMAP = vec3(water_norFBM, 0);
 	NORMALMAP_DEPTH = normal_scale;
 
+	
 	// Refraction - has to be done after normal is set
 	vec3 unpacted_normals = NORMALMAP * 2.0 - 1.0;
 	vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
-	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction * depthTest * 0.2;
-	float ref_amount = 1.0 - clamp(depthTest / clarity + combined_foam, 0.0, 1.0);
+	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction * water_depth * 0.2;
+	float ref_amount = 1.0 - clamp(water_depth / clarity + combined_foam, 0.0, 1.0);
 
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * 2.5 * depthTest).rgb * ref_amount;
+	// Depthtest 2
+	float depth_tex2 = texture(DEPTH_TEXTURE, ref_ofs).r;
+	float depth_tex_unpacked2 = depth_tex2 * 2.0 - 1.0;
+	float surface_dist2 = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked2 + PROJECTION_MATRIX[2][2]);
+	float water_depth2 = surface_dist2 + VERTEX.z;
+	
+	vec2 ref_ofs2 = SCREEN_UV - ref_normal.xy * refraction * water_depth2 * 0.2;
+
+	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs2, ROUGHNESS * 2.5 * water_depth2).rgb * ref_amount;
+
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
 	TRANSMISSION = vec3(0.9);
@@ -143,5 +155,4 @@ void fragment() {
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
-
 }
