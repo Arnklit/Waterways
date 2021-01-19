@@ -6,7 +6,7 @@ extends Spatial
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 
 const DEFAULT_SHADER_PATH = "res://addons/waterways/shaders/river.shader"
-const DEFAULT_WATER_TEXTURE_PATH = "res://addons/waterways/textures/water1.png"
+const DEFAULT_WATER_TEXTURE_PATH = "res://addons/waterways/textures/water1_normal_bump.png"
 const FILTER_RENDERER_PATH = "res://addons/waterways/filter_renderer.tscn"
 const FLOW_OFFSET_NOISE_TEXTURE_PATH = "res://addons/waterways/textures/flow_offset_noise.png"
 const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
@@ -14,17 +14,25 @@ const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
 const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
 const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
 
+const SHADERS_PATHS = [
+	"res://addons/waterways/shaders/river.shader",
+	"res://addons/waterways/shaders/lava.shader"
+]
+
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
+	mat_shader_type = 0,
 	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
 	mat_roughness = 0.2,
 	mat_edge_fade = 0.25,
 	mat_albedo_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
-	mat_albedo_gradient_depth = 10.0,
-	mat_transparency_clarity = 10.0,
+	mat_albedo_gradient_depth = 30.0,
+	mat_albedo_depth_curve = 0.25,
+	mat_transparency_clarity = 30.0,
+	mat_transparency_depth_curve = 0.25,
 	mat_transparency_refraction = 0.05,
 	mat_flow_speed = 1.0,
 	mat_flow_base_strength = 0.0,
@@ -55,6 +63,7 @@ var shape_step_width_divs := 1 setget set_step_width_divs
 var shape_smoothness := 0.5 setget set_smoothness
 
 # Material Properties
+var mat_shader_type : int setget set_shader_type
 var mat_normal_bump_texture : Texture setget set_normal_bump_texture
 var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
@@ -62,11 +71,11 @@ var mat_roughness := 0.2 setget set_roughness
 var mat_edge_fade := 0.25 setget set_edge_fade
 
 var mat_albedo_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
-var mat_albedo_gradient_depth := 10.0 setget set_gradient_depth
-var mat_albedo_depth_curve := 1.0 setget set_albedo_depth_curve
+var mat_albedo_gradient_depth := 30.0 setget set_gradient_depth
+var mat_albedo_depth_curve := 0.25 setget set_albedo_depth_curve
 
-var mat_transparency_clarity := 10.0 setget set_clarity
-var mat_transparency_depth_curve := 1.0 setget set_transparency_depth_curve
+var mat_transparency_clarity := 30.0 setget set_clarity
+var mat_transparency_depth_curve := 0.25 setget set_transparency_depth_curve
 var mat_transparency_refraction := 0.05 setget set_refraction
 
 var mat_flow_speed := 1.0 setget set_flowspeed
@@ -160,6 +169,13 @@ func _get_property_list() -> Array:
 			type = TYPE_NIL,
 			hint_string = "mat_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_shader_type",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_ENUM,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+			hint_string = "River, Lava"
 		},
 		{
 			name = "mat_normal_bump_texture",
@@ -504,7 +520,8 @@ func _enter_tree() -> void:
 	# If a value is not set on the material, the values are not correct
 	set_albedo1(mat_albedo_albedo[0])
 	set_albedo2(mat_albedo_albedo[1])
-	emit_signal("albedo_set", mat_albedo_albedo[0], mat_albedo_albedo[1])
+	# TODO - can the below be removed?
+	# emit_signal("albedo_set", mat_albedo_albedo[0], mat_albedo_albedo[1])
 
 
 func _get_configuration_warning() -> String:
@@ -520,7 +537,6 @@ func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, wi
 		var last_index := curve.get_point_count() - 1
 		var dist = position.distance_to(curve.get_point_position(last_index))
 		var new_dir := dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25 * dist
-		#var new_dir := (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25
 		curve.add_point(position, -new_dir, new_dir, -1)
 		widths.append(widths[widths.size() - 1]) # If this is a new point at the end, add a width that's the same as last
 	else:
@@ -706,6 +722,10 @@ func set_custom_shader(shader : Shader) -> void:
 			# Ability to fork default shader
 			if shader.code == "":
 				shader.code = _default_shader.code
+
+
+func set_shader_type(type : int) -> void:
+	mat_shader_type = type
 
 
 func set_roughness(value : float) -> void:

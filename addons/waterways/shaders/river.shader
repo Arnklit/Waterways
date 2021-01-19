@@ -156,6 +156,7 @@ void fragment() {
 	
 	
 	float alb_t = clamp(water_depth / gradient_depth, 0.0, 1.0);
+	alb_t = ease(alb_t, albedo_depth_curve);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
 	NORMALMAP = vec3(water_norFBM, 0);
@@ -167,7 +168,9 @@ void fragment() {
 	//vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
 	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMALMAP_DEPTH * .1;
 	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction;
-	float ref_amount = 1.0 - clamp(water_depth / clarity + combined_foam, 0.0, 1.0);
+	float clar_t = clamp(water_depth / clarity, 0.0, 1.0);
+	clar_t = ease(clar_t, transparency_depth_curve);
+	float ref_amount = 1.0 - clamp(clar_t + combined_foam, 0.0, 1.0);
 
 	// Depthtest 2
 	float depth_tex2 = textureLod(DEPTH_TEXTURE, ref_ofs, 0.0).r;
@@ -178,8 +181,11 @@ void fragment() {
 	if (surface_dist2 < -VERTEX.z) {
 		ref_ofs = SCREEN_UV;
 	} else {
-		ref_amount = 1.0 - clamp(water_depth2 / clarity + combined_foam, 0.0, 1.0);
+		clar_t = clamp(water_depth2 / clarity, 0.0, 1.0);
+		clar_t = ease(clar_t, transparency_depth_curve);
+		ref_amount = 1.0 - clamp(clar_t + combined_foam, 0.0, 1.0);
 		alb_t = clamp(water_depth2 / gradient_depth, 0.0, 1.0);
+		alb_t = ease(alb_t, albedo_depth_curve);
 	}
 	
 	vec3 alb_mix = mix(albedo1.rgb, albedo2.rgb, alb_t);

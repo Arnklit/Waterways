@@ -8,8 +8,8 @@ var _object;
 func set_node(object) -> void:
 	_object = object
 	_object.connect("albedo_set", self, "_on_set")
-	$Color1.color = _object.mat_albedo[0]
-	$Color2.color = _object.mat_albedo[1]
+	$Color1.color = _object.mat_albedo_albedo[0]
+	$Color2.color = _object.mat_albedo_albedo[1]
 	$Gradient.material.set_shader_param("color1", $Color1.color)
 	$Gradient.material.set_shader_param("color2", $Color2.color)
 
