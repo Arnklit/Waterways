@@ -11,22 +11,29 @@ uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
-uniform sampler2D texture_water : hint_black;
+uniform sampler2D normal_bump_texture : hint_normal;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
-uniform float clarity : hint_range(0.0, 200.0) = 10.0;
+uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
+
 uniform vec4 albedo1 : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
 uniform vec4 albedo2 : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
 uniform float gradient_depth : hint_range(0.0, 200.0) = 10.0;
-uniform float roughness : hint_range(0.0, 1.0) = 0.2;
+uniform float albedo_depth_curve = 1.0;
+
+uniform float clarity : hint_range(0.0, 200.0) = 10.0;
 uniform float refraction : hint_range(-1.0, 1.0) = 0.05;
+uniform float transparency_depth_curve = 1.0;
+
 uniform vec4 foam_albedo : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
 uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
+
 uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
 
+uniform sampler2D texture_foam_noise : hint_white;
 uniform sampler2D flowmap : hint_normal;
 uniform sampler2D distmap : hint_white;
 uniform bool valid_flowmap = false;
@@ -44,10 +51,30 @@ vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bo
 	return uvw;
 }
 
-vec2 AlignWithGrabTexel (vec2 uv, vec2 s_p_s) {
-	return
-		vec2(floor(uv * s_p_s.xy) + 0.5) *
-		abs(s_p_s.xy);
+// ease implementation copied from math_funcs.cpp in source
+float ease(float p_x, float p_c) {
+	if (p_x < 0.0) {
+		p_x = 0.0;
+	} else if (p_x > 1.0) {
+		p_x = 1.0;
+	}
+	if (p_c > 0.0) {
+		if (p_c < 1.0) {
+			return 1.0 - pow(1.0 - p_x, 1.0 / p_c);
+		} else {
+			return pow(p_x, p_c);
+		}
+	} else if (p_c < 0.0) {
+		//inout ease
+		
+		if (p_x < 0.5) {
+			return pow(p_x * 2.0, -p_c) * 0.5;
+		} else {
+			return (1.0 - pow(1.0 - (p_x - 0.5) * 2.0, -p_c)) * 0.5 + 0.5;
+		}
+	} else {
+		return 0.0; // no ease (raw)
+	}
 }
 
 void fragment() {
@@ -94,8 +121,8 @@ void fragment() {
 	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
 	
 	// Level 1 Water
-	vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
-	vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
+	vec3 water_a = texture(normal_bump_texture, flow_uvA.xy).rgb;
+	vec3 water_b = texture(normal_bump_texture, flow_uvB.xy).rgb;
 	vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 
 	vec2 water_norFBM = water.rg;
@@ -103,8 +130,8 @@ void fragment() {
 
 	// Level 2 Water, only add in if closer than lod 0 distance
 	if (-VERTEX.z < lod0_distance) {
-		vec3 waterx2_a = texture(texture_water, flowx2_uvA.xy).rgb;
-		vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy, 0.0).rgb;
+		vec3 waterx2_a = texture(normal_bump_texture, flowx2_uvA.xy).rgb;
+		vec3 waterx2_b = texture(normal_bump_texture, flowx2_uvB.xy, 0.0).rgb;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
 
 		water_norFBM *= 0.65;
@@ -112,9 +139,7 @@ void fragment() {
 		water_foamFBM *= waterx2.b * 2.0;
 	}
 	
-	// I don't see any way of getting a decently scaled noise texture in here
-	// without doing another texture fetch
-	float foam_randomness = texture(texture_water, UV * uv_scale.xy).a;
+	float foam_randomness = texture(texture_foam_noise, UV * uv_scale.xy).r;
 	
 	foam_mask += steepness_map * foam_steepness * foam_randomness;
 	foam_mask = clamp(foam_mask, 0.0, 1.0);
@@ -129,6 +154,7 @@ void fragment() {
 	float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
 	float water_depth = surface_dist + VERTEX.z;
 	
+	
 	float alb_t = clamp(water_depth / gradient_depth, 0.0, 1.0);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
@@ -138,7 +164,8 @@ void fragment() {
 	
 	// Refraction - has to be done after normal is set
 	vec3 unpacted_normals = NORMALMAP * 2.0 - 1.0;
-	vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
+	//vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
+	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMALMAP_DEPTH * .1;
 	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * refraction;
 	float ref_amount = 1.0 - clamp(water_depth / clarity + combined_foam, 0.0, 1.0);
 
@@ -158,7 +185,7 @@ void fragment() {
 	vec3 alb_mix = mix(albedo1.rgb, albedo2.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, 0.0).rgb * ref_amount;
+	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2 * 2.0).rgb * ref_amount;
 
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;

@@ -8,7 +8,8 @@ const WaterHelperMethods = preload("./water_helper_methods.gd")
 const DEFAULT_SHADER_PATH = "res://addons/waterways/shaders/river.shader"
 const DEFAULT_WATER_TEXTURE_PATH = "res://addons/waterways/textures/water1.png"
 const FILTER_RENDERER_PATH = "res://addons/waterways/filter_renderer.tscn"
-const NOISE_TEXTURE_PATH = "res://addons/waterways/textures/noise.png"
+const FLOW_OFFSET_NOISE_TEXTURE_PATH = "res://addons/waterways/textures/flow_offset_noise.png"
+const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
 const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
 const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
 const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
@@ -19,12 +20,12 @@ const DEFAULT_PARAMETERS = {
 	shape_smoothness = 0.5,
 	mat_uv_tiling = Vector2(1.0, 1.0),
 	mat_normal_scale = 1.0,
-	mat_clarity = 10.0,
-	mat_edge_fade = 0.25,
-	mat_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
-	mat_gradient_depth = 10.0,
 	mat_roughness = 0.2,
-	mat_refraction = 0.05,
+	mat_edge_fade = 0.25,
+	mat_albedo_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
+	mat_albedo_gradient_depth = 10.0,
+	mat_transparency_clarity = 10.0,
+	mat_transparency_refraction = 0.05,
 	mat_flow_speed = 1.0,
 	mat_flow_base_strength = 0.0,
 	mat_flow_steepness_strength = 2.0,
@@ -47,27 +48,34 @@ const DEFAULT_PARAMETERS = {
 	adv_custom_shader = null
 }
 
+
 # Shape Properties
 var shape_step_length_divs := 1 setget set_step_length_divs
 var shape_step_width_divs := 1 setget set_step_width_divs
 var shape_smoothness := 0.5 setget set_smoothness
 
 # Material Properties
-var mat_texture : Texture setget set_texture
+var mat_normal_bump_texture : Texture setget set_normal_bump_texture
 var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
 var mat_normal_scale := 1.0 setget set_normal_scale
-var mat_clarity := 10.0 setget set_clarity
-var mat_edge_fade := 0.25 setget set_edge_fade
-var mat_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
-var mat_gradient_depth := 10.0 setget set_gradient_depth
 var mat_roughness := 0.2 setget set_roughness
-var mat_refraction := 0.05 setget set_refraction
+var mat_edge_fade := 0.25 setget set_edge_fade
+
+var mat_albedo_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
+var mat_albedo_gradient_depth := 10.0 setget set_gradient_depth
+var mat_albedo_depth_curve := 1.0 setget set_albedo_depth_curve
+
+var mat_transparency_clarity := 10.0 setget set_clarity
+var mat_transparency_depth_curve := 1.0 setget set_transparency_depth_curve
+var mat_transparency_refraction := 0.05 setget set_refraction
+
 var mat_flow_speed := 1.0 setget set_flowspeed
 var mat_flow_base_strength := 0.0 setget set_flow_base
 var mat_flow_steepness_strength := 2.0 setget set_flow_steepness
 var mat_flow_distance_strength := 1.0 setget set_flow_distance
 var mat_flow_pressure_strength := 1.0 setget set_flow_pressure
 var mat_flow_max_strength := 4.0 setget set_flow_max
+
 var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
 var mat_foam_amount := 2.0 setget set_foam_amount
 var mat_foam_steepness := 2.0 setget set_foam_steepness
@@ -154,7 +162,7 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_texture",
+			name = "mat_normal_bump_texture",
 			type = TYPE_OBJECT,
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
@@ -174,22 +182,10 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_albedo",
-			type = TYPE_COLOR_ARRAY,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_gradient_depth",
+			name = "mat_roughness",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 200.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_clarity",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 200.0",
+			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -200,14 +196,50 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_roughness",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
+			name = "Material/Albedo",
+			type = TYPE_NIL,
+			hint_string = "mat_albedo_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_albedo_albedo",
+			type = TYPE_COLOR_ARRAY,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
-			name = "mat_refraction",
+			name = "mat_albedo_gradient_depth",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 200.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_albedo_depth_curve",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_EXP_EASING,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "Material/Transparency",
+			type = TYPE_NIL,
+			hint_string = "mat_transparency_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_transparency_clarity",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 200.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_transparency_depth_curve",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_EXP_EASING,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_transparency_refraction",
 			type = TYPE_REAL,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "-1.0, 1.0",
@@ -439,7 +471,7 @@ func _init() -> void:
 	_debug_material.set_shader_param("debug_arrow", load(DEBUG_ARROW_PATH) as Texture)
 	_material = ShaderMaterial.new()
 	_material.shader = _default_shader
-	set_texture(load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
+	set_normal_bump_texture(load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
 
 
 func _enter_tree() -> void:
@@ -468,10 +500,11 @@ func _enter_tree() -> void:
 	set_materials("uv2_sides", _uv2_sides)
 	set_materials("distmap", _dist_pressure)
 	set_materials("flowmap", _flow_foam_noise)
+	set_materials("texture_foam_noise", load(FOAM_NOISE_PATH) as Texture)
 	# If a value is not set on the material, the values are not correct
-	set_albedo1(mat_albedo[0])
-	set_albedo2(mat_albedo[1])
-	emit_signal("albedo_set", mat_albedo[0], mat_albedo[1])
+	set_albedo1(mat_albedo_albedo[0])
+	set_albedo2(mat_albedo_albedo[1])
+	emit_signal("albedo_set", mat_albedo_albedo[0], mat_albedo_albedo[1])
 
 
 func _get_configuration_warning() -> String:
@@ -615,12 +648,12 @@ func set_smoothness(value : float) -> void:
 
 
 func set_albedo1(color : Color) -> void:
-	mat_albedo[0] = color
+	mat_albedo_albedo[0] = color
 	set_materials("albedo1", color)
 
 
 func set_albedo2(color : Color) -> void:
-	mat_albedo[1] = color
+	mat_albedo_albedo[1] = color
 	set_materials("albedo2", color)
 
 
@@ -631,8 +664,13 @@ func set_albedo(colors : PoolColorArray) -> void:
 
 
 func set_gradient_depth(value : float) -> void:
-	mat_gradient_depth = value
+	mat_albedo_gradient_depth = value
 	set_materials("gradient_depth", value)
+
+
+func set_albedo_depth_curve(value : float) -> void:
+	mat_albedo_depth_curve = value
+	set_materials("albedo_depth_curve", value)
 
 
 func set_foam_albedo(color : Color) -> void:
@@ -676,13 +714,13 @@ func set_roughness(value : float) -> void:
 
 
 func set_refraction(value : float) -> void:
-	mat_refraction = value
+	mat_transparency_refraction = value
 	set_materials("refraction", value)
 
 
-func set_texture(texture : Texture) -> void:
-	mat_texture = texture
-	set_materials("texture_water", texture)
+func set_normal_bump_texture(texture : Texture) -> void:
+	mat_normal_bump_texture = texture
+	set_materials("normal_bump_texture", texture)
 
 
 func set_uv_scale(value : Vector3) -> void:
@@ -696,8 +734,13 @@ func set_normal_scale(value : float) -> void:
 
 
 func set_clarity(value : float) -> void:
-	mat_clarity = value
+	mat_transparency_clarity = value
 	set_materials("clarity", value)
+
+
+func set_transparency_depth_curve(value : float) -> void:
+	mat_transparency_depth_curve = value
+	set_materials("transparency_depth_curve", value)
 
 
 func set_edge_fade(value : float) -> void:
@@ -778,7 +821,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	collision_with_margins.create_from_image(image)
 
 	# Create correctly tiling noise for A channel
-	var noise_texture := load(NOISE_TEXTURE_PATH) as Texture
+	var noise_texture := load(FLOW_OFFSET_NOISE_TEXTURE_PATH) as Texture
 	var noise_with_tiling := Image.new()
 	var noise_with_margin_size := float(_uv2_sides + 2) * (float(noise_texture.get_width()) / float(_uv2_sides))
 	noise_with_tiling.create(noise_with_margin_size, noise_with_margin_size, false, Image.FORMAT_RGB8)

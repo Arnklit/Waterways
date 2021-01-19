@@ -18,7 +18,7 @@ const int FOAM_MIX = 9;
 
 uniform int mode = 1;
 
-uniform sampler2D texture_water : hint_black;
+uniform sampler2D normal_bump_texture : hint_normal;
 uniform sampler2D debug_pattern : hint_black;
 uniform sampler2D debug_arrow : hint_black;
 
@@ -29,6 +29,7 @@ uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
+uniform sampler2D texture_foam_noise : hint_white;
 uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
@@ -146,16 +147,16 @@ void fragment() {
 		vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
 		vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
 		
-		vec3 water_a = texture(texture_water, flow_uvA.xy).rgb;
-		vec3 water_b = texture(texture_water, flow_uvB.xy).rgb;
-		vec3 waterx2_a = texture(texture_water, flowx2_uvA.xy).rgb;
-		vec3 waterx2_b = texture(texture_water, flowx2_uvB.xy).rgb;
+		vec3 water_a = texture(normal_bump_texture, flow_uvA.xy).rgb;
+		vec3 water_b = texture(normal_bump_texture, flow_uvB.xy).rgb;
+		vec3 waterx2_a = texture(normal_bump_texture, flowx2_uvA.xy).rgb;
+		vec3 waterx2_b = texture(normal_bump_texture, flowx2_uvB.xy).rgb;
 		vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
 		
 		float water_foamFBM = water.b; // LOD1
 		water_foamFBM *= waterx2.b * 2.0; // LOD0 - add second level of detail
-		float foam_randomness = texture(texture_water, UV * uv_scale.xy).a;
+		float foam_randomness = texture(texture_foam_noise, UV * uv_scale.xy).r;
 		foam_mask += steepness_map * foam_randomness * foam_steepness;
 		foam_mask = clamp(foam_mask, 0.0, 1.0);
 		

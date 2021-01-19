@@ -2,19 +2,21 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/water1.png-5e1e4d872b2d9304e90a54134960c060.stex"
+path.s3tc="res://.import/water1.png-5e1e4d872b2d9304e90a54134960c060.s3tc.stex"
+path.etc2="res://.import/water1.png-5e1e4d872b2d9304e90a54134960c060.etc2.stex"
 metadata={
-"vram_texture": false
+"imported_formats": [ "s3tc", "etc2" ],
+"vram_texture": true
 }
 
 [deps]
 
 source_file="res://addons/waterways/textures/water1.png"
-dest_files=[ "res://.import/water1.png-5e1e4d872b2d9304e90a54134960c060.stex" ]
+dest_files=[ "res://.import/water1.png-5e1e4d872b2d9304e90a54134960c060.s3tc.stex", "res://.import/water1.png-5e1e4d872b2d9304e90a54134960c060.etc2.stex" ]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/lossy_quality=0.7
 compress/hdr_mode=0
 compress/bptc_ldr=0
