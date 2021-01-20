@@ -189,6 +189,7 @@ func _get_property_list() -> Array:
 	
 	if _material.shader != null:
 		var shader_params := VisualServer.shader_get_param_list(_material.shader.get_rid())
+		shader_params = reorder_params(shader_params)
 		for p in shader_params:
 			if p.name.begins_with("i_"):
 				continue
@@ -212,191 +213,7 @@ func _get_property_list() -> Array:
 			props2.append(cp)
 	else:
 		print("_material.shader is null")
-#		{
-#			name = "mat_shader_type",
-#			type = TYPE_INT,
-#			hint = PROPERTY_HINT_ENUM,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-#			hint_string = "River, Lava"
-#		},
-#		{
-#			name = "mat_normal_bump_texture",
-#			type = TYPE_OBJECT,
-#			hint = PROPERTY_HINT_RESOURCE_TYPE,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-#			hint_string = "Texture"
-#		},
-#		{
-#			name = "mat_uv_scale",
-#			type = TYPE_VECTOR3,
-#			hint = PROPERTY_HINT_NONE,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_normal_scale",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "-16.0, 16.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_roughness",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 1.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_edge_fade",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 1.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "Material/Albedo",
-#			type = TYPE_NIL,
-#			hint_string = "mat_albedo_",
-#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_albedo_albedo",
-#			type = TYPE_COLOR_ARRAY,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_albedo_gradient_depth",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 200.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_albedo_depth_curve",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_EXP_EASING,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "Material/Transparency",
-#			type = TYPE_NIL,
-#			hint_string = "mat_transparency_",
-#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_transparency_clarity",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 200.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_transparency_depth_curve",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_EXP_EASING,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_transparency_refraction",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "-1.0, 1.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "Material/Flow",
-#			type = TYPE_NIL,
-#			hint_string = "mat_flow_",
-#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_flow_speed",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 10.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_flow_base_strength",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 8.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_flow_steepness_strength",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 8.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_flow_distance_strength",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 8.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_flow_pressure_strength",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 8.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_flow_max_strength",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 8.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "Material/Foam",
-#			type = TYPE_NIL,
-#			hint_string = "mat_foam_",
-#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_foam_albedo",
-#			type = TYPE_COLOR,
-#			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_foam_amount",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 4.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_foam_steepness",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 8.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "mat_foam_smoothness",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "0.0, 1.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "Lod",
-#			type = TYPE_NIL,
-#			hint_string = "lod_",
-#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
-#		{
-#			name = "lod_lod0_distance",
-#			type = TYPE_REAL,
-#			hint = PROPERTY_HINT_RANGE,
-#			hint_string = "5.0, 200.0",
-#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-#		},
+
 	var props3 = [
 		{
 			name = "Baking",
@@ -507,6 +324,26 @@ func _get_property_list() -> Array:
 	var combined_props = props + props2 + props3
 	#print(var2str(combined_props))
 	return combined_props
+
+
+func reorder_params(unordered_params : Array) -> Array:
+	var ordered = []
+	
+	for param in unordered_params:
+		if param.hint_string != "Texture":
+			ordered.append(param)
+		else:
+			#find the last index in ordered with the same
+			var prefix = param.name.rsplit("this")[0]
+			var index = ordered.bsearch_custom(prefix, "search_name")
+			
+	return ordered
+
+
+static func search_name(a, b):
+	if a == b.name:
+		return true
+	return false
 
 
 func property_can_revert(p_name: String) -> bool:
