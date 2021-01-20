@@ -14,36 +14,46 @@ const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
 const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
 const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
 
-const SHADERS_PATHS = [
-	"res://addons/waterways/shaders/river.shader",
-	"res://addons/waterways/shaders/lava.shader"
-]
+const MATERIAL_CATEGORIES = {
+	"albedo_" : "Albedo",
+	"emission_" : "Emission",
+	"transparency_" : "Transparency",
+	"flow_" : "Flow",
+	"foam_" : "Foam",
+	"lod_" : "Lod",
+	"custom_" : "Custom"
+}
+
+#const SHADERS_PATHS = [
+#	"res://addons/waterways/shaders/river.shader",
+#	"res://addons/waterways/shaders/lava.shader"
+#]
 
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
 	mat_shader_type = 0,
-	mat_uv_tiling = Vector2(1.0, 1.0),
-	mat_normal_scale = 1.0,
-	mat_roughness = 0.2,
-	mat_edge_fade = 0.25,
-	mat_albedo_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
-	mat_albedo_gradient_depth = 30.0,
-	mat_albedo_depth_curve = 0.25,
-	mat_transparency_clarity = 30.0,
-	mat_transparency_depth_curve = 0.25,
-	mat_transparency_refraction = 0.05,
-	mat_flow_speed = 1.0,
-	mat_flow_base_strength = 0.0,
-	mat_flow_steepness_strength = 2.0,
-	mat_flow_distance_strength = 1.0,
-	mat_flow_pressure_strength = 1.0,
-	mat_flow_max_strength = 4.0,
-	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
-	mat_foam_amount = 2.0,
-	mat_foam_steepness = 2.0,
-	mat_foam_smoothness = 0.3,
+#	mat_uv_tiling = Vector2(1.0, 1.0),
+#	mat_normal_scale = 1.0,
+#	mat_roughness = 0.2,
+#	mat_edge_fade = 0.25,
+#	mat_albedo_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
+#	mat_albedo_gradient_depth = 30.0,
+#	mat_albedo_depth_curve = 0.25,
+#	mat_transparency_clarity = 30.0,
+#	mat_transparency_depth_curve = 0.25,
+#	mat_transparency_refraction = 0.05,
+#	mat_flow_speed = 1.0,
+#	mat_flow_base_strength = 0.0,
+#	mat_flow_steepness_strength = 2.0,
+#	mat_flow_distance_strength = 1.0,
+#	mat_flow_pressure_strength = 1.0,
+#	mat_flow_max_strength = 4.0,
+#	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
+#	mat_foam_amount = 2.0,
+#	mat_foam_steepness = 2.0,
+#	mat_foam_smoothness = 0.3,
 	lod_lod0_distance = 50.0,
 	baking_resolution = 2, 
 	baking_raycast_distance = 10.0,
@@ -62,36 +72,37 @@ var shape_step_length_divs := 1 setget set_step_length_divs
 var shape_step_width_divs := 1 setget set_step_width_divs
 var shape_smoothness := 0.5 setget set_smoothness
 
+#var mat_shader_type : int setget set_shader_type
+
 # Material Properties
-var mat_shader_type : int setget set_shader_type
-var mat_normal_bump_texture : Texture setget set_normal_bump_texture
-var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
-var mat_normal_scale := 1.0 setget set_normal_scale
-var mat_roughness := 0.2 setget set_roughness
-var mat_edge_fade := 0.25 setget set_edge_fade
-
-var mat_albedo_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
-var mat_albedo_gradient_depth := 30.0 setget set_gradient_depth
-var mat_albedo_depth_curve := 0.25 setget set_albedo_depth_curve
-
-var mat_transparency_clarity := 30.0 setget set_clarity
-var mat_transparency_depth_curve := 0.25 setget set_transparency_depth_curve
-var mat_transparency_refraction := 0.05 setget set_refraction
-
-var mat_flow_speed := 1.0 setget set_flowspeed
-var mat_flow_base_strength := 0.0 setget set_flow_base
-var mat_flow_steepness_strength := 2.0 setget set_flow_steepness
-var mat_flow_distance_strength := 1.0 setget set_flow_distance
-var mat_flow_pressure_strength := 1.0 setget set_flow_pressure
-var mat_flow_max_strength := 4.0 setget set_flow_max
-
-var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
-var mat_foam_amount := 2.0 setget set_foam_amount
-var mat_foam_steepness := 2.0 setget set_foam_steepness
-var mat_foam_smoothness := 0.3 setget set_foam_smoothness
+#var mat_normal_bump_texture : Texture setget set_normal_bump_texture
+#var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
+#var mat_normal_scale := 1.0 setget set_normal_scale
+#var mat_roughness := 0.2 setget set_roughness
+#var mat_edge_fade := 0.25 setget set_edge_fade
+#
+#var mat_albedo_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
+#var mat_albedo_gradient_depth := 30.0 setget set_gradient_depth
+#var mat_albedo_depth_curve := 0.25 setget set_albedo_depth_curve
+#
+#var mat_transparency_clarity := 30.0 setget set_clarity
+#var mat_transparency_depth_curve := 0.25 setget set_transparency_depth_curve
+#var mat_transparency_refraction := 0.05 setget set_refraction
+#
+#var mat_flow_speed := 1.0 setget set_flowspeed
+#var mat_flow_base_strength := 0.0 setget set_flow_base
+#var mat_flow_steepness_strength := 2.0 setget set_flow_steepness
+#var mat_flow_distance_strength := 1.0 setget set_flow_distance
+#var mat_flow_pressure_strength := 1.0 setget set_flow_pressure
+#var mat_flow_max_strength := 4.0 setget set_flow_max
+#
+#var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
+#var mat_foam_amount := 2.0 setget set_foam_amount
+#var mat_foam_steepness := 2.0 setget set_foam_steepness
+#var mat_foam_smoothness := 0.3 setget set_foam_smoothness
 
 # LOD Properties
-var lod_lod0_distance := 50.0 setget set_lod0_distance
+#var lod_lod0_distance := 50.0 setget set_lod0_distance
 
 # Bake Properties
 var baking_resolution := 2
@@ -136,7 +147,7 @@ signal albedo_set
 
 # Internal Methods
 func _get_property_list() -> Array:
-	return [
+	var props = [
 		{
 			name = "Shape",
 			type = TYPE_NIL,
@@ -170,191 +181,223 @@ func _get_property_list() -> Array:
 			hint_string = "mat_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
-		{
-			name = "mat_shader_type",
-			type = TYPE_INT,
-			hint = PROPERTY_HINT_ENUM,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-			hint_string = "River, Lava"
-		},
-		{
-			name = "mat_normal_bump_texture",
-			type = TYPE_OBJECT,
-			hint = PROPERTY_HINT_RESOURCE_TYPE,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-			hint_string = "Texture"
-		},
-		{
-			name = "mat_uv_scale",
-			type = TYPE_VECTOR3,
-			hint = PROPERTY_HINT_NONE,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_normal_scale",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "-16.0, 16.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_roughness",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_edge_fade",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "Material/Albedo",
-			type = TYPE_NIL,
-			hint_string = "mat_albedo_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_albedo_albedo",
-			type = TYPE_COLOR_ARRAY,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_albedo_gradient_depth",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 200.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_albedo_depth_curve",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_EXP_EASING,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "Material/Transparency",
-			type = TYPE_NIL,
-			hint_string = "mat_transparency_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_transparency_clarity",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 200.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_transparency_depth_curve",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_EXP_EASING,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_transparency_refraction",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "-1.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "Material/Flow",
-			type = TYPE_NIL,
-			hint_string = "mat_flow_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_speed",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 10.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_base_strength",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_steepness_strength",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_distance_strength",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_pressure_strength",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_flow_max_strength",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "Material/Foam",
-			type = TYPE_NIL,
-			hint_string = "mat_foam_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_foam_albedo",
-			type = TYPE_COLOR,
-			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_foam_amount",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 4.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_foam_steepness",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 8.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "mat_foam_smoothness",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "Lod",
-			type = TYPE_NIL,
-			hint_string = "lod_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "lod_lod0_distance",
-			type = TYPE_REAL,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "5.0, 200.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
+	]
+	# let's see if we can figure out to add all these automatically
+	
+	var props2 = []
+	var mat_categories = MATERIAL_CATEGORIES.duplicate(true)
+	
+	if _material.shader != null:
+		var shader_params := VisualServer.shader_get_param_list(_material.shader.get_rid())
+		for p in shader_params:
+			if p.name.begins_with("i_"):
+				continue
+			var hit_category = null
+			for category in mat_categories:
+				if p.name.begins_with(category):
+					props2.append({
+						name = str("Material/", mat_categories[category]),
+						type = TYPE_NIL,
+						hint_string = str("mat_", category),
+						usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+					})
+					hit_category = category
+			if hit_category != null:
+				mat_categories.erase(hit_category)
+			var cp := {}
+			for k in p:
+				cp[k] = p[k]
+			cp.name = str("mat_", p.name)
+#			cp.hint_string = str(p.hint_string)
+			props2.append(cp)
+	else:
+		print("_material.shader is null")
+#		{
+#			name = "mat_shader_type",
+#			type = TYPE_INT,
+#			hint = PROPERTY_HINT_ENUM,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+#			hint_string = "River, Lava"
+#		},
+#		{
+#			name = "mat_normal_bump_texture",
+#			type = TYPE_OBJECT,
+#			hint = PROPERTY_HINT_RESOURCE_TYPE,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+#			hint_string = "Texture"
+#		},
+#		{
+#			name = "mat_uv_scale",
+#			type = TYPE_VECTOR3,
+#			hint = PROPERTY_HINT_NONE,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_normal_scale",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "-16.0, 16.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_roughness",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 1.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_edge_fade",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 1.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "Material/Albedo",
+#			type = TYPE_NIL,
+#			hint_string = "mat_albedo_",
+#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_albedo_albedo",
+#			type = TYPE_COLOR_ARRAY,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_albedo_gradient_depth",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 200.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_albedo_depth_curve",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_EXP_EASING,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "Material/Transparency",
+#			type = TYPE_NIL,
+#			hint_string = "mat_transparency_",
+#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_transparency_clarity",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 200.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_transparency_depth_curve",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_EXP_EASING,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_transparency_refraction",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "-1.0, 1.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "Material/Flow",
+#			type = TYPE_NIL,
+#			hint_string = "mat_flow_",
+#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_flow_speed",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 10.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_flow_base_strength",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 8.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_flow_steepness_strength",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 8.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_flow_distance_strength",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 8.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_flow_pressure_strength",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 8.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_flow_max_strength",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 8.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "Material/Foam",
+#			type = TYPE_NIL,
+#			hint_string = "mat_foam_",
+#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_foam_albedo",
+#			type = TYPE_COLOR,
+#			hint = PROPERTY_HINT_COLOR_NO_ALPHA,
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_foam_amount",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 4.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_foam_steepness",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 8.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "mat_foam_smoothness",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "0.0, 1.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "Lod",
+#			type = TYPE_NIL,
+#			hint_string = "lod_",
+#			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+#		{
+#			name = "lod_lod0_distance",
+#			type = TYPE_REAL,
+#			hint = PROPERTY_HINT_RANGE,
+#			hint_string = "5.0, 200.0",
+#			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+#		},
+	var props3 = [
 		{
 			name = "Baking",
 			type = TYPE_NIL,
@@ -461,6 +504,9 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		}
 	]
+	var combined_props = props + props2 + props3
+	#print(var2str(combined_props))
+	return combined_props
 
 
 func property_can_revert(p_name: String) -> bool:
@@ -487,7 +533,7 @@ func _init() -> void:
 	_debug_material.set_shader_param("debug_arrow", load(DEBUG_ARROW_PATH) as Texture)
 	_material = ShaderMaterial.new()
 	_material.shader = _default_shader
-	set_normal_bump_texture(load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
+#	set_normal_bump_texture(load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
 
 
 func _enter_tree() -> void:
@@ -518,8 +564,8 @@ func _enter_tree() -> void:
 	set_materials("flowmap", _flow_foam_noise)
 	set_materials("texture_foam_noise", load(FOAM_NOISE_PATH) as Texture)
 	# If a value is not set on the material, the values are not correct
-	set_albedo1(mat_albedo_albedo[0])
-	set_albedo2(mat_albedo_albedo[1])
+#	set_albedo1(mat_albedo_albedo[0])
+#	set_albedo2(mat_albedo_albedo[1])
 	# TODO - can the below be removed?
 	# emit_signal("albedo_set", mat_albedo_albedo[0], mat_albedo_albedo[1])
 
@@ -663,50 +709,50 @@ func set_smoothness(value : float) -> void:
 	emit_signal("river_changed")
 
 
-func set_albedo1(color : Color) -> void:
-	mat_albedo_albedo[0] = color
-	set_materials("albedo1", color)
-
-
-func set_albedo2(color : Color) -> void:
-	mat_albedo_albedo[1] = color
-	set_materials("albedo2", color)
-
-
-func set_albedo(colors : PoolColorArray) -> void:
-	set_albedo1(colors[0])
-	set_albedo2(colors[1])
-	emit_signal("albedo_set", colors)
-
-
-func set_gradient_depth(value : float) -> void:
-	mat_albedo_gradient_depth = value
-	set_materials("gradient_depth", value)
-
-
-func set_albedo_depth_curve(value : float) -> void:
-	mat_albedo_depth_curve = value
-	set_materials("albedo_depth_curve", value)
-
-
-func set_foam_albedo(color : Color) -> void:
-	mat_foam_albedo = color
-	set_materials("foam_albedo", color)
-
-
-func set_foam_amount(amount : float) -> void:
-	mat_foam_amount = amount
-	set_materials("foam_amount", amount)
-
-
-func set_foam_steepness(amount : float) -> void:
-	mat_foam_steepness = amount
-	set_materials("foam_steepness", amount)
-
-
-func set_foam_smoothness(amount : float) -> void:
-	mat_foam_smoothness = amount
-	set_materials("foam_smoothness", amount)
+#func set_albedo1(color : Color) -> void:
+#	mat_albedo_albedo[0] = color
+#	set_materials("albedo1", color)
+#
+#
+#func set_albedo2(color : Color) -> void:
+#	mat_albedo_albedo[1] = color
+#	set_materials("albedo2", color)
+#
+#
+#func set_albedo(colors : PoolColorArray) -> void:
+#	set_albedo1(colors[0])
+#	set_albedo2(colors[1])
+#	emit_signal("albedo_set", colors)
+#
+#
+#func set_gradient_depth(value : float) -> void:
+#	mat_albedo_gradient_depth = value
+#	set_materials("gradient_depth", value)
+#
+#
+#func set_albedo_depth_curve(value : float) -> void:
+#	mat_albedo_depth_curve = value
+#	set_materials("albedo_depth_curve", value)
+#
+#
+#func set_foam_albedo(color : Color) -> void:
+#	mat_foam_albedo = color
+#	set_materials("foam_albedo", color)
+#
+#
+#func set_foam_amount(amount : float) -> void:
+#	mat_foam_amount = amount
+#	set_materials("foam_amount", amount)
+#
+#
+#func set_foam_steepness(amount : float) -> void:
+#	mat_foam_steepness = amount
+#	set_materials("foam_steepness", amount)
+#
+#
+#func set_foam_smoothness(amount : float) -> void:
+#	mat_foam_smoothness = amount
+#	set_materials("foam_smoothness", amount)
 
 
 func set_custom_shader(shader : Shader) -> void:
@@ -724,83 +770,83 @@ func set_custom_shader(shader : Shader) -> void:
 				shader.code = _default_shader.code
 
 
-func set_shader_type(type : int) -> void:
-	mat_shader_type = type
+#func set_shader_type(type : int) -> void:
+#	mat_shader_type = type
 
 
-func set_roughness(value : float) -> void:
-	mat_roughness = value
-	set_materials("roughness", value)
-
-
-func set_refraction(value : float) -> void:
-	mat_transparency_refraction = value
-	set_materials("refraction", value)
-
-
-func set_normal_bump_texture(texture : Texture) -> void:
-	mat_normal_bump_texture = texture
-	set_materials("normal_bump_texture", texture)
-
-
-func set_uv_scale(value : Vector3) -> void:
-	mat_uv_scale = value
-	set_materials("uv_scale", value)
-
-
-func set_normal_scale(value : float) -> void:
-	mat_normal_scale = value
-	set_materials("normal_scale", value)
-
-
-func set_clarity(value : float) -> void:
-	mat_transparency_clarity = value
-	set_materials("clarity", value)
-
-
-func set_transparency_depth_curve(value : float) -> void:
-	mat_transparency_depth_curve = value
-	set_materials("transparency_depth_curve", value)
-
-
-func set_edge_fade(value : float) -> void:
-	mat_edge_fade = value
-	set_materials("edge_fade", value)
-
-
-func set_flowspeed(value : float) -> void:
-	mat_flow_speed = value
-	set_materials("flow_speed", value)
-
-
-func set_flow_base(value : float) -> void:
-	mat_flow_base_strength = value
-	set_materials("flow_base", value)
-
-
-func set_flow_steepness(value : float) -> void:
-	mat_flow_steepness_strength = value
-	set_materials("flow_steepness", value)
-
-
-func set_flow_distance(value : float) -> void:
-	mat_flow_distance_strength = value
-	set_materials("flow_distance", value)
-
-
-func set_flow_pressure(value : float) -> void:
-	mat_flow_pressure_strength = value
-	set_materials("flow_pressure", value)
-
-
-func set_flow_max(value : float) -> void:
-	mat_flow_max_strength = value
-	set_materials("flow_max", value)
-
-
-func set_lod0_distance(value : float) -> void:
-	lod_lod0_distance = value
-	set_materials("lod0_distance", value)
+#func set_roughness(value : float) -> void:
+#	mat_roughness = value
+#	set_materials("roughness", value)
+#
+#
+#func set_refraction(value : float) -> void:
+#	mat_transparency_refraction = value
+#	set_materials("refraction", value)
+#
+#
+#func set_normal_bump_texture(texture : Texture) -> void:
+#	mat_normal_bump_texture = texture
+#	set_materials("normal_bump_texture", texture)
+#
+#
+#func set_uv_scale(value : Vector3) -> void:
+#	mat_uv_scale = value
+#	set_materials("uv_scale", value)
+#
+#
+#func set_normal_scale(value : float) -> void:
+#	mat_normal_scale = value
+#	set_materials("normal_scale", value)
+#
+#
+#func set_clarity(value : float) -> void:
+#	mat_transparency_clarity = value
+#	set_materials("clarity", value)
+#
+#
+#func set_transparency_depth_curve(value : float) -> void:
+#	mat_transparency_depth_curve = value
+#	set_materials("transparency_depth_curve", value)
+#
+#
+#func set_edge_fade(value : float) -> void:
+#	mat_edge_fade = value
+#	set_materials("edge_fade", value)
+#
+#
+#func set_flowspeed(value : float) -> void:
+#	mat_flow_speed = value
+#	set_materials("flow_speed", value)
+#
+#
+#func set_flow_base(value : float) -> void:
+#	mat_flow_base_strength = value
+#	set_materials("flow_base", value)
+#
+#
+#func set_flow_steepness(value : float) -> void:
+#	mat_flow_steepness_strength = value
+#	set_materials("flow_steepness", value)
+#
+#
+#func set_flow_distance(value : float) -> void:
+#	mat_flow_distance_strength = value
+#	set_materials("flow_distance", value)
+#
+#
+#func set_flow_pressure(value : float) -> void:
+#	mat_flow_pressure_strength = value
+#	set_materials("flow_pressure", value)
+#
+#
+#func set_flow_max(value : float) -> void:
+#	mat_flow_max_strength = value
+#	set_materials("flow_max", value)
+#
+#
+#func set_lod0_distance(value : float) -> void:
+#	lod_lod0_distance = value
+#	set_materials("lod0_distance", value)
 
 
 # Private Methods
