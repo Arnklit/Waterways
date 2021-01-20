@@ -1,7 +1,7 @@
 // Copyright © 2021 Kasper Arnklit Frandsen - MIT License
 // See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
-render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
+render_mode depth_draw_always, cull_disabled;
 
 // flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
@@ -14,14 +14,16 @@ uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 uniform sampler2D normal_bump_texture : hint_normal;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
-uniform float roughness : hint_range(0.0, 1.0) = 0.2;
+uniform float roughness : hint_range(0.0, 1.0) = 0.7;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
-uniform sampler2D albedo_texture : hint_black;
+uniform sampler2D emission_texture : hint_black_albedo;
+uniform float emission_energy : hint_range(0.0, 20.0) = 4.0;
 
-uniform sampler2D emission_texture : hint_black;
-
-uniform float lod0_distance : hint_range(5.0, 200.0) = 50.0;
+uniform vec4 emission1 : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec4 emission2 : hint_color = vec4(1.0, 0.5, 0.5, 1.0);
+uniform float emission_depth : hint_range(0.0, 200.0) = 3.0;
+uniform float emission_depth_curve = 0.25;
 
 uniform sampler2D flowmap : hint_normal;
 uniform sampler2D distmap : hint_white;
@@ -38,6 +40,32 @@ vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bo
 	uvw.xy += (time - progress) * jump;
 	uvw.z = 1.0 - abs(1.0 - 2.0 * progress);
 	return uvw;
+}
+
+// ease implementation copied from math_funcs.cpp in source
+float ease(float p_x, float p_c) {
+	if (p_x < 0.0) {
+		p_x = 0.0;
+	} else if (p_x > 1.0) {
+		p_x = 1.0;
+	}
+	if (p_c > 0.0) {
+		if (p_c < 1.0) {
+			return 1.0 - pow(1.0 - p_x, 1.0 / p_c);
+		} else {
+			return pow(p_x, p_c);
+		}
+	} else if (p_c < 0.0) {
+		//inout ease
+		
+		if (p_x < 0.5) {
+			return pow(p_x * 2.0, -p_c) * 0.5;
+		} else {
+			return (1.0 - pow(1.0 - (p_x - 0.5) * 2.0, -p_c)) * 0.5 + 0.5;
+		}
+	} else {
+		return 0.0; // no ease (raw)
+	}
 }
 
 void fragment() {
@@ -72,22 +100,14 @@ void fragment() {
 	flow *= flow_force;
 	
 	vec2 jump1 = vec2(0.24, 0.2083333);
-	vec2 jump2 = vec2(0.20, 0.25);
-	vec2 jump3 = vec2(0.22, 0.27);
 	float time = TIME * flow_speed + flow_foam_noise.a;
 	vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_scale, time, false);
 	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
-	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
-	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
 	
 	// Level 1 Lava
 	vec3 lava_nor_bump_a = texture(normal_bump_texture, flow_uvA.xy).rgb;
 	vec3 lava_nor_bump_b = texture(normal_bump_texture, flow_uvB.xy).rgb;
 	vec3 lava_nor_bump = lava_nor_bump_a * flow_uvA.z + lava_nor_bump_b * flow_uvB.z;
-	
-	vec3 lava_albedo_a = texture(albedo_texture, flow_uvA.xy).rgb;
-	vec3 lava_albedo_b = texture(albedo_texture, flow_uvB.xy).rgb;
-	vec3 lave_albedo = lava_albedo_a * flow_uvA.z + lava_albedo_b * flow_uvB.z;
 	
 	vec3 lava_emission_a = texture(emission_texture, flow_uvA.xy).rgb;
 	vec3 lava_emission_b = texture(emission_texture, flow_uvB.xy).rgb;
@@ -95,31 +115,27 @@ void fragment() {
 	
 	vec2 lava_norFBM = lava_nor_bump.rg;
 	float lava_bumpFBM = lava_nor_bump.b; // TODO - Will we use this?
-
-	// Level 2 Water, only add in if closer than lod 0 distance
-	if (-VERTEX.z < lod0_distance) {
-		vec3 waterx2_a = texture(normal_bump_texture, flowx2_uvA.xy).rgb;
-		vec3 waterx2_b = texture(normal_bump_texture, flowx2_uvB.xy, 0.0).rgb;
-		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
-
-		water_norFBM *= 0.65;
-		water_norFBM += waterx2.rg * 0.35;
-	}
 	
-	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
+	// Depthtest
+	float depth_tex = textureLod(DEPTH_TEXTURE, SCREEN_UV, 0.0).r;
+	float depth_tex_unpacked = depth_tex * 2.0 - 1.0;
+	float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
+	float lava_depth = surface_dist + VERTEX.z;
+	
 	ROUGHNESS = roughness;
-	NORMALMAP = vec3(water_norFBM, 0);
+	NORMALMAP = vec3(lava_norFBM, 0);
 	NORMALMAP_DEPTH = normal_scale;
 	
-	ALBEDO = 
-	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2 * 2.0).rgb * ref_amount;
-
-	ALBEDO *= 1.0 - ref_amount;
-	ALPHA = 1.0;
-	TRANSMISSION = vec3(0.9);
-
+	float emission_t = clamp(lava_depth / emission_depth, 0.0, 1.0);
+	emission_t = ease(emission_t, emission_depth_curve);
+	
+	vec3 final_lava = mix(lava_emission * emission1.rgb, lava_emission * emission2.rgb, emission_t);
+	
+	ALBEDO = vec3(0.0);
+	EMISSION = final_lava * emission_energy;
+	
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;
+	ALPHA = 1.0;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
 }
