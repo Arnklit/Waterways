@@ -1,5 +1,6 @@
-[gd_scene load_steps=20 format=2]
+[gd_scene load_steps=21 format=2]
 
+[ext_resource path="res://addons/waterways/textures/water1_normal_bump.png" type="Texture" id=1]
 [ext_resource path="res://test_assets/tdata/data.hterrain" type="Resource" id=2]
 [ext_resource path="res://addons/zylann.hterrain/hterrain.gd" type="Script" id=3]
 [ext_resource path="res://test_assets/terrain_textures/dirt_alb_bump.png" type="Texture" id=4]
@@ -42,8 +43,8 @@ size = Vector2( 512, 512 )
 [sub_resource type="Curve3D" id=5]
 bake_interval = 0.05
 _data = {
-"points": PoolVector3Array( 0, 0, -0.25, 0, 0, 0.25, 0, 0, 0, 0, 0, -0.25, 0, 0, 0.25, 0, 0, 1 ),
-"tilts": PoolRealArray( 0, 0 )
+"points": PoolVector3Array( 0.260838, -0.0971937, -1.37428, -0.260838, 0.0971937, 1.37428, 3.54298, -3.06487, -11.013, 2.49877, 0.0156469, -4.08099, -2.49877, -0.0156469, 4.08099, -0.856335, -4.31518, 4.79231, 2.79848, 0.0229797, 0.0643692, -2.79848, -0.0229797, -0.0643692, -8.08727, -4.43895, 11.2066, 1.199, 0.0878291, 1.95072, -1.199, -0.0878291, -1.95072, -15.0478, -4.81929, 4.36888, 3.11266, 0.0739021, 2.37093, -3.11266, -0.0739021, -2.37093, -19.7325, -5.11466, -4.09667 ),
+"tilts": PoolRealArray( 0, 0, 0, 0, 0 )
 }
 
 [sub_resource type="BoxShape" id=6]
@@ -120,32 +121,34 @@ _system_aabb = AABB( 2.03665, 1.92, 7.19112, 59.6608, 8.00117, 53.6482 )
 [node name="River" type="Spatial" parent="WaterSystem"]
 transform = Transform( 1, 0, 0, 0, 1, 0, 0, 0, 1, 52.2926, 12.9659, 19.8599 )
 script = ExtResource( 9 )
-shape_step_length_divs = 1
-shape_step_width_divs = 1
-shape_smoothness = 0.5
-mat_uv_scale = null
-mat_normal_scale = null
-mat_roughness = null
-mat_edge_fade = null
-mat_albedo_albedo1 = null
-mat_albedo_albedo2 = null
-mat_albedo_gradient_depth = null
-mat_albedo_depth_curve = null
-mat_transparency_clarity = null
-mat_transparency_refraction = null
-mat_transparency_depth_curve = null
-mat_flow_speed = null
-mat_flow_base = null
-mat_flow_steepness = null
-mat_flow_distance = null
-mat_flow_pressure = null
-mat_flow_max = null
-mat_foam_albedo = null
-mat_foam_amount = null
-mat_foam_steepness = null
-mat_foam_smoothness = null
-mat_lod_lod0_distance = null
-mat_normal_bump_texture = null
+shape_step_length_divs = 3
+shape_step_width_divs = 3
+shape_smoothness = 0.88
+mat_shader_type = 0
+mat_custom_shader = null
+mat_uv_scale = Vector3( 1, 1, 1 )
+mat_normal_scale = 1.0
+mat_normal_bump_texture = ExtResource( 1 )
+mat_roughness = 0.314
+mat_edge_fade = 0.4
+mat_albedo_albedo1 = Color( 0, 0.8, 1, 1 )
+mat_albedo_albedo2 = Color( 0.14902, 0.192157, 0.47451, 1 )
+mat_albedo_gradient_depth = 10.0
+mat_albedo_depth_curve = 0.5
+mat_transparency_clarity = 10.0
+mat_transparency_refraction = 0.05
+mat_transparency_depth_curve = 0.5
+mat_flow_speed = 1.0
+mat_flow_base = 0.0
+mat_flow_steepness = 2.0
+mat_flow_distance = 1.0
+mat_flow_pressure = 1.0
+mat_flow_max = 4.0
+mat_foam_albedo = Color( 0.9, 0.9, 0.9, 1 )
+mat_foam_amount = 2.0
+mat_foam_steepness = 2.0
+mat_foam_smoothness = 0.3
+lod_lod0_distance = 50.0
 baking_resolution = 2
 baking_raycast_distance = 10.0
 baking_raycast_layers = 1
@@ -154,12 +157,12 @@ baking_flowmap_blur = 0.04
 baking_foam_cutoff = 0.9
 baking_foam_offset = 0.1
 baking_foam_blur = 0.02
-adv_custom_shader = null
 curve = SubResource( 5 )
-widths = [ 1.0, 1.0 ]
+widths = [ 5.86992, 5.61987, 7.09223, 5.61987, 5.61987 ]
+valid_flowmap = false
+_selected_shader = 0
 _flow_foam_noise = null
 _dist_pressure = null
-valid_flowmap = false
 _uv2_sides = 0
 
 [node name="Camera" type="Camera" parent="."]

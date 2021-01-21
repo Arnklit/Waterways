@@ -11,8 +11,8 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // albedo
-uniform vec4 albedo_albedo1 : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
-uniform vec4 albedo_albedo2 : hint_color = vec4(0.3, 0.25, 0.2, 1.0);
+uniform vec4 albedo_albedo1 : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
+uniform vec4 albedo_albedo2 : hint_color = vec4(0.15, 0.20, 0.50, 1.0);
 uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 1.0;
 
@@ -35,9 +35,9 @@ uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
 
-uniform float lod_lod0_distance : hint_range(5.0, 200.0) = 50.0;
 
-// internals
+// Internal uniforms, do not customize these
+uniform float i_lod0_distance : hint_range(5.0, 200.0) = 50.0;
 uniform sampler2D i_texture_foam_noise : hint_white;
 uniform sampler2D i_flowmap : hint_normal;
 uniform sampler2D i_distmap : hint_white;
@@ -134,7 +134,7 @@ void fragment() {
 	float water_foamFBM = water.b;
 
 	// Level 2 Water, only add in if closer than lod 0 distance
-	if (-VERTEX.z < lod_lod0_distance) {
+	if (-VERTEX.z < i_lod0_distance) {
 		vec3 waterx2_a = texture(normal_bump_texture, flowx2_uvA.xy).rgb;
 		vec3 waterx2_b = texture(normal_bump_texture, flowx2_uvB.xy, 0.0).rgb;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;

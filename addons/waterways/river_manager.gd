@@ -6,7 +6,6 @@ extends Spatial
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 
 const DEFAULT_SHADER_PATH = "res://addons/waterways/shaders/river.shader"
-const DEFAULT_WATER_TEXTURE_PATH = "res://addons/waterways/textures/water1_normal_bump.png"
 const FILTER_RENDERER_PATH = "res://addons/waterways/filter_renderer.tscn"
 const FLOW_OFFSET_NOISE_TEXTURE_PATH = "res://addons/waterways/textures/flow_offset_noise.png"
 const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
@@ -15,46 +14,48 @@ const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
 const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
 
 const MATERIAL_CATEGORIES = {
-	"albedo_" : "Albedo",
-	"emission_" : "Emission",
-	"transparency_" : "Transparency",
-	"flow_" : "Flow",
-	"foam_" : "Foam",
-	"lod_" : "Lod",
-	"custom_" : "Custom"
+	albedo_ = "Albedo",
+	emission_ = "Emission",
+	transparency_ = "Transparency",
+	flow_ = "Flow",
+	foam_ = "Foam",
+	custom_ = "Custom"
 }
 
-#const SHADERS_PATHS = [
-#	"res://addons/waterways/shaders/river.shader",
-#	"res://addons/waterways/shaders/lava.shader"
-#]
+enum SHADER_TYPES {WATER, LAVA, CUSTOM}
+const SHADERS = [
+	{
+		name = "Water",
+		shader_path = "res://addons/waterways/shaders/river.shader",
+		texture_paths = [
+			{
+				name = "normal_bump_texture",
+				path = "res://addons/waterways/textures/water1_normal_bump.png"
+			}
+		]
+	},
+	{
+		name = "Lava",
+		shader_path = "res://addons/waterways/shaders/lava.shader",
+		texture_paths = [
+			{
+				name = "normal_bump_texture",
+				path = "res://addons/waterways/textures/lava_normal_bump.png"
+			},
+			{
+				name = "emission_texture",
+				path = "res://addons/waterways/textures/lava_emission.png"
+			}
+		]
+	}
+]
 
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
-	mat_shader_type = 0,
-#	mat_uv_tiling = Vector2(1.0, 1.0),
-#	mat_normal_scale = 1.0,
-#	mat_roughness = 0.2,
-#	mat_edge_fade = 0.25,
-#	mat_albedo_albedo = PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]),
-#	mat_albedo_gradient_depth = 30.0,
-#	mat_albedo_depth_curve = 0.25,
-#	mat_transparency_clarity = 30.0,
-#	mat_transparency_depth_curve = 0.25,
-#	mat_transparency_refraction = 0.05,
-#	mat_flow_speed = 1.0,
-#	mat_flow_base_strength = 0.0,
-#	mat_flow_steepness_strength = 2.0,
-#	mat_flow_distance_strength = 1.0,
-#	mat_flow_pressure_strength = 1.0,
-#	mat_flow_max_strength = 4.0,
-#	mat_foam_albedo = Color(0.9, 0.9, 0.9, 1.0),
-#	mat_foam_amount = 2.0,
-#	mat_foam_steepness = 2.0,
-#	mat_foam_smoothness = 0.3,
-	lod_lod0_distance = 50.0,
+	mat_shader_type = 0, # TODO - this needs to be fixed, we can't have other names that start with mat_ if we are automating all those
+	mat_custom_shader = null,
 	baking_resolution = 2, 
 	baking_raycast_distance = 10.0,
 	baking_raycast_layers = 1,
@@ -63,7 +64,7 @@ const DEFAULT_PARAMETERS = {
 	baking_foam_cutoff = 0.9,
 	baking_foam_offset = 0.1,
 	baking_foam_blur = 0.02,
-	adv_custom_shader = null
+	lod_lod0_distance = 50.0,
 }
 
 
@@ -72,37 +73,12 @@ var shape_step_length_divs := 1 setget set_step_length_divs
 var shape_step_width_divs := 1 setget set_step_width_divs
 var shape_smoothness := 0.5 setget set_smoothness
 
-#var mat_shader_type : int setget set_shader_type
-
-# Material Properties
-#var mat_normal_bump_texture : Texture setget set_normal_bump_texture
-#var mat_uv_scale := Vector3(1.0, 1.0, 1.0) setget set_uv_scale
-#var mat_normal_scale := 1.0 setget set_normal_scale
-#var mat_roughness := 0.2 setget set_roughness
-#var mat_edge_fade := 0.25 setget set_edge_fade
-#
-#var mat_albedo_albedo := PoolColorArray([Color(0.25, 0.25, 0.70), Color(0.35, 0.25, 0.25)]) setget set_albedo
-#var mat_albedo_gradient_depth := 30.0 setget set_gradient_depth
-#var mat_albedo_depth_curve := 0.25 setget set_albedo_depth_curve
-#
-#var mat_transparency_clarity := 30.0 setget set_clarity
-#var mat_transparency_depth_curve := 0.25 setget set_transparency_depth_curve
-#var mat_transparency_refraction := 0.05 setget set_refraction
-#
-#var mat_flow_speed := 1.0 setget set_flowspeed
-#var mat_flow_base_strength := 0.0 setget set_flow_base
-#var mat_flow_steepness_strength := 2.0 setget set_flow_steepness
-#var mat_flow_distance_strength := 1.0 setget set_flow_distance
-#var mat_flow_pressure_strength := 1.0 setget set_flow_pressure
-#var mat_flow_max_strength := 4.0 setget set_flow_max
-#
-#var mat_foam_albedo := Color(0.9, 0.9, 0.9, 1.0) setget set_foam_albedo
-#var mat_foam_amount := 2.0 setget set_foam_amount
-#var mat_foam_steepness := 2.0 setget set_foam_steepness
-#var mat_foam_smoothness := 0.3 setget set_foam_smoothness
+# Material Properties that not handled in shader
+var mat_shader_type : int setget set_shader_type
+var mat_custom_shader : Shader setget set_custom_shader
 
 # LOD Properties
-#var lod_lod0_distance := 50.0 setget set_lod0_distance
+var lod_lod0_distance := 50.0 setget set_lod0_distance
 
 # Bake Properties
 var baking_resolution := 2
@@ -113,9 +89,6 @@ var baking_flowmap_blur := 0.04
 var baking_foam_cutoff := 0.9
 var baking_foam_offset := 0.1
 var baking_foam_blur := 0.02
-
-# Advanced Properties
-var adv_custom_shader : Shader setget set_custom_shader
 
 # Public variables
 var curve : Curve3D
@@ -129,11 +102,12 @@ var _steps := 2
 var _st : SurfaceTool
 var _mdt : MeshDataTool
 var _default_shader : Shader
-var _debug_shader : Shader
 var _material : ShaderMaterial
 var _debug_material : ShaderMaterial
 var _first_enter_tree := true
 var _filter_renderer
+# Serialised private variables
+var _selected_shader : int = SHADER_TYPES.WATER
 var _flow_foam_noise : Texture
 var _dist_pressure : Texture
 var _uv2_sides : int
@@ -181,15 +155,28 @@ func _get_property_list() -> Array:
 			hint_string = "mat_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
+		{
+			name = "mat_shader_type",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_ENUM,
+			hint_string = "Water, Lava",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "mat_custom_shader",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+			hint_string = "Shader"
+		},
 	]
-	# let's see if we can figure out to add all these automatically
-	
+
 	var props2 = []
 	var mat_categories = MATERIAL_CATEGORIES.duplicate(true)
 	
 	if _material.shader != null:
 		var shader_params := VisualServer.shader_get_param_list(_material.shader.get_rid())
-		shader_params = reorder_params(shader_params)
+		shader_params = WaterHelperMethods.reorder_params(shader_params)
 		for p in shader_params:
 			if p.name.begins_with("i_"):
 				continue
@@ -209,12 +196,22 @@ func _get_property_list() -> Array:
 			for k in p:
 				cp[k] = p[k]
 			cp.name = str("mat_", p.name)
-#			cp.hint_string = str(p.hint_string)
 			props2.append(cp)
-	else:
-		print("_material.shader is null")
-
+	
 	var props3 = [
+		{
+			name = "Lod",
+			type = TYPE_NIL,
+			hint_string = "lod_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "lod_lod0_distance",
+			type = TYPE_REAL,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "5.0, 200.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
 		{
 			name = "Baking",
 			type = TYPE_NIL,
@@ -276,19 +273,6 @@ func _get_property_list() -> Array:
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
-		{
-			name = "Advanced",
-			type = TYPE_NIL,
-			hint_string = "adv_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
-		},
-		{
-			name = "adv_custom_shader",
-			type = TYPE_OBJECT,
-			hint = PROPERTY_HINT_RESOURCE_TYPE,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-			hint_string = "Shader"
-		},
 		# Serialize these values without exposing it in the inspector
 		{
 			name = "curve",
@@ -298,6 +282,16 @@ func _get_property_list() -> Array:
 		{
 			name = "widths",
 			type = TYPE_ARRAY,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "valid_flowmap",
+			type = TYPE_BOOL,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "_selected_shader",
+			type = TYPE_INT,
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
@@ -311,66 +305,59 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
-			name = "valid_flowmap",
-			type = TYPE_BOOL,
-			usage = PROPERTY_USAGE_STORAGE
-		},
-		{
 			name = "_uv2_sides",
 			type = TYPE_INT,
 			usage = PROPERTY_USAGE_STORAGE
 		}
 	]
 	var combined_props = props + props2 + props3
-	#print(var2str(combined_props))
 	return combined_props
 
 
-func reorder_params(unordered_params : Array) -> Array:
-	var ordered = []
-	
-	for param in unordered_params:
-		if param.hint_string != "Texture":
-			ordered.append(param)
-		else:
-			#find the last index in ordered with the same
-			var prefix = param.name.rsplit("this")[0]
-			var index = ordered.bsearch_custom(prefix, "search_name")
-			
-	return ordered
-
-
-static func search_name(a, b):
-	if a == b.name:
+func _set(property: String, value) -> bool:
+	if property.begins_with("mat_"):
+		var param_name = property.right(len("mat_"))
+		_material.set_shader_param(param_name, value)
 		return true
 	return false
 
 
-func property_can_revert(p_name: String) -> bool:
-	if not DEFAULT_PARAMETERS.has(p_name):
+func _get(property: String):
+	if property.begins_with("mat_"):
+		var param_name = property.right(len("mat_"))
+		return  _material.get_shader_param(param_name)
+
+
+func property_can_revert(property: String) -> bool:
+	# TODO - deal with shader type and custom shader
+	if property.begins_with("mat_"):
+		var param_name = property.right(len("mat_"))
+		return _material.property_can_revert(str("shader_param/", param_name))
+
+	if not DEFAULT_PARAMETERS.has(property):
 		return false
-	if get(p_name) != DEFAULT_PARAMETERS[p_name]:
+	if get(property) != DEFAULT_PARAMETERS[property]:
 		return true
 	return false
 
 
-func property_get_revert(p_name: String): # returns variant
-	return DEFAULT_PARAMETERS[p_name]
+func property_get_revert(property: String): # returns variant
+	if DEFAULT_PARAMETERS.has(property):
+		return DEFAULT_PARAMETERS[property]
 
 
 func _init() -> void:
 	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
-	_debug_shader = load(DEBUG_SHADER_PATH) as Shader
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
 	_debug_material = ShaderMaterial.new()
-	_debug_material.shader = _debug_shader
+	_debug_material.shader = load(DEBUG_SHADER_PATH) as Shader
 	_debug_material.set_shader_param("debug_pattern", load(DEBUG_PATTERN_PATH) as Texture)
 	_debug_material.set_shader_param("debug_arrow", load(DEBUG_ARROW_PATH) as Texture)
 	_material = ShaderMaterial.new()
 	_material.shader = _default_shader
-#	set_normal_bump_texture(load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
+#	_material.set_shader_param("normal_bump_texture", load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
 
 
 func _enter_tree() -> void:
@@ -546,60 +533,18 @@ func set_smoothness(value : float) -> void:
 	emit_signal("river_changed")
 
 
-#func set_albedo1(color : Color) -> void:
-#	mat_albedo_albedo[0] = color
-#	set_materials("albedo1", color)
-#
-#
-#func set_albedo2(color : Color) -> void:
-#	mat_albedo_albedo[1] = color
-#	set_materials("albedo2", color)
-#
-#
-#func set_albedo(colors : PoolColorArray) -> void:
-#	set_albedo1(colors[0])
-#	set_albedo2(colors[1])
-#	emit_signal("albedo_set", colors)
-#
-#
-#func set_gradient_depth(value : float) -> void:
-#	mat_albedo_gradient_depth = value
-#	set_materials("gradient_depth", value)
-#
-#
-#func set_albedo_depth_curve(value : float) -> void:
-#	mat_albedo_depth_curve = value
-#	set_materials("albedo_depth_curve", value)
-#
-#
-#func set_foam_albedo(color : Color) -> void:
-#	mat_foam_albedo = color
-#	set_materials("foam_albedo", color)
-#
-#
-#func set_foam_amount(amount : float) -> void:
-#	mat_foam_amount = amount
-#	set_materials("foam_amount", amount)
-#
-#
-#func set_foam_steepness(amount : float) -> void:
-#	mat_foam_steepness = amount
-#	set_materials("foam_steepness", amount)
-#
-#
-#func set_foam_smoothness(amount : float) -> void:
-#	mat_foam_smoothness = amount
-#	set_materials("foam_smoothness", amount)
+func set_shader_type(type : int) -> void:
+	mat_shader_type = type
 
 
 func set_custom_shader(shader : Shader) -> void:
-	if adv_custom_shader == shader:
+	if mat_custom_shader == shader:
 		return
-	adv_custom_shader = shader
-	if adv_custom_shader == null:
+	mat_custom_shader = shader
+	if mat_custom_shader == null:
 		_material.shader = load(DEFAULT_SHADER_PATH)
 	else:
-		_material.shader = adv_custom_shader
+		_material.shader = mat_custom_shader
 		
 		if Engine.editor_hint:
 			# Ability to fork default shader
@@ -607,83 +552,9 @@ func set_custom_shader(shader : Shader) -> void:
 				shader.code = _default_shader.code
 
 
-#func set_shader_type(type : int) -> void:
-#	mat_shader_type = type
-
-
-#func set_roughness(value : float) -> void:
-#	mat_roughness = value
-#	set_materials("roughness", value)
-#
-#
-#func set_refraction(value : float) -> void:
-#	mat_transparency_refraction = value
-#	set_materials("refraction", value)
-#
-#
-#func set_normal_bump_texture(texture : Texture) -> void:
-#	mat_normal_bump_texture = texture
-#	set_materials("normal_bump_texture", texture)
-#
-#
-#func set_uv_scale(value : Vector3) -> void:
-#	mat_uv_scale = value
-#	set_materials("uv_scale", value)
-#
-#
-#func set_normal_scale(value : float) -> void:
-#	mat_normal_scale = value
-#	set_materials("normal_scale", value)
-#
-#
-#func set_clarity(value : float) -> void:
-#	mat_transparency_clarity = value
-#	set_materials("clarity", value)
-#
-#
-#func set_transparency_depth_curve(value : float) -> void:
-#	mat_transparency_depth_curve = value
-#	set_materials("transparency_depth_curve", value)
-#
-#
-#func set_edge_fade(value : float) -> void:
-#	mat_edge_fade = value
-#	set_materials("edge_fade", value)
-#
-#
-#func set_flowspeed(value : float) -> void:
-#	mat_flow_speed = value
-#	set_materials("flow_speed", value)
-#
-#
-#func set_flow_base(value : float) -> void:
-#	mat_flow_base_strength = value
-#	set_materials("flow_base", value)
-#
-#
-#func set_flow_steepness(value : float) -> void:
-#	mat_flow_steepness_strength = value
-#	set_materials("flow_steepness", value)
-#
-#
-#func set_flow_distance(value : float) -> void:
-#	mat_flow_distance_strength = value
-#	set_materials("flow_distance", value)
-#
-#
-#func set_flow_pressure(value : float) -> void:
-#	mat_flow_pressure_strength = value
-#	set_materials("flow_pressure", value)
-#
-#
-#func set_flow_max(value : float) -> void:
-#	mat_flow_max_strength = value
-#	set_materials("flow_max", value)
-#
-#
-#func set_lod0_distance(value : float) -> void:
-#	lod_lod0_distance = value
-#	set_materials("lod0_distance", value)
+func set_lod0_distance(value : float) -> void:
+	lod_lod0_distance = value
+	set_materials("lod0_distance", value)
 
 
 # Private Methods

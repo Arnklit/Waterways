@@ -242,3 +242,32 @@ static func add_margins(image : Image, resolution : float, margin : float) -> Im
 	image_with_margins.unlock()
 	
 	return image_with_margins
+
+
+static func reorder_params(unordered_params : Array) -> Array:
+	var ordered = []
+	
+	for param in unordered_params:
+		if param.hint_string != "Texture":
+			ordered.append(param)
+		else:
+			#find the last index in ordered with the same
+			var prefix = param.name.rsplit("_")[0]
+			var index = last_prefix_occurence(ordered, prefix)
+			if index != -1:
+				ordered.insert(index, param)
+			else:
+				ordered.append(param)
+	return ordered
+
+
+static func last_prefix_occurence(array : Array, search : String) -> int:
+	var inverted_array = array.duplicate(true)
+	inverted_array.invert()
+	
+	for i in array.size():
+		var prefix = inverted_array[i].name.rsplit("_")[0]
+		if prefix ==  search:
+			return array.size() - i
+	
+	return -1
