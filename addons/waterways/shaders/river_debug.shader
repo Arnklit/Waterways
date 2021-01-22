@@ -29,16 +29,16 @@ uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
-uniform sampler2D texture_foam_noise : hint_white;
 uniform float foam_amount : hint_range(0.0, 4.0) = 1.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 
-uniform sampler2D flowmap : hint_black;
-uniform sampler2D distmap : hint_white;
-uniform bool valid_flowmap = false;
-uniform int uv2_sides = 2;
+uniform sampler2D i_texture_foam_noise : hint_white;
+uniform sampler2D i_flowmap : hint_black;
+uniform sampler2D i_distmap : hint_white;
+uniform bool i_valid_flowmap = false;
+uniform int i_uv2_sides = 2;
 
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
@@ -68,16 +68,16 @@ vec3 grayscale_to_gradient(float gradient) {
 }
 
 void fragment() {
-	vec2 custom_UV = (UV2 + 1.0 / float(uv2_sides)) * (float(uv2_sides) / float(uv2_sides + 2));
-	vec4 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0);
-	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
+	vec2 custom_UV = (UV2 + 1.0 / float(i_uv2_sides)) * (float(i_uv2_sides) / float(i_uv2_sides + 2));
+	vec4 flow_foam_noise = textureLod(i_flowmap, custom_UV, 0.0);
+	vec2 dist_pressure = textureLod(i_distmap, custom_UV, 0.0).xy;
 	
 	vec2 flow;
 	float foam_mask;
 	float noise_mask;
 	float distance_map;
 	float pressure_map;
-	if (valid_flowmap) {
+	if (i_valid_flowmap) {
 		flow = flow_foam_noise.xy;
 		foam_mask = flow_foam_noise.b;
 		noise_mask = flow_foam_noise.a;
@@ -156,7 +156,7 @@ void fragment() {
 		
 		float water_foamFBM = water.b; // LOD1
 		water_foamFBM *= waterx2.b * 2.0; // LOD0 - add second level of detail
-		float foam_randomness = texture(texture_foam_noise, UV * uv_scale.xy).r;
+		float foam_randomness = texture(i_texture_foam_noise, UV * uv_scale.xy).r;
 		foam_mask += steepness_map * foam_randomness * foam_steepness;
 		foam_mask = clamp(foam_mask, 0.0, 1.0);
 		

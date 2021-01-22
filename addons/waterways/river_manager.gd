@@ -5,13 +5,12 @@ extends Spatial
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 
-const DEFAULT_SHADER_PATH = "res://addons/waterways/shaders/river.shader"
 const FILTER_RENDERER_PATH = "res://addons/waterways/filter_renderer.tscn"
 const FLOW_OFFSET_NOISE_TEXTURE_PATH = "res://addons/waterways/textures/flow_offset_noise.png"
 const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
-const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
-const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
-const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
+#const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
+#const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
+#const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
 
 const MATERIAL_CATEGORIES = {
 	albedo_ = "Albedo",
@@ -49,6 +48,21 @@ const SHADERS = [
 		]
 	}
 ]
+
+const DEBUG_SHADER = {
+	name = "Debug",
+	shader_path = "res://addons/waterways/shaders/river_debug.shader",
+	texture_paths = [
+		{
+			name = "debug_pattern",
+			path = "res://addons/waterways/textures/debug_pattern.png"
+		},
+		{
+			name = "debug_arrow",
+			path = "res://addons/waterways/textures/debug_arrow.svg"
+		}
+	]
+}
 
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
@@ -101,7 +115,6 @@ var mesh_instance : MeshInstance
 var _steps := 2
 var _st : SurfaceTool
 var _mdt : MeshDataTool
-var _default_shader : Shader
 var _material : ShaderMaterial
 var _debug_material : ShaderMaterial
 var _first_enter_tree := true
@@ -196,6 +209,9 @@ func _get_property_list() -> Array:
 			for k in p:
 				cp[k] = p[k]
 			cp.name = str("mat_", p.name)
+			if "curve" in cp.name:
+				cp.hint = PROPERTY_HINT_EXP_EASING
+				cp.hint_string = "EASE"
 			props2.append(cp)
 	
 	var props3 = [
@@ -347,20 +363,23 @@ func property_get_revert(property: String): # returns variant
 
 
 func _init() -> void:
-	_default_shader = load(DEFAULT_SHADER_PATH) as Shader
+	print("_init() run")
+	#_default_shader = load(DEFAULT_SHADER_PATH) as Shader
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
 	_debug_material = ShaderMaterial.new()
-	_debug_material.shader = load(DEBUG_SHADER_PATH) as Shader
-	_debug_material.set_shader_param("debug_pattern", load(DEBUG_PATTERN_PATH) as Texture)
-	_debug_material.set_shader_param("debug_arrow", load(DEBUG_ARROW_PATH) as Texture)
+	_debug_material.shader = load(DEBUG_SHADER.shader_path) as Shader
+	for texture in DEBUG_SHADER.texture_paths:
+		_debug_material.set_shader_param(texture.name, load(texture.path) as Texture)
 	_material = ShaderMaterial.new()
-	_material.shader = _default_shader
-#	_material.set_shader_param("normal_bump_texture", load(DEFAULT_WATER_TEXTURE_PATH) as Texture)
+	_material.shader = load(SHADER_TYPES[mat_shader_type].shader_path) as Shader
+	for texture in SHADER_TYPES[mat_shader_type].texture_paths:
+		_material.set_shader_param(texture.name, load(texture.path) as Texture)
 
 
 func _enter_tree() -> void:
+	print("_enter_tree() run")
 	if Engine.editor_hint and _first_enter_tree:
 		_first_enter_tree = false
 
@@ -382,16 +401,11 @@ func _enter_tree() -> void:
 		mesh_instance = get_child(0) as MeshInstance
 		_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 	
-	set_materials("valid_flowmap", valid_flowmap)
-	set_materials("uv2_sides", _uv2_sides)
-	set_materials("distmap", _dist_pressure)
-	set_materials("flowmap", _flow_foam_noise)
-	set_materials("texture_foam_noise", load(FOAM_NOISE_PATH) as Texture)
-	# If a value is not set on the material, the values are not correct
-#	set_albedo1(mat_albedo_albedo[0])
-#	set_albedo2(mat_albedo_albedo[1])
-	# TODO - can the below be removed?
-	# emit_signal("albedo_set", mat_albedo_albedo[0], mat_albedo_albedo[1])
+	set_materials("i_valid_flowmap", valid_flowmap)
+	set_materials("i_uv2_sides", _uv2_sides)
+	set_materials("i_distmap", _dist_pressure)
+	set_materials("i_flowmap", _flow_foam_noise)
+	set_materials("i_texture_foam_noise", load(FOAM_NOISE_PATH) as Texture)
 
 
 func _get_configuration_warning() -> String:
@@ -508,7 +522,7 @@ func set_step_length_divs(value : int) -> void:
 	if _first_enter_tree:
 		return
 	valid_flowmap = false
-	set_materials("valid_flowmap", valid_flowmap)
+	set_materials("i_valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
 
@@ -518,7 +532,7 @@ func set_step_width_divs(value : int) -> void:
 	if _first_enter_tree:
 		return
 	valid_flowmap = false
-	set_materials("valid_flowmap", valid_flowmap)
+	set_materials("i_valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
 
@@ -528,7 +542,7 @@ func set_smoothness(value : float) -> void:
 	if _first_enter_tree:
 		return
 	valid_flowmap = false
-	set_materials("valid_flowmap", valid_flowmap)
+	set_materials("i_valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
 
@@ -542,19 +556,20 @@ func set_custom_shader(shader : Shader) -> void:
 		return
 	mat_custom_shader = shader
 	if mat_custom_shader == null:
-		_material.shader = load(DEFAULT_SHADER_PATH)
+		_material.shader = load(SHADER_TYPES[mat_shader_type].shader_path) as Shader
 	else:
 		_material.shader = mat_custom_shader
 		
 		if Engine.editor_hint:
 			# Ability to fork default shader
 			if shader.code == "":
-				shader.code = _default_shader.code
+				var selected_shader = load(SHADER_TYPES[mat_shader_type].shader_path) as Shader
+				shader.code = selected_shader.code
 
 
 func set_lod0_distance(value : float) -> void:
 	lod_lod0_distance = value
-	set_materials("lod0_distance", value)
+	set_materials("i_lod0_distance", value)
 
 
 # Private Methods
@@ -639,10 +654,10 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	
 	_dist_pressure = dist_pressure_img
 	
-	set_materials("flowmap", _flow_foam_noise)
-	set_materials("distmap", _dist_pressure)
-	set_materials("valid_flowmap", true)
-	set_materials("uv2_sides", _uv2_sides)
+	set_materials("i_flowmap", _flow_foam_noise)
+	set_materials("i_distmap", _dist_pressure)
+	set_materials("i_valid_flowmap", true)
+	set_materials("i_uv2_sides", _uv2_sides)
 	valid_flowmap = true;
 	emit_signal("progress_notified", 100.0, "finished")
 	update_configuration_warning()

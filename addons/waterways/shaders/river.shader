@@ -14,12 +14,12 @@ uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 uniform vec4 albedo_albedo1 : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
 uniform vec4 albedo_albedo2 : hint_color = vec4(0.15, 0.20, 0.50, 1.0);
 uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
-uniform float albedo_depth_curve = 1.0;
+uniform float albedo_depth_curve = 0.25;
 
 // transparency
 uniform float transparency_clarity : hint_range(0.0, 200.0) = 10.0;
 uniform float transparency_refraction : hint_range(-1.0, 1.0) = 0.05;
-uniform float transparency_depth_curve = 1.0;
+uniform float transparency_depth_curve = 0.25;
 
 // flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
