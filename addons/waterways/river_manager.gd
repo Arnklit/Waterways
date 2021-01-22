@@ -107,6 +107,8 @@ var widths := [] setget set_widths
 var valid_flowmap := false
 var debug_view := 0 setget set_debug_view
 var mesh_instance : MeshInstance
+var flow_foam_noise : Texture
+var dist_pressure : Texture
 
 # Private variables
 var _steps := 2
@@ -118,8 +120,6 @@ var _filter_renderer
 # Serialised private variables
 var _material : ShaderMaterial
 var _selected_shader : int = SHADER_TYPES.WATER
-var _flow_foam_noise : Texture
-var _dist_pressure : Texture
 var _uv2_sides : int
 
 # river_changed used to update handles when values are changed on script side
@@ -412,8 +412,8 @@ func _enter_tree() -> void:
 	
 	set_materials("i_valid_flowmap", valid_flowmap)
 	set_materials("i_uv2_sides", _uv2_sides)
-	set_materials("i_distmap", _dist_pressure)
-	set_materials("i_flowmap", _flow_foam_noise)
+	set_materials("i_distmap", dist_pressure)
+	set_materials("i_flowmap", flow_foam_noise)
 	set_materials("i_texture_foam_noise", load(FOAM_NOISE_PATH) as Texture)
 
 
@@ -523,6 +523,10 @@ func get_closest_point_to(point : Vector3) -> int:
 			closest_index = p
 	
 	return closest_index
+
+
+func get_shader_param(param : String):
+	return _material.get_shader_param(param)
 
 
 # Parameter Setters
@@ -670,12 +674,11 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	var flow_foam_noise_result = flow_foam_noise_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	var dist_pressure_result = dist_pressure_img.get_data().get_rect(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
 	
-	_flow_foam_noise = flow_foam_noise_img
+	flow_foam_noise = flow_foam_noise_img
+	dist_pressure = dist_pressure_img
 	
-	_dist_pressure = dist_pressure_img
-	
-	set_materials("i_flowmap", _flow_foam_noise)
-	set_materials("i_distmap", _dist_pressure)
+	set_materials("i_flowmap", flow_foam_noise)
+	set_materials("i_distmap", dist_pressure)
 	set_materials("i_valid_flowmap", true)
 	set_materials("i_uv2_sides", _uv2_sides)
 	valid_flowmap = true;

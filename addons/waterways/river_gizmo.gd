@@ -150,11 +150,11 @@ func commit_handle(gizmo: EditorSpatialGizmo, index: int, restore, cancel: bool 
 		ur.add_undo_property(river, "widths", river_widths_undo)
 	
 	ur.add_do_method(river, "properties_changed")
-	ur.add_do_method(river, "set_materials", "valid_flowmap", false)
+	ur.add_do_method(river, "set_materials", "i_valid_flowmap", false)
 	ur.add_do_property(river, "valid_flowmap", false)
 	ur.add_do_method(river, "update_configuration_warning")
 	ur.add_undo_method(river, "properties_changed")
-	ur.add_undo_method(river, "set_materials", "valid_flowmap", river.valid_flowmap)
+	ur.add_undo_method(river, "set_materials", "i_valid_flowmap", river.valid_flowmap)
 	ur.add_undo_property(river, "valid_flowmap", river.valid_flowmap)
 	ur.add_undo_method(river, "update_configuration_warning")
 	ur.commit_action()
