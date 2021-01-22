@@ -11,8 +11,8 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // albedo
-uniform vec4 albedo_albedo1 : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
-uniform vec4 albedo_albedo2 : hint_color = vec4(0.15, 0.20, 0.50, 1.0);
+uniform vec4 albedo_albedo_near : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
+uniform vec4 albedo_albedo_far : hint_color = vec4(0.15, 0.20, 0.50, 1.0);
 uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 0.25;
 
@@ -193,7 +193,7 @@ void fragment() {
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
 	
-	vec3 alb_mix = mix(albedo_albedo1.rgb, albedo_albedo2.rgb, alb_t);
+	vec3 alb_mix = mix(albedo_albedo_near.rgb, albedo_albedo_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
 	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2 * 2.0).rgb * ref_amount;

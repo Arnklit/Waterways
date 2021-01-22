@@ -8,9 +8,6 @@ const WaterHelperMethods = preload("./water_helper_methods.gd")
 const FILTER_RENDERER_PATH = "res://addons/waterways/filter_renderer.tscn"
 const FLOW_OFFSET_NOISE_TEXTURE_PATH = "res://addons/waterways/textures/flow_offset_noise.png"
 const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
-#const DEBUG_SHADER_PATH = "res://addons/waterways/shaders/river_debug.shader"
-#const DEBUG_PATTERN_PATH = "res://addons/waterways/textures/debug_pattern.png"
-#const DEBUG_ARROW_PATH = "res://addons/waterways/textures/debug_arrow.svg"
 
 const MATERIAL_CATEGORIES = {
 	albedo_ = "Albedo",
@@ -115,11 +112,11 @@ var mesh_instance : MeshInstance
 var _steps := 2
 var _st : SurfaceTool
 var _mdt : MeshDataTool
-var _material : ShaderMaterial
 var _debug_material : ShaderMaterial
 var _first_enter_tree := true
 var _filter_renderer
 # Serialised private variables
+var _material : ShaderMaterial
 var _selected_shader : int = SHADER_TYPES.WATER
 var _flow_foam_noise : Texture
 var _dist_pressure : Texture
@@ -203,6 +200,7 @@ func _get_property_list() -> Array:
 						usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
 					})
 					hit_category = category
+					break
 			if hit_category != null:
 				mat_categories.erase(hit_category)
 			var cp := {}
@@ -213,7 +211,7 @@ func _get_property_list() -> Array:
 				cp.hint = PROPERTY_HINT_EXP_EASING
 				cp.hint_string = "EASE"
 			props2.append(cp)
-	
+			
 	var props3 = [
 		{
 			name = "Lod",
@@ -306,6 +304,13 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
+			name = "_material",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			hint_string = "ShaderMaterial",
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
 			name = "_selected_shader",
 			type = TYPE_INT,
 			usage = PROPERTY_USAGE_STORAGE
@@ -333,6 +338,7 @@ func _get_property_list() -> Array:
 func _set(property: String, value) -> bool:
 	if property.begins_with("mat_"):
 		var param_name = property.right(len("mat_"))
+		print("setting ", param_name, ", to: ", value)
 		_material.set_shader_param(param_name, value)
 		return true
 	return false
@@ -348,6 +354,7 @@ func property_can_revert(property: String) -> bool:
 	# TODO - deal with shader type and custom shader
 	if property.begins_with("mat_"):
 		var param_name = property.right(len("mat_"))
+		print("property can revert: param name: ", param_name)
 		return _material.property_can_revert(str("shader_param/", param_name))
 
 	if not DEFAULT_PARAMETERS.has(property):
@@ -358,6 +365,7 @@ func property_can_revert(property: String) -> bool:
 
 
 func property_get_revert(property: String): # returns variant
+	print("property_get_revert: ", property)
 	if DEFAULT_PARAMETERS.has(property):
 		return DEFAULT_PARAMETERS[property]
 
@@ -368,13 +376,15 @@ func _init() -> void:
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
+
 	_debug_material = ShaderMaterial.new()
 	_debug_material.shader = load(DEBUG_SHADER.shader_path) as Shader
 	for texture in DEBUG_SHADER.texture_paths:
 		_debug_material.set_shader_param(texture.name, load(texture.path) as Texture)
+
 	_material = ShaderMaterial.new()
-	_material.shader = load(SHADER_TYPES[mat_shader_type].shader_path) as Shader
-	for texture in SHADER_TYPES[mat_shader_type].texture_paths:
+	_material.shader = load(SHADERS[mat_shader_type].shader_path) as Shader
+	for texture in SHADERS[mat_shader_type].texture_paths:
 		_material.set_shader_param(texture.name, load(texture.path) as Texture)
 
 
@@ -382,14 +392,13 @@ func _enter_tree() -> void:
 	print("_enter_tree() run")
 	if Engine.editor_hint and _first_enter_tree:
 		_first_enter_tree = false
-
+	
 	if not curve:
 		curve = Curve3D.new()
 		curve.bake_interval = 0.05
 		curve.add_point(Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, -0.25), Vector3(0.0, 0.0, 0.25))
 		curve.add_point(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, -0.25), Vector3(0.0, 0.0, 0.25))
 		widths = [1.0, 1.0]
-	
 	
 	if get_child_count() <= 0:
 		var new_mesh_instance := MeshInstance.new()
@@ -547,8 +556,19 @@ func set_smoothness(value : float) -> void:
 	emit_signal("river_changed")
 
 
-func set_shader_type(type : int) -> void:
+func set_shader_type(type: int):
+	if type == mat_shader_type:
+		return
 	mat_shader_type = type
+	
+	if mat_shader_type == SHADER_TYPES.CUSTOM:
+		_material.shader = mat_custom_shader
+	else:
+		_material.shader = load(SHADERS[mat_shader_type].shader_path)
+		for texture in SHADERS[mat_shader_type].texture_paths:
+			_material.set_shader_param(texture.name, load(texture.path) as Texture)
+	
+	property_list_changed_notify()
 
 
 func set_custom_shader(shader : Shader) -> void:
@@ -556,14 +576,14 @@ func set_custom_shader(shader : Shader) -> void:
 		return
 	mat_custom_shader = shader
 	if mat_custom_shader == null:
-		_material.shader = load(SHADER_TYPES[mat_shader_type].shader_path) as Shader
+		_material.shader = load(SHADERS[mat_shader_type].shader_path) as Shader
 	else:
 		_material.shader = mat_custom_shader
 		
 		if Engine.editor_hint:
 			# Ability to fork default shader
 			if shader.code == "":
-				var selected_shader = load(SHADER_TYPES[mat_shader_type].shader_path) as Shader
+				var selected_shader = load(SHADERS[mat_shader_type].shader_path) as Shader
 				shader.code = selected_shader.code
 
 

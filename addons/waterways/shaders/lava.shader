@@ -3,6 +3,21 @@
 shader_type spatial;
 render_mode depth_draw_always, cull_disabled;
 
+// main
+uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
+uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
+uniform sampler2D normal_bump_texture : hint_normal;
+uniform float roughness : hint_range(0.0, 1.0) = 0.7;
+uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
+
+// emission
+uniform vec4 emission_emission1 : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec4 emission_emission2 : hint_color = vec4(1.0, 0.5, 0.5, 1.0);
+uniform float emission_energy : hint_range(0.0, 20.0) = 4.0;
+uniform float emission_depth : hint_range(0.0, 200.0) = 3.0;
+uniform float emission_depth_curve = 0.25;
+uniform sampler2D emission_texture : hint_black_albedo;
+
 // flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
@@ -11,24 +26,11 @@ uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
-uniform sampler2D normal_bump_texture : hint_normal;
-uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
-uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
-uniform float roughness : hint_range(0.0, 1.0) = 0.7;
-uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
-
-uniform sampler2D emission_texture : hint_black_albedo;
-uniform float emission_energy : hint_range(0.0, 20.0) = 4.0;
-
-uniform vec4 emission1 : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform vec4 emission2 : hint_color = vec4(1.0, 0.5, 0.5, 1.0);
-uniform float emission_depth : hint_range(0.0, 200.0) = 3.0;
-uniform float emission_depth_curve = 0.25;
-
-uniform sampler2D flowmap : hint_normal;
-uniform sampler2D distmap : hint_white;
-uniform bool valid_flowmap = false;
-uniform int uv2_sides = 2;
+// Internal uniforms, do not customize these
+uniform sampler2D i_flowmap : hint_normal;
+uniform sampler2D i_distmap : hint_white;
+uniform bool i_valid_flowmap = false;
+uniform int i_uv2_sides = 2;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
@@ -72,14 +74,14 @@ void fragment() {
 	// Sample the UV2 textures. To avoid issues with the UV2 seams, margins
 	// are left on the textures, so the UV2 needs to be rescaled to cut off
 	// the margins.
-	vec2 custom_UV = (UV2 + 1.0 / float(uv2_sides)) * (float(uv2_sides) / float(uv2_sides + 2));
-	vec4 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0);
-	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
+	vec2 custom_UV = (UV2 + 1.0 / float(i_uv2_sides)) * (float(i_uv2_sides) / float(i_uv2_sides + 2));
+	vec4 flow_foam_noise = textureLod(i_flowmap, custom_UV, 0.0);
+	vec2 dist_pressure = textureLod(i_distmap, custom_UV, 0.0).xy;
 	
 	vec2 flow;
 	float distance_map;
 	float pressure_map;
-	if (valid_flowmap) {
+	if (i_valid_flowmap) {
 		flow = flow_foam_noise.xy;
 		distance_map = (1.0 - dist_pressure.r) * 2.0;
 		pressure_map = dist_pressure.g * 2.0;
@@ -129,7 +131,7 @@ void fragment() {
 	float emission_t = clamp(lava_depth / emission_depth, 0.0, 1.0);
 	emission_t = ease(emission_t, emission_depth_curve);
 	
-	vec3 final_lava = mix(lava_emission * emission1.rgb, lava_emission * emission2.rgb, emission_t);
+	vec3 final_lava = mix(lava_emission * emission_emission1.rgb, lava_emission * emission_emission2.rgb, emission_t);
 	
 	ALBEDO = vec3(0.0);
 	EMISSION = final_lava * emission_energy;
