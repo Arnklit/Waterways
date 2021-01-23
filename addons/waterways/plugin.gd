@@ -9,6 +9,7 @@ const RiverManager = preload("./river_manager.gd")
 const RiverGizmo = preload("./river_gizmo.gd")
 const GradientInspector = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./progress_window.tscn")
+const RiverControls = preload("./gui/river_controls.gd")
 
 var river_gizmo = RiverGizmo.new()
 var gradient_inspector = GradientInspector.new()
@@ -20,7 +21,7 @@ var _progress_window = null
 var _editor_selection : EditorSelection = null
 var _heightmap_renderer = null
 var _mode := "select"
-var snap_to_colliders := false
+var constraint: int = RiverControls.CONSTRAINTS.NONE
 
 
 func _enter_tree() -> void:
@@ -118,8 +119,8 @@ func _on_mode_change(mode) -> void:
 
 
 func _on_option_change(option, value) -> void:
-	snap_to_colliders = value
-	if snap_to_colliders:
+	constraint = value
+	if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
 		WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
 
 
@@ -187,7 +188,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				var end_pos_global = _edited_node.to_global(end_pos)
 				var plane := Plane(end_pos_global, end_pos_global + camera.transform.basis.x, end_pos_global + camera.transform.basis.y)
 				var new_pos
-				if snap_to_colliders:
+				if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
 					var space_state = _edited_node.get_world().direct_space_state
 					var result = space_state.intersect_ray(ray_from, ray_from + ray_dir * 4096)
 					if result:
@@ -237,6 +238,15 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				ur.add_undo_method(_edited_node, "update_configuration_warning")
 				ur.commit_action()
 		return true
+	
+	else:
+		# Forward input to river controls. This is cleaner than handling
+		# the keybindings here as the keybindings need to interact with
+		# the buttons. Handling it here would expose more private details
+		# of the controls than needed, instead only the spatial_gui_input()
+		# method needs to be exposed.
+		return _river_controls.spatial_gui_input(event)
+	
 	return false
 
 
