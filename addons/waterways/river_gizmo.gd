@@ -90,6 +90,12 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 	# Point, in and out handles
 	if index % HANDLES_PER_POINT <= 2:
 		var old_pos_global := river.to_global(old_pos)
+		
+		var z := river.curve.get_point_out(p_index).normalized()
+		var x := z.cross(Vector3.UP).normalized()
+		var y := x.cross(z).normalized()
+		var handle_basis := Basis(x, y, z) * global_inverse.basis
+		
 		var new_pos
 		
 		if editor_plugin.constraint == RiverControls.CONSTRAINTS.COLLIDERS:
@@ -106,6 +112,8 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		
 		elif editor_plugin.constraint in AXIS_MAPPING:
 			var axis: Vector3 = AXIS_MAPPING[editor_plugin.constraint]
+			if false:  # TODO: Check if this should be done in local space
+				axis = handle_basis.xform(axis)
 			var axis_from = old_pos_global + (axis * AXIS_CONSTRAINT_LENGTH)
 			var axis_to = old_pos_global - (axis * AXIS_CONSTRAINT_LENGTH)
 			var ray_to = ray_from + (ray_dir * AXIS_CONSTRAINT_LENGTH)
@@ -114,6 +122,8 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		
 		elif editor_plugin.constraint in PLANE_MAPPING:
 			var normal: Vector3 = PLANE_MAPPING[editor_plugin.constraint]
+			if false:  # TODO: Check if this should be done in local space
+				normal = handle_basis.xform(normal)
 			var distance := old_pos_global.project(normal).length()
 			var plane := Plane(normal, distance)
 			new_pos = plane.intersects_ray(ray_from, ray_dir)
