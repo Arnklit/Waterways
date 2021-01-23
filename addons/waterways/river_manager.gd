@@ -19,7 +19,7 @@ const MATERIAL_CATEGORIES = {
 }
 
 enum SHADER_TYPES {WATER, LAVA, CUSTOM}
-const SHADERS = [
+const BUILTIN_SHADERS = [
 	{
 		name = "Water",
 		shader_path = "res://addons/waterways/shaders/river.shader",
@@ -27,6 +27,16 @@ const SHADERS = [
 			{
 				name = "normal_bump_texture",
 				path = "res://addons/waterways/textures/water1_normal_bump.png"
+			}
+		],
+		reset_values = [
+			{
+				name = "albedo_color_near",
+				value = Color(0.0, 0.8, 1.0 , 1.0)
+			},
+			{
+				name = "albedo_color_far",
+				value = Color(0.15, 0.2, 0.5, 1.0)
 			}
 		]
 	},
@@ -41,6 +51,16 @@ const SHADERS = [
 			{
 				name = "emission_texture",
 				path = "res://addons/waterways/textures/lava_emission.png"
+			}
+		],
+		reset_values = [
+			{
+				name = "emission_color_near",
+				value = Color(1.0, 1.0, 1.0, 1.0)
+			},
+			{
+				name = "emission_color_far",
+				value = Color(1.0, 0.5, 0.5, 1.0)
 			}
 		]
 	}
@@ -65,7 +85,7 @@ const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
 	shape_step_width_divs = 1,
 	shape_smoothness = 0.5,
-	mat_shader_type = 0, # TODO - this needs to be fixed, we can't have other names that start with mat_ if we are automating all those
+	mat_shader_type = 0,
 	mat_custom_shader = null,
 	baking_resolution = 2, 
 	baking_raycast_distance = 10.0,
@@ -127,7 +147,7 @@ var _uv2_sides : int
 # albedo_set is needed since the gradient is a custom inspector that needs a signal to update from script side
 signal river_changed
 signal progress_notified
-signal albedo_set
+#signal albedo_set
 
 # Internal Methods
 func _get_property_list() -> Array:
@@ -169,7 +189,7 @@ func _get_property_list() -> Array:
 			name = "mat_shader_type",
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_ENUM,
-			hint_string = "Water, Lava",
+			hint_string = "Water, Lava, Custom",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -211,7 +231,6 @@ func _get_property_list() -> Array:
 				cp.hint = PROPERTY_HINT_EXP_EASING
 				cp.hint_string = "EASE"
 			props2.append(cp)
-			
 	var props3 = [
 		{
 			name = "Lod",
@@ -304,6 +323,16 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
+			name = "flow_foam_noise",
+			type = TYPE_OBJECT,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
+			name = "dist_pressure",
+			type = TYPE_OBJECT,
+			usage = PROPERTY_USAGE_STORAGE
+		},
+		{
 			name = "_material",
 			type = TYPE_OBJECT,
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
@@ -313,16 +342,6 @@ func _get_property_list() -> Array:
 		{
 			name = "_selected_shader",
 			type = TYPE_INT,
-			usage = PROPERTY_USAGE_STORAGE
-		},
-		{
-			name = "_flow_foam_noise",
-			type = TYPE_OBJECT,
-			usage = PROPERTY_USAGE_STORAGE
-		},
-		{
-			name = "_dist_pressure",
-			type = TYPE_OBJECT,
 			usage = PROPERTY_USAGE_STORAGE
 		},
 		{
@@ -338,7 +357,6 @@ func _get_property_list() -> Array:
 func _set(property: String, value) -> bool:
 	if property.begins_with("mat_"):
 		var param_name = property.right(len("mat_"))
-		print("setting ", param_name, ", to: ", value)
 		_material.set_shader_param(param_name, value)
 		return true
 	return false
@@ -351,10 +369,12 @@ func _get(property: String):
 
 
 func property_can_revert(property: String) -> bool:
-	# TODO - deal with shader type and custom shader
 	if property.begins_with("mat_"):
+		if "color" in property:
+			# TODO - we are disabling revert for color parameters due to this
+			# bug: https://github.com/godotengine/godot/issues/45388
+			return false
 		var param_name = property.right(len("mat_"))
-		print("property can revert: param name: ", param_name)
 		return _material.property_can_revert(str("shader_param/", param_name))
 
 	if not DEFAULT_PARAMETERS.has(property):
@@ -364,15 +384,7 @@ func property_can_revert(property: String) -> bool:
 	return false
 
 
-func property_get_revert(property: String): # returns variant
-	print("property_get_revert: ", property)
-	if DEFAULT_PARAMETERS.has(property):
-		return DEFAULT_PARAMETERS[property]
-
-
 func _init() -> void:
-	print("_init() run")
-	#_default_shader = load(DEFAULT_SHADER_PATH) as Shader
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
 	_filter_renderer = load(FILTER_RENDERER_PATH)
@@ -383,9 +395,11 @@ func _init() -> void:
 		_debug_material.set_shader_param(texture.name, load(texture.path) as Texture)
 
 	_material = ShaderMaterial.new()
-	_material.shader = load(SHADERS[mat_shader_type].shader_path) as Shader
-	for texture in SHADERS[mat_shader_type].texture_paths:
+	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
+	for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
 		_material.set_shader_param(texture.name, load(texture.path) as Texture)
+	for param in BUILTIN_SHADERS[mat_shader_type].reset_values:
+		_material.set_shader_param(param.name, param.value)
 
 
 func _enter_tree() -> void:
@@ -568,9 +582,11 @@ func set_shader_type(type: int):
 	if mat_shader_type == SHADER_TYPES.CUSTOM:
 		_material.shader = mat_custom_shader
 	else:
-		_material.shader = load(SHADERS[mat_shader_type].shader_path)
-		for texture in SHADERS[mat_shader_type].texture_paths:
+		_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path)
+		for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
 			_material.set_shader_param(texture.name, load(texture.path) as Texture)
+		for param in BUILTIN_SHADERS[mat_shader_type].reset_values:
+			_material.set_shader_param(param.name, param.value)
 	
 	property_list_changed_notify()
 
@@ -579,16 +595,19 @@ func set_custom_shader(shader : Shader) -> void:
 	if mat_custom_shader == shader:
 		return
 	mat_custom_shader = shader
-	if mat_custom_shader == null:
-		_material.shader = load(SHADERS[mat_shader_type].shader_path) as Shader
-	else:
+	if mat_custom_shader != null:
 		_material.shader = mat_custom_shader
 		
 		if Engine.editor_hint:
 			# Ability to fork default shader
 			if shader.code == "":
-				var selected_shader = load(SHADERS[mat_shader_type].shader_path) as Shader
+				var selected_shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
 				shader.code = selected_shader.code
+	
+	if shader != null:
+		set_shader_type(SHADER_TYPES.CUSTOM)
+	else:
+		set_shader_type(SHADER_TYPES.WATER)
 
 
 func set_lod0_distance(value : float) -> void:

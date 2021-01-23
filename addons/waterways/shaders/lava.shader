@@ -11,8 +11,8 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.7;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // emission
-uniform vec4 emission_emission1 : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform vec4 emission_emission2 : hint_color = vec4(1.0, 0.5, 0.5, 1.0);
+uniform vec4 emission_color_near : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
+uniform vec4 emission_color_far : hint_color = vec4(1.0, 0.5, 0.5, 1.0);
 uniform float emission_energy : hint_range(0.0, 20.0) = 4.0;
 uniform float emission_depth : hint_range(0.0, 200.0) = 3.0;
 uniform float emission_depth_curve = 0.25;
@@ -131,7 +131,7 @@ void fragment() {
 	float emission_t = clamp(lava_depth / emission_depth, 0.0, 1.0);
 	emission_t = ease(emission_t, emission_depth_curve);
 	
-	vec3 final_lava = mix(lava_emission * emission_emission1.rgb, lava_emission * emission_emission2.rgb, emission_t);
+	vec3 final_lava = mix(lava_emission * emission_color_near.rgb, lava_emission * emission_color_far.rgb, emission_t);
 	
 	ALBEDO = vec3(0.0);
 	EMISSION = final_lava * emission_energy;

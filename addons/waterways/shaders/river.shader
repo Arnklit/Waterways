@@ -3,25 +3,36 @@
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
 
-// main
+// If you are making your own shader, you can customize or add your own
+// parameters below and they will automatically get parsed and displayed in
+// the River inspector.
+
+// Use prefixes: albedo_, emission_, transparency_, flow_, foam_ and custom_
+// to automatically put your parameters into categories in the inspector.
+
+// If "curve" is in the name, the inspector will represent and easing curve
+// If "color" is in the name, the value will not be able to revert due to 
+// this bug: https://github.com/godotengine/godot/issues/45388
+
+// Main
 uniform sampler2D normal_bump_texture : hint_normal;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
-// albedo
+// Albedo
 uniform vec4 albedo_color_near : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
-uniform vec4 albedo_color_far : hint_color = vec4(0.15, 0.20, 0.50, 1.0);
+uniform vec4 albedo_color_far : hint_color = vec4(0.15, 0.2, 0.5, 1.0);
 uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 0.25;
 
-// transparency
+// Transparency
 uniform float transparency_clarity : hint_range(0.0, 200.0) = 10.0;
 uniform float transparency_refraction : hint_range(-1.0, 1.0) = 0.05;
 uniform float transparency_depth_curve = 0.25;
 
-// flow
+// Flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
 uniform float flow_steepness : hint_range(0.0, 8.0) = 2.0;
@@ -29,20 +40,20 @@ uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
-// foam
+// Foam
 uniform vec4 foam_albedo : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
 uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
 
-
-// Internal uniforms, do not customize these
+// Internal uniforms - DO NOT CUSTOMIZE THESE
 uniform float i_lod0_distance : hint_range(5.0, 200.0) = 50.0;
 uniform sampler2D i_texture_foam_noise : hint_white;
 uniform sampler2D i_flowmap : hint_normal;
 uniform sampler2D i_distmap : hint_white;
 uniform bool i_valid_flowmap = false;
 uniform int i_uv2_sides = 2;
+
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
@@ -192,7 +203,7 @@ void fragment() {
 		alb_t = clamp(water_depth2 / albedo_gradient_depth, 0.0, 1.0);
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
-	
+
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
