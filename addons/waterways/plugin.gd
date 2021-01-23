@@ -179,6 +179,8 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 		# We'll use this closest point to add a point in between if on the line
 		# and to remove if close to a point
 		if _mode == "select":
+			if not event.pressed:
+				river_gizmo.reset()
 			return false
 		if _mode == "add" and not event.pressed:
 			# if we don't have a point on the line, we'll calculate a point

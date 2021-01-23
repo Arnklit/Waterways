@@ -22,6 +22,7 @@ var editor_plugin : EditorPlugin
 
 var _path_mat
 var _handle_lines_mat
+var _handle_base_transform
 
 func _init() -> void:
 	create_handle_material("handles")
@@ -32,6 +33,10 @@ func _init() -> void:
 	mat.render_priority = 10
 	add_material("path", mat)
 	add_material("handle_lines", mat)
+
+
+func reset() -> void:
+	_handle_base_transform = null
 
 
 func get_name() -> String:
@@ -87,15 +92,21 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 	if index % HANDLES_PER_POINT == 4:
 		old_pos = base + river.curve.get_point_out(p_index).cross(Vector3.DOWN).normalized() * river.widths[p_index]
 	
-	# Point, in and out handles
-	if index % HANDLES_PER_POINT <= 2:
-		var old_pos_global := river.to_global(old_pos)
-		
+	var old_pos_global := river.to_global(old_pos)
+	
+	if not _handle_base_transform:
+		# This is the first set_handle() call since the last reset so we
+		# use the current handle position as our _handle_base_transform
 		var z := river.curve.get_point_out(p_index).normalized()
 		var x := z.cross(Vector3.UP).normalized()
 		var y := x.cross(z).normalized()
-		var handle_basis := Basis(x, y, z) * global_inverse.basis
-		
+		_handle_base_transform = Transform(
+			Basis(x, y, z) * global_inverse.basis,
+			old_pos_global
+		)
+	
+	# Point, in and out handles
+	if index % HANDLES_PER_POINT <= 2:
 		var new_pos
 		
 		if editor_plugin.constraint == RiverControls.CONSTRAINTS.COLLIDERS:
@@ -113,7 +124,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		elif editor_plugin.constraint in AXIS_MAPPING:
 			var axis: Vector3 = AXIS_MAPPING[editor_plugin.constraint]
 			if false:  # TODO: Check if this should be done in local space
-				axis = handle_basis.xform(axis)
+				axis = _handle_base_transform.basis.xform(axis)
 			var axis_from = old_pos_global + (axis * AXIS_CONSTRAINT_LENGTH)
 			var axis_to = old_pos_global - (axis * AXIS_CONSTRAINT_LENGTH)
 			var ray_to = ray_from + (ray_dir * AXIS_CONSTRAINT_LENGTH)
@@ -123,7 +134,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		elif editor_plugin.constraint in PLANE_MAPPING:
 			var normal: Vector3 = PLANE_MAPPING[editor_plugin.constraint]
 			if false:  # TODO: Check if this should be done in local space
-				normal = handle_basis.xform(normal)
+				normal = _handle_base_transform.basis.xform(normal)
 			var distance := old_pos_global.project(normal).length()
 			var plane := Plane(normal, distance)
 			new_pos = plane.intersects_ray(ray_from, ray_dir)
