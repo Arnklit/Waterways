@@ -239,7 +239,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				ur.commit_action()
 		return true
 	
-	else:
+	elif _edited_node is RiverManager:
 		# Forward input to river controls. This is cleaner than handling
 		# the keybindings here as the keybindings need to interact with
 		# the buttons. Handling it here would expose more private details
