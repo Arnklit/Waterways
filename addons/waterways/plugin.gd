@@ -64,7 +64,7 @@ func _exit_tree() -> void:
 	remove_spatial_gizmo_plugin(river_gizmo)
 	remove_inspector_plugin(gradient_inspector)
 	_river_controls.disconnect("mode", self, "_on_mode_change")
-	_river_controls.disconnect("options", self, "on_option_change")
+	_river_controls.disconnect("options", self, "_on_option_change")
 	_editor_selection.disconnect("selection_changed", self, "_on_selection_change")
 	disconnect("scene_changed", self, "_on_scene_changed");
 	disconnect("scene_closed", self, "_on_scene_closed");
