@@ -70,7 +70,7 @@ margin_right = 276.0
 margin_bottom = 26.0
 text = "No Constraint"
 flat = true
-items = [ "No Constraint", null, false, 0, null, "Snap to colliders", null, false, 1, null, "Axis X", null, false, 2, null, "Axis Y", null, false, 3, null, "Axis Z", null, false, 4, null, "Plane YZ", null, false, 5, null, "Plane XZ", null, false, 6, null, "Plane XY", null, false, 7, null ]
+items = [ "No Constraint", null, false, 0, null, "Snap to Colliders", null, false, 1, null, "Axis X", null, false, 2, null, "Axis Y", null, false, 3, null, "Axis Z", null, false, 4, null, "Plane YZ", null, false, 5, null, "Plane XZ", null, false, 6, null, "Plane XY", null, false, 7, null ]
 selected = 0
 
 [node name="LocalMode" type="CheckBox" parent="."]
