@@ -28,7 +28,7 @@ func _enter_tree() -> void:
 func spatial_gui_input(event: InputEvent) -> bool:
 	# This uses the forwarded spatial input in order to not react to events
 	# while the spatial editor is not in focus
-	if event is InputEventKey and event.is_pressed():
+	if event is InputEventKey and event.is_pressed() and not constraints.disabled:
 		
 		# Early exit if any of the modifiers (except shift) is pressed to not
 		# override default shortcuts like Ctrl + Z
@@ -64,18 +64,21 @@ func spatial_gui_input(event: InputEvent) -> bool:
 
 func _on_select() -> void:
 	_untoggle_buttons()
+	_disable_constraint_ui(false)
 	$Select.pressed = true
 	emit_signal("mode", "select")
 
 
 func _on_add() -> void:
 	_untoggle_buttons()
+	_disable_constraint_ui(true)
 	$Add.pressed = true
 	emit_signal("mode", "add")
 
 
 func _on_remove() -> void:
 	_untoggle_buttons()
+	_disable_constraint_ui(true)
 	$Remove.pressed = true
 	emit_signal("mode", "remove")
 
@@ -86,6 +89,11 @@ func _on_constraint_selected(index: int) -> void:
 
 func _on_local_mode_toggled(enabled: bool) -> void:
 	emit_signal("options", "local_mode", enabled)
+
+
+func _disable_constraint_ui(disable: bool) -> void:
+	$Constraints.disabled = disable
+	$LocalMode.disabled = disable
 
 
 func _untoggle_buttons() -> void:
