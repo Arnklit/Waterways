@@ -98,8 +98,8 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		# This is the first set_handle() call since the last reset so we
 		# use the current handle position as our _handle_base_transform
 		var z := river.curve.get_point_out(p_index).normalized()
-		var x := z.cross(Vector3.UP).normalized()
-		var y := x.cross(z).normalized()
+		var x := z.cross(Vector3.DOWN).normalized()
+		var y := z.cross(x).normalized()
 		_handle_base_transform = Transform(
 			Basis(x, y, z) * global_inverse.basis,
 			old_pos_global
