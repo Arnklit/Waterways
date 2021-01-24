@@ -135,7 +135,9 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 			var normal: Vector3 = PLANE_MAPPING[editor_plugin.constraint]
 			if editor_plugin.local_editing:
 				normal = _handle_base_transform.basis.xform(normal)
-			var distance := old_pos_global.project(normal).length()
+			var projected := old_pos_global.project(normal)
+			var direction := sign(projected.dot(normal))
+			var distance := direction * projected.length()
 			var plane := Plane(normal, distance)
 			new_pos = plane.intersects_ray(ray_from, ray_dir)
 		
