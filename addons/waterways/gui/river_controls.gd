@@ -35,9 +35,17 @@ func spatial_gui_input(event: InputEvent) -> bool:
 		if event.alt or event.control or event.meta or event.command:
 			return false
 		
+		# Handle local mode keybinding for toggling
+		if event.scancode == KEY_T:
+			# Set the input as handled to prevent default actions from the keys
+			$LocalMode.pressed = not $LocalMode.pressed
+			get_tree().set_input_as_handled()
+			return true
+		
 		# Fetch the constraint that the user requested to toggle
 		var requested: int
 		match [event.scancode, event.shift]:
+			[KEY_S, _]: requested = CONSTRAINTS.COLLIDERS
 			[KEY_X, false]: requested = CONSTRAINTS.AXIS_X
 			[KEY_Y, false]: requested = CONSTRAINTS.AXIS_Y
 			[KEY_Z, false]: requested = CONSTRAINTS.AXIS_Z
