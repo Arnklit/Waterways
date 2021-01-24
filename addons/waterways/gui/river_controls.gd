@@ -84,6 +84,10 @@ func _on_constraint_selected(index: int) -> void:
 	emit_signal("options", "constraint", index)
 
 
+func _on_local_mode_toggled(enabled: bool) -> void:
+	emit_signal("options", "local_mode", enabled)
+
+
 func _untoggle_buttons() -> void:
 	$Select.pressed = false
 	$Add.pressed = false

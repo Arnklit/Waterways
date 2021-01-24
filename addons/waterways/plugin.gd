@@ -22,6 +22,7 @@ var _editor_selection : EditorSelection = null
 var _heightmap_renderer = null
 var _mode := "select"
 var constraint: int = RiverControls.CONSTRAINTS.NONE
+var local_editing := false
 
 
 func _enter_tree() -> void:
@@ -119,9 +120,12 @@ func _on_mode_change(mode) -> void:
 
 
 func _on_option_change(option, value) -> void:
-	constraint = value
-	if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
-		WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
+	if option == "constraint":
+		constraint = value
+		if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
+			WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
+	elif option == "local_mode":
+		local_editing = value
 
 
 func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:

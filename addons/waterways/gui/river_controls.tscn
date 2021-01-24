@@ -72,7 +72,14 @@ text = "No Constraint"
 flat = true
 items = [ "No Constraint", null, false, 0, null, "Snap to colliders", null, false, 1, null, "Axis X", null, false, 2, null, "Axis Y", null, false, 3, null, "Axis Z", null, false, 4, null, "Plane YZ", null, false, 5, null, "Plane XZ", null, false, 6, null, "Plane XY", null, false, 7, null ]
 selected = 0
+
+[node name="LocalMode" type="CheckBox" parent="."]
+margin_left = 280.0
+margin_right = 381.0
+margin_bottom = 26.0
+text = "Local Mode"
 [connection signal="pressed" from="Select" to="." method="_on_select"]
 [connection signal="pressed" from="Add" to="." method="_on_add"]
 [connection signal="pressed" from="Remove" to="." method="_on_remove"]
 [connection signal="item_selected" from="Constraints" to="." method="_on_constraint_selected"]
+[connection signal="toggled" from="LocalMode" to="." method="_on_local_mode_toggled"]

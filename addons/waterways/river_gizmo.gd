@@ -123,7 +123,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		
 		elif editor_plugin.constraint in AXIS_MAPPING:
 			var axis: Vector3 = AXIS_MAPPING[editor_plugin.constraint]
-			if false:  # TODO: Check if this should be done in local space
+			if editor_plugin.local_editing:
 				axis = _handle_base_transform.basis.xform(axis)
 			var axis_from = old_pos_global + (axis * AXIS_CONSTRAINT_LENGTH)
 			var axis_to = old_pos_global - (axis * AXIS_CONSTRAINT_LENGTH)
@@ -133,7 +133,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		
 		elif editor_plugin.constraint in PLANE_MAPPING:
 			var normal: Vector3 = PLANE_MAPPING[editor_plugin.constraint]
-			if false:  # TODO: Check if this should be done in local space
+			if editor_plugin.local_editing:
 				normal = _handle_base_transform.basis.xform(normal)
 			var distance := old_pos_global.project(normal).length()
 			var plane := Plane(normal, distance)
