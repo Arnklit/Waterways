@@ -3,7 +3,7 @@
 [ext_resource path="res://addons/waterways/gui/gradient_inspector.gd" type="Script" id=1]
 [ext_resource path="res://addons/waterways/shaders/gui/gradient.shader" type="Shader" id=2]
 
-[sub_resource type="ShaderMaterial" id=2]
+[sub_resource type="ShaderMaterial" id=1]
 shader = ExtResource( 2 )
 shader_param/color1 = Color( 1, 0, 0, 1 )
 shader_param/color2 = Color( 0, 1, 0, 1 )
@@ -26,7 +26,7 @@ color = Color( 0.25098, 0.25098, 0.701961, 1 )
 edit_alpha = false
 
 [node name="Gradient" type="ColorRect" parent="."]
-material = SubResource( 2 )
+material = SubResource( 1 )
 margin_left = 134.0
 margin_right = 265.0
 margin_bottom = 24.0
@@ -42,5 +42,3 @@ size_flags_vertical = 3
 flat = true
 color = Color( 0.25098, 0.501961, 0.701961, 1 )
 edit_alpha = false
-[connection signal="color_changed" from="Color1" to="." method="_on_color1_changed"]
-[connection signal="color_changed" from="Color2" to="." method="_on_color2_changed"]

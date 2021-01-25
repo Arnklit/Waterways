@@ -11,9 +11,8 @@ func can_handle(object: Object) -> bool:
 
 
 func parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int) -> bool:
-	if type == TYPE_COLOR_ARRAY:
+	if type == TYPE_TRANSFORM and "color" in path:
 		var editor_property = _editor.new()
-		editor_property.set_node(object)
 		add_property_editor(path, editor_property)
 	
 		return true
