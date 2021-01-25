@@ -101,7 +101,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		var x := z.cross(Vector3.DOWN).normalized()
 		var y := z.cross(x).normalized()
 		_handle_base_transform = Transform(
-			Basis(x, y, z) * global_inverse.basis,
+			Basis(x, y, z) * global_transform.basis,
 			old_pos_global
 		)
 	
