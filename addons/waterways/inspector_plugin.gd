@@ -14,6 +14,5 @@ func parse_property(object: Object, type: int, path: String, hint: int, hint_tex
 	if type == TYPE_TRANSFORM and "color" in path:
 		var editor_property = _editor.new()
 		add_property_editor(path, editor_property)
-	
 		return true
 	return false
