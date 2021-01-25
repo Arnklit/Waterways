@@ -79,7 +79,7 @@ func _on_select() -> void:
 
 func _on_add() -> void:
 	_untoggle_buttons()
-	_disable_constraint_ui(true)
+	_disable_constraint_ui(false)
 	$Add.pressed = true
 	emit_signal("mode", "add")
 

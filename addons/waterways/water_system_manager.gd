@@ -10,6 +10,7 @@ const RiverManager = preload("res://addons/waterways/river_manager.gd")
 var system_map : ImageTexture = null setget set_system_map
 var system_bake_resolution := 2
 var system_group_name := "waterways_system"
+var minimum_water_level := 0.0
 # Auto assign
 var wet_group_name : String = "waterways_wet"
 var surface_index : int = -1
@@ -62,6 +63,11 @@ func _get_property_list() -> Array:
 		{
 			name = "system_group_name",
 			type = TYPE_STRING,
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+		},
+		{
+			name = "minimum_water_level",
+			type = TYPE_REAL,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
@@ -149,12 +155,14 @@ func get_water_altitude(query_pos : Vector3) -> float:
 	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
-		return 0.0 # TODO return ocean level / minimum water level
+		# We are outside the aabb of the Water System
+		return minimum_water_level
 	
 	pos_2d = pos_2d * _system_img.get_width()
 	var col = _system_img.get_pixelv(pos_2d)
-	if col.a == 0.0:
-		return 0.0 # TODO return ocean level / minimum water level
+	if col == Color(0, 0, 0, 1):
+		# We hit the empty part of the System Map
+		return minimum_water_level
 	# Throw a warning if the map is not baked
 	var height = col.b * _system_aabb.size.y + _system_aabb.position.y
 	return query_pos.y - height
@@ -172,6 +180,10 @@ func get_water_flow(query_pos : Vector3) -> Vector3:
 	
 	pos_2d = pos_2d * _system_img.get_width()
 	var col = _system_img.get_pixelv(pos_2d)
+	
+	if col == Color(0, 0, 0, 1):
+		# We hit the empty part of the System Map
+		return Vector3.ZERO
 	
 	var flow = Vector3(col.r, 0.5, col.g) * 2.0 - Vector3(1.0, 1.0, 1.0)
 	return flow

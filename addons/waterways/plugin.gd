@@ -191,7 +191,16 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 			# based of a plane of the last point of the curve
 			if closest_segment == -1:
 				var end_pos = _edited_node.curve.get_point_position(_edited_node.curve.get_point_count() - 1)
-				var end_pos_global = _edited_node.to_global(end_pos)
+				var end_pos_global : Vector3 = _edited_node.to_global(end_pos)
+					
+				var z : Vector3 = _edited_node.curve.get_point_out(_edited_node.curve.get_point_count() - 1).normalized()
+				var x := z.cross(Vector3.DOWN).normalized()
+				var y := z.cross(x).normalized()
+				var _handle_base_transform = Transform(
+					Basis(x, y, z) * global_transform.basis,
+					end_pos_global
+				)
+			
 				var plane := Plane(end_pos_global, end_pos_global + camera.transform.basis.x, end_pos_global + camera.transform.basis.y)
 				var new_pos
 				if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
@@ -201,8 +210,29 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 						new_pos = result.position
 					else:
 						return false
-				else:
+				elif constraint == RiverControls.CONSTRAINTS.NONE:
 					new_pos = plane.intersects_ray(ray_from, ray_from + ray_dir * 4096)
+				
+				elif constraint in RiverGizmo.AXIS_MAPPING:
+					var axis: Vector3 = RiverGizmo.AXIS_MAPPING[constraint]
+					if local_editing:
+						axis = _handle_base_transform.basis.xform(axis)
+					var axis_from = end_pos_global + (axis * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
+					var axis_to = end_pos_global - (axis * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
+					var ray_to = ray_from + (ray_dir * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
+					var result = Geometry.get_closest_points_between_segments(axis_from, axis_to, ray_from, ray_to)
+					new_pos = result[0]
+				
+				elif constraint in RiverGizmo.PLANE_MAPPING:
+					var normal: Vector3 = RiverGizmo.PLANE_MAPPING[constraint]
+					if local_editing:
+						normal = _handle_base_transform.basis.xform(normal)
+					var projected := end_pos_global.project(normal)
+					var direction := sign(projected.dot(normal))
+					var distance := direction * projected.length()
+					plane = Plane(normal, distance)
+					new_pos = plane.intersects_ray(ray_from, ray_dir)
+						
 				baked_closest_point = _edited_node.to_local(new_pos)
 			
 			var ur := get_undo_redo()
