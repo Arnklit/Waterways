@@ -19,15 +19,18 @@ I've been very impressed with examples of using flowmaps to imitate water simula
 Usage
 -----
 Once the addon is active, you can simply add a River node to the scene.
-![2kXOoGLFRm](https://user-images.githubusercontent.com/4955051/102621243-3437a200-4137-11eb-9912-c91cadc0dd1e.gif)
+![ZlC0D3OKaq](https://user-images.githubusercontent.com/4955051/105901753-b60fca80-6015-11eb-8ee5-4ac10b815ca0.gif)
 
 **Shaping**
 
 You can then use the Path controls to shape the river to your liking. 
-![fGj5m244JK](https://user-images.githubusercontent.com/4955051/102622232-a1980280-4138-11eb-9a82-4d168055d10b.gif)
+![ZlC0D3OKaq](https://user-images.githubusercontent.com/4955051/105902076-10109000-6016-11eb-8b57-33fa60852ac4.gif)
 
-The "Snap to colliders" option can be used to easily place the path of the river along a terrain.
-![lrQNRdVzCU](https://user-images.githubusercontent.com/4955051/102622600-271bb280-4139-11eb-9b4a-c53ea4a4d004.gif)
+The "Snap to Colliders" constraint can be used to easily place the path of the river along a terrain.
+![Uo0Yts7nj6](https://user-images.githubusercontent.com/4955051/105904985-cd50b700-6019-11eb-9fa0-f0b08c1f5160.gif)
+
+The Axis and Plane constraints can be used for better control in moving and adding points. The implementation is similar to Blender's. You can also use the shortcuts X, Y and Z to lock movement to a given axis and shortcuts Shift + X, Y and Z to lock to planes YZ, XZ and XY. The Local mode option, switches the axis to be local to the point rather than the world and can be toggled with shortcut T.
+![qK2oHGFXFO](https://user-images.githubusercontent.com/4955051/105904382-fa509a00-6018-11eb-8cab-417d0a364ff5.gif)
 
 **Texture Baking**
 
@@ -87,7 +90,7 @@ For effects such as this:
 
 River Parameters
 ----------------
-The river's parameters are split into 5 sections.
+The river's parameters are split into 4 sections.
 
 **Shape**
 
@@ -97,15 +100,20 @@ The river's parameters are split into 5 sections.
 
 **Material**
 
-- *Texture* - The pattern used for the water. RG channels hold the normal map and B holds the foam pattern.
-- *UV Scale* - The UV scaling used on the above texture.
+*The Material section has two hardcoded parameters*
+
+- *Shader Type* - This option allows you to select between the two built-in shaders *Water* and *Lava*.
+- *Custom Shader* - This option allows you to easily make a copy of the selected shader and edit it.
+
+*The remaining parameters in the Material section are parsed from the currect shader*
+
+*Parameters shared by Water and Lava shader*
+
 - *Normal Scale* - The strength of the normal mapping.
-- *Albedo* - The two colours of the water mixed based on the depth set in *Gradient Depth*.
-- *Gradient Depth* - Use this to control how the albedo gradient is applied.
-- *Clarity* - How far light can travel in the water before only returning the albedo colour.
-- *Edge Fade* - The distance the river fades out when it intesects other objects to give the shore line a softer look.
+- *Normal Bump Texture* - The pattern used for the water. RG channels hold the normal map and B holds the foam pattern.
+- *UV Scale* - The UV scaling used on the above texture.
 - *Roughness* - The roughness of the water surface, also affects the blurring that occurs in the refraction.
-- *Refraction* - How much the background get's bent by the water shape.
+- *Edge Fade* - The distance the river fades out when it intesects other objects to give the shore line a softer look.
 - *Flow* - Subcategory for flow options.
     - *Speed* - How fast the river flows.
     - *Base Strength* - Base multiplier of the flow vectors.
@@ -113,11 +121,32 @@ The river's parameters are split into 5 sections.
     - *Distance Strength* - Flow vectors multiplied by the distance field for faster flows further away from shore.
     - *Pressure Strength* - Flow vectors multiplied by a pressure map, to imitate the flow increasing when there is less available space in the river.
     - *Max Strength* - Clamps the maximum multiplier of the flow vectors.
+
+*Parameters specific to Water shader*
+
+- *Albedo* - Subcategory for the albedo parameters.
+    - *Color* - The two colours of the water mixed based on the depth set in *Depth*.
+    - *Depth* - The water depth at which the far color of the gradient is returned.
+    - *Depth Curve* - The interpolation curve used for the depth gradient.
+
+- *Transparency* - Subcategory ofr the transparency parameters.
+    - *Clarity* - How far light can travel in the water before only returning the albedo colour.
+    - *Depth Curve* - The interpolation curve used for the clarity depth.
+    - *Refraction* - How much the background get's bent by the water shape.
+    
 - *Foam* - Subcategory for the foam options.
     - *Albedo* - The colour of the foam.
     - *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
     - *Steepness* - Gives the option to add in foam where the river is steep.
     - *Smoothness* - Controls how the foam layers are combined to give a sharper or softer look.
+
+*Parameters specific to the Lava shader*
+
+- *Emission* - Subcategory for the emission options.
+    - *Color* - The two colours multiplied by the emission texture of the lava mixed based on the depth set in *Depth*.
+    - *Depth* - The lava depth at which the far color of the gradient is returned.
+    - *Depth Curve* - The interpolation curve used for the depth gradient.
+    - *Texture* - The emission texture.
 
 **Lod**
 
@@ -134,14 +163,12 @@ The river's parameters are split into 5 sections.
 - *Foam Offset* - How far the foam strethes along the flow direction.
 - *Foam Blur* - How much the foam mask is blurred.
 
-**Advanced**
-- *Custom Shader* - This option allows you to easily make a copy of the default shader and edit it.
-
 WaterSystem Parameters
 ----------------------
 - *System Map* - The baked system maps texture
 - *System Bake Resolution* - The resolution of the system maps
 - *System Group Name* - This group name is assigned at runtime, it is used by the *Buoyant* node to find the WaterSystem. If you only have one *WaterSystem*, you can just leave this be.
+- *Minimum Water Level* - This is the value returned when an object queries the Water System heightmap, but hits outside the baked height data.
 - *Auto Assign Texture & Coordinates On Generate* - Subcategory for auto assign setting, used to send the system map and coordinates to materials to be used in shaders
     - *Wet Group Name* - This name will be used to find any *MeshInstances* that should have the maps assigned
     - *Surface Index* - The surface index the material you want to send the maps to is set on the *MeshInstance*, -1 means disabled.
@@ -167,6 +194,7 @@ Acknowledgements
 * Thanks to my patrons *Marcus Richter, Dmitriy Keane, spacechace0, Johannes Wuesnch, Winston and Little Mouse Games* for all their support.
 
 Several people in the Godot community have helped me out with this.
+* *Winston* has contributed code to the project with the great axis constraint system.
 * *Zylann* has been really helpful, both with any issues I've had working on terrains, but also in that whenever I don't know how to do something in a plugin I generally find the answer somewhere in his code.
 * *HungryProton* has given me a ton of help setting up the Gizmo's to make custom editing tools for the river.
 * *Rodzilla* helped me figure out how to generate the various textures for the flow and foam and a lot of the code for rendering the maps are directly inspired by his incredible [Material Maker](https://rodzilla.itch.io/material-maker) tool.
