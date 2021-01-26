@@ -385,6 +385,8 @@ func _init() -> void:
 	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
 	for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
 		_material.set_shader_param(texture.name, load(texture.path) as Texture)
+	# Have to manually set the color or it does not default right. Not sure how to work around this
+	_material.set_shader_param("albedo_color", Transform(Vector3(0.0, 0.8, 1.0), Vector3(0.15, 0.2, 0.5), Vector3.ZERO, Vector3.ZERO))
 
 
 func _enter_tree() -> void:

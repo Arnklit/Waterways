@@ -22,13 +22,13 @@ uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // Albedo
 uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
-uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
+uniform float albedo_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 0.25;
 
 // Transparency
 uniform float transparency_clarity : hint_range(0.0, 200.0) = 10.0;
-uniform float transparency_refraction : hint_range(-1.0, 1.0) = 0.05;
 uniform float transparency_depth_curve = 0.25;
+uniform float transparency_refraction : hint_range(-1.0, 1.0) = 0.05;
 
 // Flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
@@ -183,7 +183,7 @@ void fragment() {
 	float water_depth = surface_dist + VERTEX.z;
 	
 	
-	float alb_t = clamp(water_depth / albedo_gradient_depth, 0.0, 1.0);
+	float alb_t = clamp(water_depth / albedo_depth, 0.0, 1.0);
 	alb_t = ease(alb_t, albedo_depth_curve);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
@@ -212,7 +212,7 @@ void fragment() {
 		clar_t = clamp(water_depth2 / transparency_clarity, 0.0, 1.0);
 		clar_t = ease(clar_t, transparency_depth_curve);
 		ref_amount = 1.0 - clamp(clar_t + combined_foam, 0.0, 1.0);
-		alb_t = clamp(water_depth2 / albedo_gradient_depth, 0.0, 1.0);
+		alb_t = clamp(water_depth2 / albedo_depth, 0.0, 1.0);
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
 	mat4 albedo_color_srgb = gradient_lin2srgb(albedo_color);
