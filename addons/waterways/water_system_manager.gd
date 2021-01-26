@@ -150,19 +150,19 @@ func generate_system_maps() -> void:
 # negative numbers below the water
 func get_water_altitude(query_pos : Vector3) -> float:
 	if _system_img == null:
-		return 0.0
+		return query_pos.y - minimum_water_level
 	var position_in_aabb = query_pos - _system_aabb.position
 	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
 		# We are outside the aabb of the Water System
-		return minimum_water_level
+		return query_pos.y - minimum_water_level
 	
 	pos_2d = pos_2d * _system_img.get_width()
 	var col = _system_img.get_pixelv(pos_2d)
 	if col == Color(0, 0, 0, 1):
 		# We hit the empty part of the System Map
-		return minimum_water_level
+		return query_pos.y - minimum_water_level
 	# Throw a warning if the map is not baked
 	var height = col.b * _system_aabb.size.y + _system_aabb.position.y
 	return query_pos.y - height
