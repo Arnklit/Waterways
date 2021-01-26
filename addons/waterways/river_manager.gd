@@ -370,10 +370,10 @@ func _get(property: String):
 
 func property_can_revert(property: String) -> bool:
 	if property.begins_with("mat_"):
-		if "color" in property:
-			# TODO - we are disabling revert for color parameters due to this
-			# bug: https://github.com/godotengine/godot/issues/45388
-			return false
+#		if "color" in property:
+#			# TODO - we are disabling revert for color parameters due to this
+#			# bug: https://github.com/godotengine/godot/issues/45388
+#			return false
 		var param_name = property.right(len("mat_"))
 		return _material.property_can_revert(str("shader_param/", param_name))
 

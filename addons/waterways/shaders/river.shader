@@ -22,9 +22,9 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // Albedo
-uniform mat4 albedo_color = mat4(vec4(0.0, 0.8, 1.0, 1.0), vec4(0.15, 0.2, 0.5, 1.0), vec4(0.0), vec4(0.0));
-uniform vec4 albedo_color_near : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
-uniform vec4 albedo_color_far : hint_color = vec4(0.15, 0.2, 0.5, 1.0);
+uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
+//uniform vec4 albedo_color_near : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
+//uniform vec4 albedo_color_far : hint_color = vec4(0.15, 0.2, 0.5, 1.0);
 uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 0.25;
 
@@ -204,7 +204,10 @@ void fragment() {
 		alb_t = clamp(water_depth2 / albedo_gradient_depth, 0.0, 1.0);
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
-
+	vec3 albedo_color_near = vec3(albedo_color[0][0], albedo_color[1][0], albedo_color[2][0]);
+	vec3 albedo_color_far = vec3(albedo_color[0][1], albedo_color[1][1], albedo_color[2][1]);
+//	vec3 albedo_color_near = vec3(albedo_color[0].x, albedo_color[0].y, albedo_color[0].z);
+//	vec3 albedo_color_far = vec3(albedo_color[1].x, albedo_color[1].y, albedo_color[1].z);
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
