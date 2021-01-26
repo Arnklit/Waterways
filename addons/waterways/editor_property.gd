@@ -22,7 +22,6 @@ func gradient_changed(_val) -> void:
 
 func update_property() -> void:
 	var new_value = get_edited_object()[get_edited_property()]
-#	var new_value = _ui.get_value()
 	_updating = true
 	_ui.set_value(new_value)
 	_updating = false

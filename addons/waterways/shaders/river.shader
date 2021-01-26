@@ -11,20 +11,17 @@ render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
 // to automatically put your parameters into categories in the inspector.
 
 // If "curve" is in the name, the inspector will represent and easing curve
-// If "color" is in the name, the value will not be able to revert due to 
-// this bug: https://github.com/godotengine/godot/issues/45388
+// mat4s will get parsed as gradients, see documentation for details
 
 // Main
+uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform sampler2D normal_bump_texture : hint_normal;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
-uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // Albedo
 uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
-//uniform vec4 albedo_color_near : hint_color = vec4(0.0, 0.8, 1.0, 1.0);
-//uniform vec4 albedo_color_far : hint_color = vec4(0.15, 0.2, 0.5, 1.0);
 uniform float albedo_gradient_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 0.25;
 
@@ -92,6 +89,20 @@ float ease(float p_x, float p_c) {
 	} else {
 		return 0.0; // no ease (raw)
 	}
+}
+
+float lin2srgb(float lin) {
+	return pow(lin, 2.2);
+}
+
+mat4 gradient_lin2srgb(mat4 lin_mat) {
+	mat4 srgb_mat = mat4(
+		vec4(lin2srgb(lin_mat[0].x), lin2srgb(lin_mat[0].y), lin2srgb(lin_mat[0].z), lin2srgb(lin_mat[0].w)),
+		vec4(lin2srgb(lin_mat[1].x), lin2srgb(lin_mat[1].y), lin2srgb(lin_mat[1].z), lin2srgb(lin_mat[1].w)),
+		vec4(0.0),
+		vec4(0.0)
+	);
+	return srgb_mat;
 }
 
 void fragment() {
@@ -204,10 +215,9 @@ void fragment() {
 		alb_t = clamp(water_depth2 / albedo_gradient_depth, 0.0, 1.0);
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
-	vec3 albedo_color_near = vec3(albedo_color[0][0], albedo_color[1][0], albedo_color[2][0]);
-	vec3 albedo_color_far = vec3(albedo_color[0][1], albedo_color[1][1], albedo_color[2][1]);
-//	vec3 albedo_color_near = vec3(albedo_color[0].x, albedo_color[0].y, albedo_color[0].z);
-//	vec3 albedo_color_far = vec3(albedo_color[1].x, albedo_color[1].y, albedo_color[1].z);
+	mat4 albedo_color_srgb = gradient_lin2srgb(albedo_color);
+	vec3 albedo_color_near = vec3(albedo_color_srgb[0].x, albedo_color_srgb[0].y, albedo_color_srgb[0].z);
+	vec3 albedo_color_far = vec3(albedo_color_srgb[1].x, albedo_color_srgb[1].y, albedo_color_srgb[1].z);
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts

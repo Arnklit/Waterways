@@ -3,16 +3,25 @@
 shader_type spatial;
 render_mode depth_draw_always, cull_disabled;
 
+// If you are making your own shader, you can customize or add your own
+// parameters below and they will automatically get parsed and displayed in
+// the River inspector.
+
+// Use prefixes: albedo_, emission_, transparency_, flow_, foam_ and custom_
+// to automatically put your parameters into categories in the inspector.
+
+// If "curve" is in the name, the inspector will represent and easing curve
+// mat4s will get parsed as gradients, see documentation for details
+
 // main
-uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform sampler2D normal_bump_texture : hint_normal;
+uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float roughness : hint_range(0.0, 1.0) = 0.7;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // emission
-uniform vec4 emission_color_near : hint_color = vec4(1.0, 1.0, 1.0, 1.0);
-uniform vec4 emission_color_far : hint_color = vec4(1.0, 0.5, 0.5, 1.0);
+uniform mat4 emission_color = mat4(vec4(1.0, 1.0, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
 uniform float emission_energy : hint_range(0.0, 20.0) = 4.0;
 uniform float emission_depth : hint_range(0.0, 200.0) = 3.0;
 uniform float emission_depth_curve = 0.25;
@@ -68,6 +77,20 @@ float ease(float p_x, float p_c) {
 	} else {
 		return 0.0; // no ease (raw)
 	}
+}
+
+float lin2srgb(float lin) {
+	return pow(lin, 2.2);
+}
+
+mat4 gradient_lin2srgb(mat4 lin_mat) {
+	mat4 srgb_mat = mat4(
+		vec4(lin2srgb(lin_mat[0].x), lin2srgb(lin_mat[0].y), lin2srgb(lin_mat[0].z), lin2srgb(lin_mat[0].w)),
+		vec4(lin2srgb(lin_mat[1].x), lin2srgb(lin_mat[1].y), lin2srgb(lin_mat[1].z), lin2srgb(lin_mat[1].w)),
+		vec4(0.0),
+		vec4(0.0)
+	);
+	return srgb_mat;
 }
 
 void fragment() {
@@ -131,6 +154,10 @@ void fragment() {
 	float emission_t = clamp(lava_depth / emission_depth, 0.0, 1.0);
 	emission_t = ease(emission_t, emission_depth_curve);
 	
+	mat4 emission_color_srgb = gradient_lin2srgb(emission_color);
+	vec3 emission_color_near = vec3(emission_color_srgb[0].x, emission_color_srgb[0].y, emission_color_srgb[0].z);
+	vec3 emission_color_far = vec3(emission_color_srgb[1].x, emission_color_srgb[1].y, emission_color_srgb[1].z);
+
 	vec3 final_lava = mix(lava_emission * emission_color_near.rgb, lava_emission * emission_color_far.rgb, emission_t);
 	
 	ALBEDO = vec3(0.0);

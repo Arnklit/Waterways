@@ -28,16 +28,6 @@ const BUILTIN_SHADERS = [
 				name = "normal_bump_texture",
 				path = "res://addons/waterways/textures/water1_normal_bump.png"
 			}
-		],
-		reset_values = [
-			{
-				name = "albedo_color_near",
-				value = Color(0.0, 0.8, 1.0 , 1.0)
-			},
-			{
-				name = "albedo_color_far",
-				value = Color(0.15, 0.2, 0.5, 1.0)
-			}
 		]
 	},
 	{
@@ -51,16 +41,6 @@ const BUILTIN_SHADERS = [
 			{
 				name = "emission_texture",
 				path = "res://addons/waterways/textures/lava_emission.png"
-			}
-		],
-		reset_values = [
-			{
-				name = "emission_color_near",
-				value = Color(1.0, 1.0, 1.0, 1.0)
-			},
-			{
-				name = "emission_color_far",
-				value = Color(1.0, 0.5, 0.5, 1.0)
 			}
 		]
 	}
@@ -362,13 +342,13 @@ func _set(property: String, value) -> bool:
 	return false
 
 
-func _get(property: String):
+func _get(property : String):
 	if property.begins_with("mat_"):
 		var param_name = property.right(len("mat_"))
 		return  _material.get_shader_param(param_name)
 
 
-func property_can_revert(property: String) -> bool:
+func property_can_revert(property : String) -> bool:
 	if property.begins_with("mat_"):
 #		if "color" in property:
 #			# TODO - we are disabling revert for color parameters due to this
@@ -382,6 +362,13 @@ func property_can_revert(property: String) -> bool:
 	if get(property) != DEFAULT_PARAMETERS[property]:
 		return true
 	return false
+
+
+func property_get_revert(property : String):
+	if property.begins_with("mat_"):
+		var param_name = property.right(len("mat_"))
+		var revert_value = _material.property_get_revert(str("shader_param/", param_name))
+		return revert_value
 
 
 func _init() -> void:
@@ -398,12 +385,9 @@ func _init() -> void:
 	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
 	for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
 		_material.set_shader_param(texture.name, load(texture.path) as Texture)
-	for param in BUILTIN_SHADERS[mat_shader_type].reset_values:
-		_material.set_shader_param(param.name, param.value)
 
 
 func _enter_tree() -> void:
-	print("_enter_tree() run")
 	if Engine.editor_hint and _first_enter_tree:
 		_first_enter_tree = false
 	
@@ -585,8 +569,6 @@ func set_shader_type(type: int):
 		_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path)
 		for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
 			_material.set_shader_param(texture.name, load(texture.path) as Texture)
-		for param in BUILTIN_SHADERS[mat_shader_type].reset_values:
-			_material.set_shader_param(param.name, param.value)
 	
 	property_list_changed_notify()
 
