@@ -1,6 +1,15 @@
 Changelog
 =========
 
+0.2.1
+-----
+- New axis constraints for adding and moving river curve points (implemented by Winston)
+- Built in Lava shader
+- Improved inspector that dynamically parses built-in and custom shaders
+- Curve controls for colour and transparency depth
+- Improved refractions with objects in front of water removed
+- Various bug fixes
+
 0.2.0
 -----
 
