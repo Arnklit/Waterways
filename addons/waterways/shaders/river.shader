@@ -221,7 +221,7 @@ void fragment() {
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_color.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2 * 2.0).rgb * ref_amount;
+	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2).rgb * ref_amount;
 
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
