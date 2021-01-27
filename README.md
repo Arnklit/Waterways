@@ -24,7 +24,7 @@ Once the addon is active, you can simply add a River node to the scene.
 **Shaping**
 
 You can then use the Path controls to shape the river to your liking. 
-![ZlC0D3OKaq](https://user-images.githubusercontent.com/4955051/105902076-10109000-6016-11eb-8b57-33fa60852ac4.gif)
+![FOa6ZrcTXA](https://user-images.githubusercontent.com/4955051/105954879-4af1e280-606d-11eb-9f53-bf60f701395e.gif)
 
 The "Snap to Colliders" constraint can be used to easily place the path of the river along a terrain.
 ![Uo0Yts7nj6](https://user-images.githubusercontent.com/4955051/105904985-cd50b700-6019-11eb-9fa0-f0b08c1f5160.gif)
@@ -94,8 +94,8 @@ The river's parameters are split into 4 sections.
 
 **Shape**
 
-- *Step Length Divs* - How many subdivision the river with lef per step along it's length.
-- *Step Width Divs* - How many subdivision the river with lef per step along it's width.
+- *Step Length Divs* - How many subdivision the river will have per step along its length.
+- *Step Width Divs* - How many subdivision the river will have along its width.
 - *Smoothing* - How much the shape of the river is relaxed to even out corners.
 
 **Material**
@@ -110,9 +110,9 @@ The river's parameters are split into 4 sections.
 *Parameters shared by Water and Lava shader*
 
 - *Normal Scale* - The strength of the normal mapping.
-- *Normal Bump Texture* - The pattern used for the water. RG channels hold the normal map and B holds the foam pattern.
-- *UV Scale* - The UV scaling used on the above texture.
-- *Roughness* - The roughness of the water surface, also affects the blurring that occurs in the refraction.
+- *Normal Bump Texture* - The pattern used for the water. RG channels hold the normal map and B holds a bump or height map used for the foam.
+- *UV Scale* - The UV scaling used for textures on the river.
+- *Roughness* - The roughness of the river surface, also affects the blurring that occurs in the refractions.
 - *Edge Fade* - The distance the river fades out when it intesects other objects to give the shore line a softer look.
 - *Flow* - Subcategory for flow options.
     - *Speed* - How fast the river flows.
@@ -126,16 +126,16 @@ The river's parameters are split into 4 sections.
 
 - *Albedo* - Subcategory for the albedo parameters.
     - *Color* - The two colours of the water mixed based on the depth set in *Depth*.
-    - *Depth* - The water depth at which the far color of the gradient is returned.
+    - *Depth* - The water depth at which the far colour of the gradient is returned.
     - *Depth Curve* - The interpolation curve used for the depth gradient.
 
-- *Transparency* - Subcategory ofr the transparency parameters.
+- *Transparency* - Subcategory for the transparency parameters.
     - *Clarity* - How far light can travel in the water before only returning the albedo colour.
     - *Depth Curve* - The interpolation curve used for the clarity depth.
-    - *Refraction* - How much the background get's bent by the water shape.
+    - *Refraction* - How much the background gets bent by the water shape.
     
 - *Foam* - Subcategory for the foam options.
-    - *Albedo* - The colour of the foam.
+    - *Color* - The colour of the foam.
     - *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
     - *Steepness* - Gives the option to add in foam where the river is steep.
     - *Smoothness* - Controls how the foam layers are combined to give a sharper or softer look.
@@ -144,7 +144,7 @@ The river's parameters are split into 4 sections.
 
 - *Emission* - Subcategory for the emission options.
     - *Color* - The two colours multiplied by the emission texture of the lava mixed based on the depth set in *Depth*.
-    - *Depth* - The lava depth at which the far color of the gradient is returned.
+    - *Depth* - The lava depth at which the far colour of the gradient is returned.
     - *Depth Curve* - The interpolation curve used for the depth gradient.
     - *Texture* - The emission texture.
 
@@ -162,6 +162,46 @@ The river's parameters are split into 4 sections.
 - *Foam Cutoff* - How much of the Distance Field is cut off to generate the foam mask. Increasing this calue will make the foam mask tighter around the collisions.
 - *Foam Offset* - How far the foam strethes along the flow direction.
 - *Foam Blur* - How much the foam mask is blurred.
+
+Writing Custom Shaders
+----------------------
+When writing custom shaders for the tool there are a few things to keep in mind.
+
+The tool uses certain uniforms that should not be customized as that will break the tool. These uniforms are prefixed with "i_" and are:
+
+|Uniform name        |Description                                                  |
+|:-------------------|:------------------------------------------------------------|
+|i_lod0_distance     |used by the LOD system                                       |
+|i_texture_foam_noise|a noise texture used to display foam on steep angles         |
+|i_flowmap           |the generated flowmap(RG) and foam map(B)                    |
+|i_distmap           |the generated distance field(R) and pressure map(B)          |
+|i_valid_flowmap     |a bool that is set if the generated maps are valid           |
+|i_uv2_sides         |an int value that tells the shader how to read the UV2 layout|
+
+Uniforms that do not start with "i_" will be parsed by the river's material inspector so they can easily be used in the tool. If the uniforms start with any of the below prefixes they will automatically be sorted into subcategories in the material section.
+
+|Prefix name  |Subcatergory name|
+|:------------|:----------------|
+|albedo_      |Albedo           |
+|emission_    |Emission         |
+|transparency_|Transparency     |
+|flow_        |Flow             |
+|foam_        |Foam             |
+|custom_      |Custom           |
+
+Additionally the river inspector will handle these uniform types specially:
+
+float uniforms containing "curve" in their name will be displayed as an easing curve in the inspector.
+
+```uniform float albedo_depth_curve = 0.25;```
+
+![image](https://user-images.githubusercontent.com/4955051/105959013-43353c80-6073-11eb-9f1c-b93d66c06ef6.png)
+
+mat4 uniforms containing "color" in their name will be displayed as a gradient field with two colour selectors. Here is the code setting up the water shader's albedo gradient with the two colors (0.0, 0.8, 1.0) and (0.15, 0.2, 0.5).
+
+```uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));```
+
+![image](https://user-images.githubusercontent.com/4955051/105959179-7d9ed980-6073-11eb-94af-64af97e195bf.png)
 
 WaterSystem Parameters
 ----------------------
