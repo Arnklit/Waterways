@@ -10,8 +10,8 @@ render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
 // Use prefixes: albedo_, emission_, transparency_, flow_, foam_ and custom_
 // to automatically put your parameters into categories in the inspector.
 
-// If "curve" is in the name, the inspector will represent and easing curve
-// mat4s will get parsed as gradients, see documentation for details
+// If "curve" is in the name, the inspector will represent and easing curve.
+// mat4´s with "color" in their name will get parsed as gradients.
 
 // Main
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
@@ -39,7 +39,7 @@ uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
 // Foam
-uniform vec4 foam_albedo : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
+uniform vec4 foam_color : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
 uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
@@ -219,7 +219,7 @@ void fragment() {
 	vec3 albedo_color_near = vec3(albedo_color_srgb[0].x, albedo_color_srgb[0].y, albedo_color_srgb[0].z);
 	vec3 albedo_color_far = vec3(albedo_color_srgb[1].x, albedo_color_srgb[1].y, albedo_color_srgb[1].z);
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
-	ALBEDO = mix(alb_mix, foam_albedo.rgb, combined_foam);
+	ALBEDO = mix(alb_mix, foam_color.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
 	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2 * 2.0).rgb * ref_amount;
 
