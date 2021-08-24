@@ -83,3 +83,12 @@ text = "Local Mode"
 [connection signal="pressed" from="Remove" to="." method="_on_remove"]
 [connection signal="item_selected" from="Constraints" to="." method="_on_constraint_selected"]
 [connection signal="toggled" from="LocalMode" to="." method="_on_local_mode_toggled"]
+
+[node name="DrawExtraHandleLines" type="CheckButton" parent="."]
+margin_left = 400.0
+margin_right = 381.0
+margin_bottom = 26.0
+text = "Draw Extra Handle Lines"
+hint_tooltip = "The tool draws lines between active handles, towards the terrain. With this setting on, these lines are drawn for nearby handles and curve points as well, not just the active one."
+pressed = true
+[connection signal="toggled" from="DrawExtraHandleLines" to="." method="_on_extra_handle_lines_toggled"]

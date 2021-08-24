@@ -23,6 +23,7 @@ var _heightmap_renderer = null
 var _mode := "select"
 var constraint: int = RiverControls.CONSTRAINTS.NONE
 var local_editing := false
+var extra_handle_lines := true
 
 
 func _enter_tree() -> void:
@@ -126,6 +127,8 @@ func _on_option_change(option, value) -> void:
 			WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
 	elif option == "local_mode":
 		local_editing = value
+	elif option == "extra_handle_lines":
+		extra_handle_lines = value
 
 
 func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:

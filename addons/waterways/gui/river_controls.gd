@@ -99,6 +99,10 @@ func _on_local_mode_toggled(enabled: bool) -> void:
 	emit_signal("options", "local_mode", enabled)
 
 
+func _on_extra_handle_lines_toggled(enabled: bool) -> void:
+	emit_signal("options", "extra_handle_lines", enabled)
+
+
 func _disable_constraint_ui(disable: bool) -> void:
 	$Constraints.disabled = disable
 	$LocalMode.disabled = disable

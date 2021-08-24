@@ -21,8 +21,13 @@ const PLANE_MAPPING := {
 var editor_plugin : EditorPlugin
 
 var _path_mat
-var _handle_lines_mat
+var _path_mat_wd
+var _handle_control_point_lines_mat
+var _handle_control_point_lines_mat_wd
+var _handle_width_lines_mat
+var _handle_width_lines_mat_wd
 var _handle_base_transform
+var _extra_lines = {}
 
 const HANDLE_OFFSET = Vector3(0, 0.05, 0)
 
@@ -53,6 +58,60 @@ func _init() -> void:
 	handles_width_mat.set_flag(            SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
 	handles_width_mat_wd.set_flag(         SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
 
+	var path_mat = SpatialMaterial.new()
+	var path_mat_wd = SpatialMaterial.new()
+	var control_points_mat = SpatialMaterial.new()
+	var control_points_mat_wd = SpatialMaterial.new()
+	var width_mat = SpatialMaterial.new()
+	var width_mat_wd = SpatialMaterial.new()
+	path_mat.set_albedo(               Color(1.0, 1.0, 0,   0.25))
+	path_mat_wd.set_albedo(            Color(1.0, 1.0, 0,   1.0))
+	control_points_mat.set_albedo(     Color(1.0, 0.5, 0.0, 0.25))
+	control_points_mat_wd.set_albedo(  Color(1.0, 0.5, 0.0, 1.0))
+	width_mat.set_albedo(              Color(0.0, 1.0, 1.0, 0.25))
+	width_mat_wd.set_albedo(           Color(0.0, 1.0, 1.0, 1.0))
+
+	path_mat.set_flag(             SpatialMaterial.FLAG_UNSHADED, true)
+	path_mat_wd.set_flag(          SpatialMaterial.FLAG_UNSHADED, true)
+	control_points_mat.set_flag(   SpatialMaterial.FLAG_UNSHADED, true)
+	control_points_mat_wd.set_flag(SpatialMaterial.FLAG_UNSHADED, true)
+	width_mat.set_flag(            SpatialMaterial.FLAG_UNSHADED, true)
+	width_mat_wd.set_flag(         SpatialMaterial.FLAG_UNSHADED, true)
+
+	path_mat.set_flag(             SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
+	path_mat_wd.set_flag(          SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
+	control_points_mat.set_flag(   SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
+	control_points_mat_wd.set_flag(SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
+	width_mat.set_flag(            SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
+	width_mat_wd.set_flag(         SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
+	path_mat.flags_transparent = true;
+	path_mat_wd.flags_transparent = true;
+	control_points_mat.flags_transparent = true;
+	control_points_mat_wd.flags_transparent = true;
+	width_mat.flags_transparent = true;
+	width_mat_wd.flags_transparent = true;
+
+	path_mat.render_priority = 10
+	path_mat_wd.render_priority = 10
+	control_points_mat.render_priority = 10
+	control_points_mat_wd.render_priority = 10
+	width_mat.render_priority = 10
+	width_mat_wd.render_priority = 10
+	add_material("path", path_mat)
+	add_material("path_wd", path_mat_wd)
+	add_material("handle_control_point_lines", control_points_mat)
+	add_material("handle_control_point_lines_wd", control_points_mat_wd)
+	add_material("handle_width_lines", width_mat)
+	add_material("handle_width_lines_wd", width_mat_wd)
+
+	_path_mat = path_mat
+	_path_mat_wd = path_mat_wd
+	_handle_control_point_lines_mat = control_points_mat
+	_handle_control_point_lines_mat_wd = control_points_mat_wd
+	_handle_width_lines_mat = width_mat
+	_handle_width_lines_mat_wd = width_mat_wd
+
+	_extra_lines = {}
 
 func reset() -> void:
 	_handle_base_transform = null
@@ -268,6 +327,62 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 
 		# Ensure width handles don't end up inside the center point
 		river.widths[p_index] = max(river.widths[p_index], 0.02)
+
+#	for i in range(point_count):
+	if true:
+		var i = _get_curve_index(index, point_count)
+		var point_index_center = _get_point_index(i, true, false, false, false, false, point_count)
+		var point_index_cp_in = _get_point_index(i, false, true, false, false, false, point_count)
+		var point_index_cp_out = _get_point_index(i, false, false, true, false, false, point_count)
+		var point_index_width_left = _get_point_index(i, false, false, false, true, false, point_count)
+		var point_index_width_right = _get_point_index(i, false, false, false, false, true, point_count)
+		var point_pos = river.curve.get_point_position(i)
+		var point_pos_in = river.curve.get_point_in(i) + point_pos
+		var point_pos_out = river.curve.get_point_out(i) + point_pos
+		var point_width_pos_left = river.curve.get_point_position(i) + river.curve.get_point_out(i).cross(Vector3.DOWN).normalized() * river.widths[i]
+		var point_width_pos_right = river.curve.get_point_position(i) + river.curve.get_point_out(i).cross(Vector3.UP).normalized() * river.widths[i]
+
+		if editor_plugin.extra_handle_lines or is_center:
+			draw_vertical_line_to_terrain(point_index_center, point_pos, river.global_transform.origin, space_state, "center")
+		if editor_plugin.extra_handle_lines or is_cp_in or is_cp_out:
+			draw_vertical_line_to_terrain(point_index_cp_in, point_pos_in, river.global_transform.origin, space_state, "cp")
+			draw_vertical_line_to_terrain(point_index_cp_out, point_pos_out, river.global_transform.origin, space_state, "cp")
+		if editor_plugin.extra_handle_lines or is_width_left or is_width_right:
+			draw_vertical_line_to_terrain(point_index_width_left, point_width_pos_left, river.global_transform.origin, space_state, "width")
+			draw_vertical_line_to_terrain(point_index_width_right, point_width_pos_right, river.global_transform.origin, space_state, "width")
+
+		if is_center:
+			if i > 0:
+				for t_i in range(1, 5):
+					draw_vertical_line_to_terrain(point_count*5+t_i, river.curve.interpolate(i-1, float(t_i)/5), river.global_transform.origin, space_state, "center")
+			if i < point_count-1:
+				for t_i in range(1, 5):
+					draw_vertical_line_to_terrain(point_count*5+t_i+5, river.curve.interpolate(i, float(t_i)/5), river.global_transform.origin, space_state, "center")
+
+		if is_cp_in or is_cp_out:
+			for t_i in range(3):
+				draw_vertical_line_to_terrain(point_count*5+t_i, lerp(point_pos_in, point_pos, float(t_i)/3), river.global_transform.origin, space_state, "cp")
+			for t_i in range(3):
+				draw_vertical_line_to_terrain(point_count*5+t_i+3, lerp(point_pos_out, point_pos, float(t_i)/3), river.global_transform.origin, space_state, "cp")
+			if i > 0 and editor_plugin.extra_handle_lines:
+				var point_pos_prev = river.curve.get_point_position(i-1)
+				var point_pos_in_prev = river.curve.get_point_in(i-1) + point_pos_prev
+				var point_pos_out_prev = river.curve.get_point_out(i-1) + point_pos_prev
+				for t_i in range(0, 6):
+					draw_vertical_line_to_terrain(point_count*10+t_i, lerp(point_pos_in_prev, point_pos_out_prev, float(t_i)/5), river.global_transform.origin, space_state, "cp")
+			if i < point_count-1 and editor_plugin.extra_handle_lines:
+				var point_pos_next = river.curve.get_point_position(i+1)
+				var point_pos_in_next = river.curve.get_point_in(i+1) + point_pos_next
+				var point_pos_out_next = river.curve.get_point_out(i+1) + point_pos_next
+				for t_i in range(0, 6):
+					draw_vertical_line_to_terrain(point_count*10+t_i+7, lerp(point_pos_in_next, point_pos_out_next, float(t_i)/5), river.global_transform.origin, space_state, "cp")
+
+		if is_width_left or is_width_right:
+			for t_i in range(3):
+				draw_vertical_line_to_terrain(point_count*5+t_i, lerp(point_width_pos_left, point_pos, float(t_i)/3), river.global_transform.origin, space_state, "width")
+			for t_i in range(3):
+				draw_vertical_line_to_terrain(point_count*5+t_i+3, lerp(point_width_pos_right, point_pos, float(t_i)/3), river.global_transform.origin, space_state, "width")
+
 	redraw(gizmo)
 
 # Handle Undo / Redo of handle movements
@@ -307,8 +422,28 @@ func commit_handle(gizmo: EditorSpatialGizmo, index: int, restore, cancel: bool 
 	ur.add_undo_property(river, "valid_flowmap", river.valid_flowmap)
 	ur.add_undo_method(river, "update_configuration_warning")
 	ur.commit_action()
-	
+
+	_extra_lines = {}
+
 	redraw(gizmo)
+
+func draw_vertical_line_to_terrain(index, pos, global_pos, space_state, material):
+	var worldpos = pos + global_pos
+	var result = space_state.intersect_ray(worldpos, worldpos + Vector3.DOWN * 128)
+	if not result:
+		result = space_state.intersect_ray(worldpos, worldpos + Vector3.UP * 128)
+	if result:
+		var ground_pos_relative = result.position - global_pos + Vector3(0, abs(result.position.y - global_pos.y)/2, 0)
+		var line_length = (pos - ground_pos_relative).length()
+		_extra_lines[index] = {}
+		_extra_lines[index]["mat"] = material
+		_extra_lines[index]["p1"] = pos
+		_extra_lines[index]["p2"] = ground_pos_relative
+		_extra_lines[index+100000] = {}
+		_extra_lines[index+100000]["mat"] = material
+		_extra_lines[index+100000]["p1"] = ground_pos_relative - Vector3(1, 0, 0) * line_length * 0.1
+		_extra_lines[index+100000]["p2"] = ground_pos_relative + Vector3(1, 0, 0) * line_length * 0.1
+
 
 func redraw(gizmo: EditorSpatialGizmo) -> void:
 	# Work around for issue where using "get_material" doesn't return a
@@ -316,8 +451,13 @@ func redraw(gizmo: EditorSpatialGizmo) -> void:
 	# so I'm caching the materials instead
 	if not _path_mat:
 		_path_mat = get_material("path", gizmo)
-	if not _handle_lines_mat:
-		_handle_lines_mat = get_material("handle_lines", gizmo)
+		_path_mat_wd = get_material("path_wd", gizmo)
+	if not _handle_control_point_lines_mat:
+		_handle_control_point_lines_mat = get_material("handle_control_point_lines", gizmo)
+		_handle_control_point_lines_mat_wd = get_material("handle_control_point_lines_wd", gizmo)
+	if not _handle_width_lines_mat:
+		_handle_width_lines_mat = get_material("handle_width_lines", gizmo)
+		_handle_width_lines_mat_wd = get_material("handle_width_lines_wd", gizmo)
 	gizmo.clear()
 	
 	var river := gizmo.get_spatial_node() as RiverManager
@@ -337,14 +477,18 @@ func _draw_path(gizmo: EditorSpatialGizmo, curve : Curve3D) -> void:
 		path.append(baked_points[i + 1] + HANDLE_OFFSET)
 	gizmo.add_lines(path, _path_mat)
 
+
 func _draw_handles(gizmo: EditorSpatialGizmo, river : RiverManager) -> void:
-	var lines = PoolVector3Array()
 	var handles_center = PoolVector3Array()
 	var handles_center_wd = PoolVector3Array()
 	var handles_control_points = PoolVector3Array()
 	var handles_control_points_wd = PoolVector3Array()
 	var handles_width = PoolVector3Array()
 	var handles_width_wd = PoolVector3Array()
+
+	var lines_center_extras = PoolVector3Array()
+	var lines_control_point = PoolVector3Array()
+	var lines_width = PoolVector3Array()
 	var point_count = river.curve.get_point_count()
 	for i in point_count:
 		var point_pos = river.curve.get_point_position(i)
@@ -367,8 +511,14 @@ func _draw_handles(gizmo: EditorSpatialGizmo, river : RiverManager) -> void:
 		lines.push_back(point_width_pos_right)
 		lines.push_back(point_pos)
 		lines.push_back(point_width_pos_left)
-		
-	gizmo.add_lines(lines, _handle_lines_mat)
+
+
+	gizmo.add_lines(lines_center_extras, _path_mat)
+	gizmo.add_lines(lines_center_extras, _path_mat_wd)
+	gizmo.add_lines(lines_control_point, _handle_control_point_lines_mat)
+	gizmo.add_lines(lines_control_point, _handle_control_point_lines_mat_wd)
+	gizmo.add_lines(lines_width, _handle_width_lines_mat)
+	gizmo.add_lines(lines_width, _handle_width_lines_mat_wd)
 	gizmo.add_handles(handles_center, get_material("handles_center", gizmo))
 	gizmo.add_handles(handles_control_points, get_material("handles_control_points", gizmo))
 	gizmo.add_handles(handles_width, get_material("handles_width", gizmo))
