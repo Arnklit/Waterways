@@ -503,15 +503,26 @@ func _draw_handles(gizmo: EditorSpatialGizmo, river : RiverManager) -> void:
 		handles_width.push_back(point_width_pos_right + HANDLE_OFFSET)
 		handles_width.push_back(point_width_pos_left + HANDLE_OFFSET)
 
-		lines.push_back(point_pos)
-		lines.push_back(point_pos_in)
-		lines.push_back(point_pos)
-		lines.push_back(point_pos_out)
-		lines.push_back(point_pos)
-		lines.push_back(point_width_pos_right)
-		lines.push_back(point_pos)
-		lines.push_back(point_width_pos_left)
+		lines_control_point.push_back(point_pos + HANDLE_OFFSET)
+		lines_control_point.push_back(point_pos_in + HANDLE_OFFSET)
+		lines_control_point.push_back(point_pos + HANDLE_OFFSET)
+		lines_control_point.push_back(point_pos_out + HANDLE_OFFSET)
+		lines_width.push_back(point_pos + HANDLE_OFFSET)
+		lines_width.push_back(point_width_pos_right + HANDLE_OFFSET)
+		lines_width.push_back(point_pos + HANDLE_OFFSET)
+		lines_width.push_back(point_width_pos_left + HANDLE_OFFSET)
 
+	for el_index in _extra_lines.keys():
+		var el = _extra_lines[el_index]
+		if el["mat"] == "center":
+			lines_center_extras.push_back(el["p1"])
+			lines_center_extras.push_back(el["p2"])
+		elif el["mat"] == "cp":
+			lines_control_point.push_back(el["p1"])
+			lines_control_point.push_back(el["p2"])
+		elif el["mat"] == "width":
+			lines_width.push_back(el["p1"])
+			lines_width.push_back(el["p2"])
 
 	gizmo.add_lines(lines_center_extras, _path_mat)
 	gizmo.add_lines(lines_center_extras, _path_mat_wd)
