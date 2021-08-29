@@ -24,6 +24,11 @@ var _path_mat
 var _handle_lines_mat
 var _handle_base_transform
 
+
+# Ensure that the width handle can't end up inside the center handle
+# as then it is hard to separate them again.
+const MIN_DIST_TO_CENTER_HANDLE = 0.02
+
 func _init() -> void:
 	# Two materials for every handle type.
 	# 1) Transparent handle that is always shown.
@@ -290,7 +295,7 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 	
 
 		# Ensure width handles don't end up inside the center point
-		river.widths[p_index] = max(river.widths[p_index], 0.02)
+		river.widths[p_index] = max(river.widths[p_index], MIN_DIST_TO_CENTER_HANDLE)
 	redraw(gizmo)
 
 # Handle Undo / Redo of handle movements
