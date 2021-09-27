@@ -24,8 +24,44 @@ var _path_mat
 var _handle_lines_mat
 var _handle_base_transform
 
+
+# Ensure that the width handle can't end up inside the center handle
+# as then it is hard to separate them again.
+const MIN_DIST_TO_CENTER_HANDLE = 0.02
+
 func _init() -> void:
-	create_handle_material("handles")
+	# Two materials for every handle type.
+	# 1) Transparent handle that is always shown.
+	# 2) Opaque handle that is only shown above terrain (when passing depth test)
+	# Note that this impacts the point index of the handles. See table below.
+	create_handle_material("handles_center")
+	create_handle_material("handles_control_points")
+	create_handle_material("handles_width")
+	create_handle_material("handles_center_with_depth")
+	create_handle_material("handles_control_points_with_depth")
+	create_handle_material("handles_width_with_depth")
+
+	var handles_center_mat             = get_material("handles_center")
+	var handles_center_mat_wd          = get_material("handles_center_with_depth")
+	var handles_control_points_mat     = get_material("handles_control_points")
+	var handles_control_points_mat_wd  = get_material("handles_control_points_with_depth")
+	var handles_width_mat              = get_material("handles_width")
+	var handles_width_mat_wd           = get_material("handles_width_with_depth")
+
+	handles_center_mat.set_albedo(           Color(1.0, 1.0, 0.0, 0.25))
+	handles_center_mat_wd.set_albedo(        Color(1.0, 1.0, 0.0, 1.0))
+	handles_control_points_mat.set_albedo(   Color(1.0, 0.5, 0.0, 0.25))
+	handles_control_points_mat_wd.set_albedo(Color(1.0, 0.5, 0.0, 1.0))
+	handles_width_mat.set_albedo(            Color(0.0, 1.0, 1.0, 0.25))
+	handles_width_mat_wd.set_albedo(         Color(0.0, 1.0, 1.0, 1.0))
+
+	handles_center_mat.set_flag(           SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
+	handles_center_mat_wd.set_flag(        SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
+	handles_control_points_mat.set_flag(   SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
+	handles_control_points_mat_wd.set_flag(SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
+	handles_width_mat.set_flag(            SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
+	handles_width_mat_wd.set_flag(         SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, false)
+
 	var mat = SpatialMaterial.new()
 	mat.set_flag(SpatialMaterial.FLAG_UNSHADED, true)
 	mat.set_flag(SpatialMaterial.FLAG_DISABLE_DEPTH_TEST, true)
@@ -50,23 +86,99 @@ func has_gizmo(spatial) -> bool:
 func get_handle_name(gizmo: EditorSpatialGizmo, index: int) -> String:
 	return "Handle " + String(index)
 
+# Handles are pushed to separate handle lists, one per material (using gizmo.add_handles).
+# A handle's "index" is given (by Godot) in order it was added to a gizmo. 
+# Given that N = points in the curve:
+# - First we add the center ("actual") curve handles, therefore
+#   the handle's index is the same as the curve point's index.
+# - Then we add the in and out points together. So the first curve point's IN handle
+#   gets an index of N. The OUT handle gets N+1.
+# - Finally the left/right indices come last, and the first curve point's LEFT is N * 3 .
+#   (3 because there are three rows before the left/right indices)
+#
+# Examples for N = 2, 3, 4:
+# curve points 2:0   1      3:0   1   2        4:0   1   2   3
+# ------------------------------------------------------------------
+# center         0   1        0   1   2          0   1   2   3
+# in             2   4        3   5   7          4   6   8   10
+# out            3   5        4   6   8          5   7   9   11
+# left           6   8        9   11  13         12  14  16  18
+# right          7   9        10  12  14         13  15  17  19
+#
+# The following utility functions calculate to and from curve/handle indices.
+
+func _is_center_point(index: int, river_curve_point_count: int):
+	var res = index < river_curve_point_count
+	return res
+
+func _is_control_point_in(index: int, river_curve_point_count: int):
+	if index < river_curve_point_count:
+		return false
+	if index >= river_curve_point_count * 3:
+		return false
+	var res = (index - river_curve_point_count) % 2 == 0
+	return res
+
+func _is_control_point_out(index: int, river_curve_point_count: int):
+	if index < river_curve_point_count:
+		return false
+	if index >= river_curve_point_count * 3:
+		return false
+	var res = (index - river_curve_point_count) % 2 == 1
+	return res
+
+func _is_width_point_left(index: int, river_curve_point_count: int):
+	if index < river_curve_point_count * 3:
+		return false
+	var res = (index - river_curve_point_count * 3) % 2 == 0
+	return res
+
+func _is_width_point_right(index: int, river_curve_point_count: int):
+	if index < river_curve_point_count * 3:
+		return false
+	var res = (index - river_curve_point_count * 3) % 2 == 1
+	return res
+
+func _get_curve_index(index: int, point_count: int):
+	if _is_center_point(index, point_count):
+		return index
+	if _is_control_point_in(index, point_count):
+		return (index - point_count) / 2
+	if _is_control_point_out(index, point_count):
+		return (index - point_count - 1) / 2
+	if _is_width_point_left(index, point_count) or _is_width_point_right(index, point_count):
+		return (index - point_count * 3) / 2
+
+func _get_point_index(curve_index: int, is_center: bool, is_cp_in: bool, is_cp_out: bool, is_width_left: bool, is_width_right: bool, point_count: int):
+	if is_center:
+		return curve_index
+	if is_cp_in:
+		return point_count + curve_index * 2
+	if is_cp_out:
+		return point_count + 1 + curve_index * 2
+	if is_width_left:
+		return point_count * 3 + curve_index * 2
+	if is_width_right:
+		return point_count * 3 + 1 + curve_index * 2
+
 
 func get_handle_value(gizmo: EditorSpatialGizmo, index: int):
-	var p_index = index / HANDLES_PER_POINT
 	var river : RiverManager = gizmo.get_spatial_node()
-	if index % HANDLES_PER_POINT == 0:
-		return river.curve.get_point_position(p_index)
-	if index % HANDLES_PER_POINT == 1:
-		return river.curve.get_point_in(p_index)
-	if index % HANDLES_PER_POINT == 2:
-		return river.curve.get_point_out(p_index)
-	if index % HANDLES_PER_POINT == 3 or  index % HANDLES_PER_POINT == 4:
-		return river.widths[p_index] 
+	var point_count = river.curve.get_point_count()
+	if _is_center_point(index, point_count):
+		return river.curve.get_point_position(_get_curve_index(index, point_count))
+	if _is_control_point_in(index, point_count):
+		return river.curve.get_point_in(_get_curve_index(index, point_count))
+	if _is_control_point_out(index, point_count):
+		return river.curve.get_point_out(_get_curve_index(index, point_count))
+	if _is_width_point_left(index, point_count) or _is_width_point_right(index, point_count):
+		return river.widths[_get_curve_index(index, point_count)]
 
 
 # Called when handle is moved
 func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Vector2) -> void:
 	var river : RiverManager = gizmo.get_spatial_node()
+	var space_state := river.get_world().direct_space_state
 
 	var global_transform : Transform = river.transform
 	if river.is_inside_tree():
@@ -77,19 +189,25 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 	var ray_dir = camera.project_ray_normal(point)
 
 	var old_pos : Vector3
-	var p_index = int(index / HANDLES_PER_POINT)
+	var point_count = river.curve.get_point_count()
+	var p_index = _get_curve_index(index, point_count)
 	var base = river.curve.get_point_position(p_index)
-	
+
 	# Logic to move handles
-	if index % HANDLES_PER_POINT == 0:
+	var is_center = _is_center_point(index, point_count)
+	var is_cp_in = _is_control_point_in(index, point_count)
+	var is_cp_out = _is_control_point_out(index, point_count)
+	var is_width_left = _is_width_point_left(index, point_count)
+	var is_width_right = _is_width_point_right(index, point_count)
+	if is_center:
 		old_pos = base
-	if index % HANDLES_PER_POINT == 1:
+	if is_cp_in:
 		old_pos = river.curve.get_point_in(p_index) + base
-	if index % HANDLES_PER_POINT == 2:
+	if is_cp_out:
 		old_pos = river.curve.get_point_out(p_index) + base
-	if index % HANDLES_PER_POINT == 3:
+	if is_width_left:
 		old_pos = base + river.curve.get_point_out(p_index).cross(Vector3.UP).normalized() * river.widths[p_index]
-	if index % HANDLES_PER_POINT == 4:
+	if is_width_right:
 		old_pos = base + river.curve.get_point_out(p_index).cross(Vector3.DOWN).normalized() * river.widths[p_index]
 	
 	var old_pos_global := river.to_global(old_pos)
@@ -106,13 +224,12 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		)
 	
 	# Point, in and out handles
-	if index % HANDLES_PER_POINT <= 2:
+	if is_center or is_cp_in or is_cp_out:
 		var new_pos
 		
 		if editor_plugin.constraint == RiverControls.CONSTRAINTS.COLLIDERS:
 			# TODO - make in / out handles snap to a plane based on the normal of
 			# the raycast hit instead.
-			var space_state := river.get_world().direct_space_state
 			var result = space_state.intersect_ray(ray_from, ray_from + ray_dir * 4096)
 			if result:
 				new_pos = result.position
@@ -150,22 +267,23 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		
 		var new_pos_local := river.to_local(new_pos)
 
-		if index % HANDLES_PER_POINT == 0:
+
+		if is_center:
 			river.set_curve_point_position(p_index, new_pos_local)
-		if index % HANDLES_PER_POINT == 1:
+		if is_cp_in:
 			river.set_curve_point_in(p_index, new_pos_local - base)
 			river.set_curve_point_out(p_index, -(new_pos_local - base))
-		if index % HANDLES_PER_POINT == 2:
+		if is_cp_out:
 			river.set_curve_point_out(p_index, new_pos_local - base)
 			river.set_curve_point_in(p_index, -(new_pos_local - base))
 	
 	# Widths handles
-	if index % HANDLES_PER_POINT >= 3:
+	if is_width_left or is_width_right:
 		var p1 = base
 		var p2
-		if index % HANDLES_PER_POINT == 3:
+		if is_width_left:
 			p2 = river.curve.get_point_out(p_index).cross(Vector3.UP).normalized() * 4096
-		if index % HANDLES_PER_POINT == 4:
+		if is_width_right:
 			p2 = river.curve.get_point_out(p_index).cross(Vector3.DOWN).normalized() * 4096
 		var g1 = global_inverse.xform(ray_from)
 		var g2 = global_inverse.xform(ray_from + ray_dir * 4096)
@@ -175,30 +293,34 @@ func set_handle(gizmo: EditorSpatialGizmo, index: int, camera: Camera, point: Ve
 		
 		river.widths[p_index] += dir
 	
+
+		# Ensure width handles don't end up inside the center point
+		river.widths[p_index] = max(river.widths[p_index], MIN_DIST_TO_CENTER_HANDLE)
 	redraw(gizmo)
 
 # Handle Undo / Redo of handle movements
 func commit_handle(gizmo: EditorSpatialGizmo, index: int, restore, cancel: bool = false) -> void:
 	var river : RiverManager = gizmo.get_spatial_node()
-	
+	var point_count = river.curve.get_point_count()
+
 	var ur = editor_plugin.get_undo_redo()
 	ur.create_action("Change River Shape")
-	
-	var p_index = index / HANDLES_PER_POINT
-	if index % HANDLES_PER_POINT == 0:
+
+	var p_index = _get_curve_index(index, point_count)
+	if _is_center_point(index, point_count):
 		ur.add_do_method(river, "set_curve_point_position", p_index, river.curve.get_point_position(p_index))
 		ur.add_undo_method(river, "set_curve_point_position", p_index, restore)
-	if index % HANDLES_PER_POINT == 1:
+	if _is_control_point_in(index, point_count):
 		ur.add_do_method(river, "set_curve_point_in", p_index, river.curve.get_point_in(p_index))
 		ur.add_undo_method(river, "set_curve_point_in", p_index, restore)
 		ur.add_do_method(river, "set_curve_point_out", p_index, river.curve.get_point_out(p_index))
 		ur.add_undo_method(river, "set_curve_point_out", p_index, -restore)
-	if index % HANDLES_PER_POINT == 2:
+	if _is_control_point_out(index, point_count):
 		ur.add_do_method(river, "set_curve_point_out", p_index, river.curve.get_point_out(p_index))
 		ur.add_undo_method(river, "set_curve_point_out", p_index, restore)
 		ur.add_do_method(river, "set_curve_point_in", p_index, river.curve.get_point_in(p_index))
 		ur.add_undo_method(river, "set_curve_point_in", p_index, -restore)
-	if index % HANDLES_PER_POINT == 3 or index % HANDLES_PER_POINT == 4:
+	if _is_width_point_left(index, point_count) or _is_width_point_right(index, point_count):
 		var river_widths_undo := river.widths.duplicate(true)
 		river_widths_undo[p_index] = restore
 		ur.add_do_property(river, "widths", river.widths)
@@ -245,21 +367,27 @@ func _draw_path(gizmo: EditorSpatialGizmo, curve : Curve3D) -> void:
 	gizmo.add_lines(path, _path_mat)
 
 func _draw_handles(gizmo: EditorSpatialGizmo, river : RiverManager) -> void:
-	var handles = PoolVector3Array()
 	var lines = PoolVector3Array()
-	for i in river.curve.get_point_count():
+	var handles_center = PoolVector3Array()
+	var handles_center_wd = PoolVector3Array()
+	var handles_control_points = PoolVector3Array()
+	var handles_control_points_wd = PoolVector3Array()
+	var handles_width = PoolVector3Array()
+	var handles_width_wd = PoolVector3Array()
+	var point_count = river.curve.get_point_count()
+	for i in point_count:
 		var point_pos = river.curve.get_point_position(i)
 		var point_pos_in = river.curve.get_point_in(i) + point_pos
 		var point_pos_out = river.curve.get_point_out(i) + point_pos
 		var point_width_pos_right = river.curve.get_point_position(i) + river.curve.get_point_out(i).cross(Vector3.UP).normalized() * river.widths[i]
 		var point_width_pos_left = river.curve.get_point_position(i) + river.curve.get_point_out(i).cross(Vector3.DOWN).normalized() * river.widths[i]
-		
-		handles.push_back(point_pos)
-		handles.push_back(point_pos_in)
-		handles.push_back(point_pos_out)
-		handles.push_back(point_width_pos_right)
-		handles.push_back(point_width_pos_left)
-		
+
+		handles_center.push_back(point_pos)
+		handles_control_points.push_back(point_pos_in)
+		handles_control_points.push_back(point_pos_out)
+		handles_width.push_back(point_width_pos_right)
+		handles_width.push_back(point_width_pos_left)
+
 		lines.push_back(point_pos)
 		lines.push_back(point_pos_in)
 		lines.push_back(point_pos)
@@ -270,4 +398,12 @@ func _draw_handles(gizmo: EditorSpatialGizmo, river : RiverManager) -> void:
 		lines.push_back(point_width_pos_left)
 		
 	gizmo.add_lines(lines, _handle_lines_mat)
-	gizmo.add_handles(handles, get_material("handles", gizmo))
+	
+	# Add each handle twice, for both material types.
+	# Needs to be grouped by material "type" since that's what influences the handle indices.
+	gizmo.add_handles(handles_center, get_material("handles_center", gizmo))
+	gizmo.add_handles(handles_control_points, get_material("handles_control_points", gizmo))
+	gizmo.add_handles(handles_width, get_material("handles_width", gizmo))
+	gizmo.add_handles(handles_center, get_material("handles_center_with_depth", gizmo))
+	gizmo.add_handles(handles_control_points, get_material("handles_control_points_with_depth", gizmo))
+	gizmo.add_handles(handles_width, get_material("handles_width_with_depth", gizmo))
