@@ -1,7 +1,7 @@
 # Copyright © 2021 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
-tool
-extends Spatial
+@tool
+extends Node3D
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 
@@ -22,7 +22,7 @@ enum SHADER_TYPES {WATER, LAVA, CUSTOM}
 const BUILTIN_SHADERS = [
 	{
 		name = "Water",
-		shader_path = "res://addons/waterways/shaders/river.shader",
+		shader_path = "res://addons/waterways/shaders/river.gdshader",
 		texture_paths = [
 			{
 				name = "normal_bump_texture",
@@ -32,7 +32,7 @@ const BUILTIN_SHADERS = [
 	},
 	{
 		name = "Lava",
-		shader_path = "res://addons/waterways/shaders/lava.shader",
+		shader_path = "res://addons/waterways/shaders/lava.gdshader",
 		texture_paths = [
 			{
 				name = "normal_bump_texture",
@@ -48,7 +48,7 @@ const BUILTIN_SHADERS = [
 
 const DEBUG_SHADER = {
 	name = "Debug",
-	shader_path = "res://addons/waterways/shaders/river_debug.shader",
+	shader_path = "res://addons/waterways/shaders/river_debug.gdshader",
 	texture_paths = [
 		{
 			name = "debug_pattern",
@@ -80,43 +80,43 @@ const DEFAULT_PARAMETERS = {
 
 
 # Shape Properties
-var shape_step_length_divs := 1 setget set_step_length_divs
-var shape_step_width_divs := 1 setget set_step_width_divs
-var shape_smoothness := 0.5 setget set_smoothness
-
+var shape_step_length_divs : int = 1: set = set_step_length_divs
+var shape_step_width_divs : int = 1: set = set_step_width_divs
+var shape_smoothness : float = 0.5: set = set_smoothness
+	
 # Material Properties that not handled in shader
-var mat_shader_type : int setget set_shader_type
-var mat_custom_shader : Shader setget set_custom_shader
+var mat_shader_type : SHADER_TYPES: set = set_shader_type
+var mat_custom_shader : Shader: set = set_custom_shader
 
 # LOD Properties
-var lod_lod0_distance := 50.0 setget set_lod0_distance
+var lod_lod0_distance : float = 50.0: set = set_lod0_distance
 
 # Bake Properties
-var baking_resolution := 2
-var baking_raycast_distance := 10.0
-var baking_raycast_layers := 1
-var baking_dilate := 0.6
-var baking_flowmap_blur := 0.04
-var baking_foam_cutoff := 0.9
-var baking_foam_offset := 0.1
-var baking_foam_blur := 0.02
+var baking_resolution : int = 2
+var baking_raycast_distance : float = 10.0
+var baking_raycast_layers : int = 1
+var baking_dilate : float = 0.6
+var baking_flowmap_blur : float = 0.04
+var baking_foam_cutoff : float = 0.9
+var baking_foam_offset : float = 0.1
+var baking_foam_blur : float = 0.02
 
 # Public variables
 var curve : Curve3D
-var widths := [] setget set_widths
+var widths : Array = []: set = set_widths
 var valid_flowmap := false
-var debug_view := 0 setget set_debug_view
-var mesh_instance : MeshInstance
-var flow_foam_noise : Texture
-var dist_pressure : Texture
+var debug_view : int = 0: set = set_debug_view
+var mesh_instance : MeshInstance3D
+var flow_foam_noise : Texture2D
+var dist_pressure : Texture2D
 
 # Private variables
-var _steps := 2
+var _steps : int = 2
 var _st : SurfaceTool
 var _mdt : MeshDataTool
 var _debug_material : ShaderMaterial
 var _first_enter_tree := true
-var _filter_renderer
+var _filter_renderer : PackedScene
 # Serialised private variables
 var _material : ShaderMaterial
 var _selected_shader : int = SHADER_TYPES.WATER
@@ -133,7 +133,7 @@ signal progress_notified
 func _get_property_list() -> Array:
 	var props = [
 		{
-			name = "Shape",
+			name = "Shape3D",
 			type = TYPE_NIL,
 			hint_string = "shape_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -154,7 +154,7 @@ func _get_property_list() -> Array:
 		},
 		{
 			name = "shape_smoothness",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.1, 5.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -185,7 +185,8 @@ func _get_property_list() -> Array:
 	var mat_categories = MATERIAL_CATEGORIES.duplicate(true)
 	
 	if _material.shader != null:
-		var shader_params := VisualServer.shader_get_param_list(_material.shader.get_rid())
+		var shader_params := RenderingServer.shader_get_shader_uniform_list(_material.shader.get_rid())
+		# TODO fix shader_params is now a dictionary, but code below expects an array
 		shader_params = WaterHelperMethods.reorder_params(shader_params)
 		for p in shader_params:
 			if p.name.begins_with("i_"):
@@ -220,7 +221,7 @@ func _get_property_list() -> Array:
 		},
 		{
 			name = "lod_lod0_distance",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "5.0, 200.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -240,7 +241,7 @@ func _get_property_list() -> Array:
 		},
 		{
 			name = "baking_raycast_distance",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 100.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -253,35 +254,35 @@ func _get_property_list() -> Array:
 		},
 		{
 			name = "baking_dilate",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
 			name = "baking_flowmap_blur",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
 			name = "baking_foam_cutoff",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
 			name = "baking_foam_offset",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
 		},
 		{
 			name = "baking_foam_blur",
-			type = TYPE_REAL,
+			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -334,18 +335,18 @@ func _get_property_list() -> Array:
 	return combined_props
 
 
-func _set(property: String, value) -> bool:
-	if property.begins_with("mat_"):
-		var param_name = property.right(len("mat_"))
-		_material.set_shader_param(param_name, value)
+func _set(property: StringName, value) -> bool:
+	if str(property).begins_with("mat_"):
+		var param_name = str(property).right(len("mat_"))
+		_material.set_shader_uniform(param_name, value)
 		return true
 	return false
 
 
-func _get(property : String):
-	if property.begins_with("mat_"):
-		var param_name = property.right(len("mat_"))
-		return  _material.get_shader_param(param_name)
+func _get(property : StringName):
+	if str(property).begins_with("mat_"):
+		var param_name = str(property).right(len("mat_"))
+		return  _material.get_shader_uniform(param_name)
 
 
 func property_can_revert(property : String) -> bool:
@@ -379,18 +380,18 @@ func _init() -> void:
 	_debug_material = ShaderMaterial.new()
 	_debug_material.shader = load(DEBUG_SHADER.shader_path) as Shader
 	for texture in DEBUG_SHADER.texture_paths:
-		_debug_material.set_shader_param(texture.name, load(texture.path) as Texture)
+		_debug_material.set_shader_uniform(texture.name, load(texture.path) as Texture2D)
 
 	_material = ShaderMaterial.new()
 	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
 	for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
-		_material.set_shader_param(texture.name, load(texture.path) as Texture)
+		_material.set_shader_uniform(texture.name, load(texture.path) as Texture2D)
 	# Have to manually set the color or it does not default right. Not sure how to work around this
-	_material.set_shader_param("albedo_color", Transform(Vector3(0.0, 0.8, 1.0), Vector3(0.15, 0.2, 0.5), Vector3.ZERO, Vector3.ZERO))
+	_material.set_shader_uniform("albedo_color", Transform3D(Vector3(0.0, 0.8, 1.0), Vector3(0.15, 0.2, 0.5), Vector3.ZERO, Vector3.ZERO))
 
 
 func _enter_tree() -> void:
-	if Engine.editor_hint and _first_enter_tree:
+	if Engine.is_editor_hint() and _first_enter_tree:
 		_first_enter_tree = false
 	
 	if not curve:
@@ -401,20 +402,20 @@ func _enter_tree() -> void:
 		widths = [1.0, 1.0]
 	
 	if get_child_count() <= 0:
-		var new_mesh_instance := MeshInstance.new()
+		var new_mesh_instance := MeshInstance3D.new()
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
-		mesh_instance = get_child(0) as MeshInstance
+		mesh_instance = get_child(0) as MeshInstance3D
 		_generate_river()
 	else:
-		mesh_instance = get_child(0) as MeshInstance
+		mesh_instance = get_child(0) as MeshInstance3D
 		_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 	
 	set_materials("i_valid_flowmap", valid_flowmap)
 	set_materials("i_uv2_sides", _uv2_sides)
 	set_materials("i_distmap", dist_pressure)
 	set_materials("i_flowmap", flow_foam_noise)
-	set_materials("i_texture_foam_noise", load(FOAM_NOISE_PATH) as Texture)
+	set_materials("i_texture_foam_noise", load(FOAM_NOISE_PATH) as Texture2D)
 
 
 func _get_configuration_warning() -> String:
@@ -447,7 +448,7 @@ func remove_point(index : int) -> void:
 	if curve.get_point_count() <= 2:
 		return
 	curve.remove_point(index)
-	widths.remove(index)
+	widths.remove_at(index)
 	emit_signal("river_changed")
 	_generate_river()
 
@@ -480,8 +481,8 @@ func set_widths(new_widths : Array) -> void:
 
 
 func set_materials(param : String, value) -> void:
-	_material.set_shader_param(param, value)
-	_debug_material.set_shader_param(param, value)
+	_material.set_shader_uniform(param, value)
+	_debug_material.set_shader_uniform(param, value)
 
 
 func set_debug_view(index : int) -> void:
@@ -489,23 +490,23 @@ func set_debug_view(index : int) -> void:
 	if index == 0:
 		mesh_instance.material_override = null
 	else:
-		_debug_material.set_shader_param("mode", index)
+		_debug_material.set_shader_uniform("mode", index)
 		mesh_instance.material_override =_debug_material
 
 
 func spawn_mesh() -> void:
 	if owner == null:
-		push_warning("Cannot create MeshInstance sibling when River is root.")
+		push_warning("Cannot create MeshInstance3D sibling when River is root.")
 		return
 	var sibling_mesh := mesh_instance.duplicate(true)
 	get_parent().add_child(sibling_mesh)
 	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
-	sibling_mesh.translation = translation
+	sibling_mesh.position = position
 	sibling_mesh.material_override = null;
 
 
-func get_curve_points() -> PoolVector3Array:
-	var points : PoolVector3Array
+func get_curve_points() -> PackedVector3Array:
+	var points : PackedVector3Array
 	for p in curve.get_point_count():
 		points.append(curve.get_point_position(p))
 	
@@ -525,8 +526,8 @@ func get_closest_point_to(point : Vector3) -> int:
 	return closest_index
 
 
-func get_shader_param(param : String):
-	return _material.get_shader_param(param)
+func get_shader_uniform(param : String):
+	return _material.get_shader_uniform(param)
 
 
 # Parameter Setters
@@ -570,9 +571,9 @@ func set_shader_type(type: int):
 	else:
 		_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path)
 		for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
-			_material.set_shader_param(texture.name, load(texture.path) as Texture)
+			_material.set_shader_uniform(texture.name, load(texture.path) as Texture)
 	
-	property_list_changed_notify()
+	notify_property_list_changed()
 
 
 func set_custom_shader(shader : Shader) -> void:
@@ -617,14 +618,14 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	image.fill(Color(0.0, 0.0, 0.0))
 	
 	emit_signal("progress_notified", 0.0, "Calculating Collisions (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
-	yield(get_tree(), "idle_frame")
+	await get_tree().process_frame
 	
 	image.lock()
-	image = yield(WaterHelperMethods.generate_collisionmap(image, mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, shape_step_length_divs, shape_step_width_divs, self), "completed")
+	image = await WaterHelperMethods.generate_collisionmap(image, mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, shape_step_length_divs, shape_step_width_divs, self)
 	image.unlock()
 	
 	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
-	yield(get_tree(), "idle_frame")
+	await get_tree().process_frame
 	
 	# Calculate how many colums are in UV2
 	_uv2_sides = WaterHelperMethods.calculate_side(_steps)
@@ -637,7 +638,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	collision_with_margins.create_from_image(image)
 
 	# Create correctly tiling noise for A channel
-	var noise_texture := load(FLOW_OFFSET_NOISE_TEXTURE_PATH) as Texture
+	var noise_texture := load(FLOW_OFFSET_NOISE_TEXTURE_PATH) as Texture2D
 	var noise_with_tiling := Image.new()
 	var noise_with_margin_size := float(_uv2_sides + 2) * (float(noise_texture.get_width()) / float(_uv2_sides))
 	noise_with_tiling.create(noise_with_margin_size, noise_with_margin_size, false, Image.FORMAT_RGB8)
@@ -651,7 +652,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	tiled_noise.create_from_image(noise_with_tiling)
 
 	# Create renderer
-	var renderer_instance = _filter_renderer.instance()
+	var renderer_instance = _filter_renderer.instantiate()
 
 	self.add_child(renderer_instance)
 
@@ -661,16 +662,16 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	var foam_offset_amount = baking_foam_offset / float(_uv2_sides)
 	var foam_blur_amount = baking_foam_blur / float(_uv2_sides) * flowmap_resolution
 	
-	var flow_pressure_map = yield(renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, _uv2_sides + 2.0), "completed")
-	var blurred_flow_pressure_map = yield(renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution), "completed")
-	var dilated_texture = yield(renderer_instance.apply_dilate(collision_with_margins, dilate_amount, 0.0, flowmap_resolution), "completed")
-	var normal_map = yield(renderer_instance.apply_normal(dilated_texture, flowmap_resolution), "completed")
-	var flow_map = yield(renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution), "completed")
-	var blurred_flow_map = yield(renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution), "completed")
-	var foam_map = yield(renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution), "completed")
-	var blurred_foam_map = yield(renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution), "completed")
-	var flow_foam_noise_img = yield(renderer_instance.apply_combine(blurred_flow_map, blurred_flow_map, blurred_foam_map, tiled_noise), "completed")
-	var dist_pressure_img = yield(renderer_instance.apply_combine(dilated_texture, blurred_flow_pressure_map), "completed")
+	var flow_pressure_map = await renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, _uv2_sides + 2.0).completed
+	var blurred_flow_pressure_map = await renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution).completed
+	var dilated_texture = await renderer_instance.apply_dilate(collision_with_margins, dilate_amount, 0.0, flowmap_resolution).completed
+	var normal_map = await renderer_instance.apply_normal(dilated_texture, flowmap_resolution).completed
+	var flow_map = await renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution).completed
+	var blurred_flow_map = await renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution).completed
+	var foam_map = await renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution).completed
+	var blurred_foam_map = await renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution).completed
+	var flow_foam_noise_img = await renderer_instance.apply_combine(blurred_flow_map, blurred_flow_map, blurred_foam_map, tiled_noise).completed
+	var dist_pressure_img = await renderer_instance.apply_combine(dilated_texture, blurred_flow_pressure_map).completed
 	
 	remove_child(renderer_instance) # cleanup
 	
@@ -686,7 +687,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	set_materials("i_uv2_sides", _uv2_sides)
 	valid_flowmap = true;
 	emit_signal("progress_notified", 100.0, "finished")
-	update_configuration_warning()
+	update_configuration_warnings()
 
 
 # Signal Methods

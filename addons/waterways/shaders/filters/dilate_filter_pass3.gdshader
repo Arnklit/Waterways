@@ -2,7 +2,7 @@ shader_type canvas_item;
 
 uniform float size = 512.0;
 uniform sampler2D distance_texture;
-uniform sampler2D color_texture : hint_white;
+uniform sampler2D color_texture : hint_default_white;
 uniform float fill = 1.0;
 
 void fragment() {

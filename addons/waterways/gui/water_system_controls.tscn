@@ -4,16 +4,16 @@
 [ext_resource path="res://addons/waterways/gui/water_system_menu.gd" type="Script" id=2]
 
 [node name="WaterSystemControls" type="HBoxContainer"]
-margin_right = 128.0
-margin_bottom = 26.0
+offset_right = 128.0
+offset_bottom = 26.0
 script = ExtResource( 1 )
 __meta__ = {
 "_edit_use_anchors_": false
 }
 
 [node name="WaterSystemMenu" type="MenuButton" parent="."]
-margin_right = 97.0
-margin_bottom = 26.0
+offset_right = 97.0
+offset_bottom = 26.0
 text = "WaterSystem"
-items = [ "Generate System Maps", null, 0, false, false, 0, 0, null, "", false ]
+items = ["Generate System Maps", null, 0, false, false, 0, 0, null, "", false]
 script = ExtResource( 2 )

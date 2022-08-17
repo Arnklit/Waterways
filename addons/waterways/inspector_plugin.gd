@@ -11,7 +11,7 @@ func can_handle(object: Object) -> bool:
 
 
 func parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int) -> bool:
-	if type == TYPE_TRANSFORM and "color" in path:
+	if type == TYPE_TRANSFORM3D and "color" in path:
 		var editor_property = _editor.new()
 		add_property_editor(path, editor_property)
 		return true

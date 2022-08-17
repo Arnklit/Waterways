@@ -1,6 +1,6 @@
 # Copyright © 2021 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
-tool
+@tool
 extends EditorPlugin
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
@@ -14,8 +14,8 @@ const RiverControls = preload("./gui/river_controls.gd")
 var river_gizmo = RiverGizmo.new()
 var gradient_inspector = GradientInspector.new()
 
-var _river_controls = preload("./gui/river_controls.tscn").instance()
-var _water_system_controls = preload("./gui/water_system_controls.tscn").instance()
+var _river_controls = preload("./gui/river_controls.tscn").instantiate()
+var _water_system_controls = preload("./gui/water_system_controls.tscn").instantiate()
 var _edited_node = null
 var _progress_window = null
 var _editor_selection : EditorSelection = null
@@ -26,20 +26,20 @@ var local_editing := false
 
 
 func _enter_tree() -> void:
-	add_custom_type("River", "Spatial", preload("./river_manager.gd"), preload("./icons/river.svg"))
-	add_custom_type("WaterSystem", "Spatial", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
-	add_custom_type("Buoyant", "Spatial", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
+	add_custom_type("River", "Node3D", preload("./river_manager.gd"), preload("./icons/river.svg"))
+	add_custom_type("WaterSystem", "Node3D", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
+	add_custom_type("Buoyant", "Node3D", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
 	add_spatial_gizmo_plugin(river_gizmo)
 	add_inspector_plugin(gradient_inspector)
 	river_gizmo.editor_plugin = self
-	_river_controls.connect("mode", self, "_on_mode_change")
-	_river_controls.connect("options", self, "_on_option_change")
-	_progress_window = ProgressWindow.instance()
+	_river_controls.connect("mode", Callable(self, "_on_mode_change"))
+	_river_controls.connect("options", Callable(self, "_on_option_change"))
+	_progress_window = ProgressWindow.instantiate()
 	_river_controls.add_child(_progress_window)
 	_editor_selection = get_editor_interface().get_selection()
-	_editor_selection.connect("selection_changed", self, "_on_selection_change")
-	connect("scene_changed", self, "_on_scene_changed");
-	connect("scene_closed", self, "_on_scene_closed");
+	_editor_selection.connect("selection_changed", Callable(self, "_on_selection_change"))
+	connect("scene_changed", Callable(self, "_on_scene_changed"));
+	connect("scene_closed", Callable(self, "_on_scene_closed"));
 
 
 func _on_generate_flowmap_pressed() -> void:
@@ -64,11 +64,11 @@ func _exit_tree() -> void:
 	remove_custom_type("Buoyant")
 	remove_spatial_gizmo_plugin(river_gizmo)
 	remove_inspector_plugin(gradient_inspector)
-	_river_controls.disconnect("mode", self, "_on_mode_change")
-	_river_controls.disconnect("options", self, "_on_option_change")
-	_editor_selection.disconnect("selection_changed", self, "_on_selection_change")
-	disconnect("scene_changed", self, "_on_scene_changed");
-	disconnect("scene_closed", self, "_on_scene_closed");
+	_river_controls.disconnect("mode", Callable(self, "_on_mode_change"))
+	_river_controls.disconnect("options", Callable(self, "_on_option_change"))
+	_editor_selection.disconnect("selection_changed", Callable(self, "_on_selection_change"))
+	disconnect("scene_changed", Callable(self, "_on_scene_changed"));
+	disconnect("scene_closed", Callable(self, "_on_scene_closed"));
 	_hide_river_control_panel()
 	_hide_water_system_control_panel()
 
@@ -93,8 +93,8 @@ func _on_selection_change() -> void:
 		return
 	if selected[0] is RiverManager:
 		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
-		if not _edited_node.is_connected("progress_notified", self, "_river_progress_notified"):
-			_edited_node.connect("progress_notified", self, "_river_progress_notified")
+		if not _edited_node.is_connected("progress_notified", Callable(self, "_river_progress_notified")):
+			_edited_node.connect("progress_notified", Callable(self, "_river_progress_notified"))
 		_hide_water_system_control_panel()
 	elif selected[0] is WaterSystem:
 		# TODO - is there anything we need to add here?
@@ -128,21 +128,21 @@ func _on_option_change(option, value) -> void:
 		local_editing = value
 
 
-func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
+func forward_spatial_gui_input(camera: Camera3D, event: InputEvent) -> bool:
 	if not _edited_node:
 		return false
 	
-	var global_transform: Transform = _edited_node.transform
+	var global_transform: Transform3D = _edited_node.transform
 	if _edited_node.is_inside_tree():
 		global_transform = _edited_node.get_global_transform()
-	var global_inverse: Transform = global_transform.affine_inverse()
+	var global_inverse: Transform3D = global_transform.affine_inverse()
 	
-	if (event is InputEventMouseButton) and (event.button_index == BUTTON_LEFT):
+	if (event is InputEventMouseButton) and (event.button_index == MOUSE_BUTTON_LEFT):
 		
 		var ray_from = camera.project_ray_origin(event.position)
 		var ray_dir = camera.project_ray_normal(event.position)
-		var g1 = global_inverse.xform(ray_from)
-		var g2 = global_inverse.xform(ray_from + ray_dir * 4096)
+		var g1 = global_inverse * (ray_from)
+		var g2 = global_inverse * (ray_from + ray_dir * 4096)
 		
 		# Iterate through points to find closest segment
 		var curve_points = _edited_node.get_curve_points()
@@ -152,7 +152,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 		for point in curve_points.size() -1:
 			var p1 = curve_points[point]
 			var p2 = curve_points[point + 1]
-			var result  = Geometry.get_closest_points_between_segments(p1, p2, g1, g2)
+			var result  = Geometry3D.get_closest_points_between_segments(p1, p2, g1, g2)
 			var dist = result[0].distance_to(result[1])
 			if dist < closest_distance:
 				closest_distance = dist
@@ -168,7 +168,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 		for baked_point in baked_curve_points.size() - 1:
 			var p1 = baked_curve_points[baked_point]
 			var p2 = baked_curve_points[baked_point + 1]
-			var result  = Geometry.get_closest_points_between_segments(p1, p2, g1, g2)
+			var result  = Geometry3D.get_closest_points_between_segments(p1, p2, g1, g2)
 			var dist = result[0].distance_to(result[1])
 			if dist < 0.1 and dist < baked_closest_distance:
 				baked_closest_distance = dist
@@ -196,7 +196,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				var z : Vector3 = _edited_node.curve.get_point_out(_edited_node.curve.get_point_count() - 1).normalized()
 				var x := z.cross(Vector3.DOWN).normalized()
 				var y := z.cross(x).normalized()
-				var _handle_base_transform = Transform(
+				var _handle_base_transform = Transform3D(
 					Basis(x, y, z) * global_transform.basis,
 					end_pos_global
 				)
@@ -204,7 +204,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				var plane := Plane(end_pos_global, end_pos_global + camera.transform.basis.x, end_pos_global + camera.transform.basis.y)
 				var new_pos
 				if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
-					var space_state = _edited_node.get_world().direct_space_state
+					var space_state = _edited_node.get_world_3d().direct_space_state
 					var result = space_state.intersect_ray(ray_from, ray_from + ray_dir * 4096)
 					if result:
 						new_pos = result.position
@@ -216,20 +216,20 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				elif constraint in RiverGizmo.AXIS_MAPPING:
 					var axis: Vector3 = RiverGizmo.AXIS_MAPPING[constraint]
 					if local_editing:
-						axis = _handle_base_transform.basis.xform(axis)
+						axis = _handle_base_transform.basis * (axis)
 					var axis_from = end_pos_global + (axis * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
 					var axis_to = end_pos_global - (axis * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
 					var ray_to = ray_from + (ray_dir * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
-					var result = Geometry.get_closest_points_between_segments(axis_from, axis_to, ray_from, ray_to)
+					var result = Geometry3D.get_closest_points_between_segments(axis_from, axis_to, ray_from, ray_to)
 					new_pos = result[0]
 				
 				elif constraint in RiverGizmo.PLANE_MAPPING:
 					var normal: Vector3 = RiverGizmo.PLANE_MAPPING[constraint]
 					if local_editing:
-						normal = _handle_base_transform.basis.xform(normal)
-					var projected := end_pos_global.project(normal)
-					var direction := sign(projected.dot(normal))
-					var distance := direction * projected.length()
+						normal = _handle_base_transform.basis * (normal)
+					var projected : Vector3 = end_pos_global.project(normal)
+					var direction : Vector3 = sign(projected.dot(normal))
+					var distance : Vector3 = direction * projected.length()
 					plane = Plane(normal, distance)
 					new_pos = plane.intersects_ray(ray_from, ray_dir)
 						
@@ -300,26 +300,26 @@ func _river_progress_notified(progress : float, message : String) -> void:
 func _show_river_control_panel() -> void:
 	if not _river_controls.get_parent():
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
-		_river_controls.menu.connect("generate_flowmap", self, "_on_generate_flowmap_pressed")
-		_river_controls.menu.connect("generate_mesh", self, "_on_generate_mesh_pressed")
-		_river_controls.menu.connect("debug_view_changed", self, "_on_debug_view_changed")
+		_river_controls.menu.connect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
+		_river_controls.menu.connect("generate_mesh", Callable(self, "_on_generate_mesh_pressed"))
+		_river_controls.menu.connect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
 
 
 func _hide_river_control_panel() -> void:
 	if _river_controls.get_parent():
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
-		_river_controls.menu.disconnect("generate_flowmap", self, "_on_generate_flowmap_pressed")
-		_river_controls.menu.disconnect("generate_mesh", self, "_on_generate_mesh_pressed")
-		_river_controls.menu.disconnect("debug_view_changed", self, "_on_debug_view_changed")
+		_river_controls.menu.disconnect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
+		_river_controls.menu.disconnect("generate_mesh", Callable(self, "_on_generate_mesh_pressed"))
+		_river_controls.menu.disconnect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
 
 
 func _show_water_system_control_panel() -> void:
 	if not _water_system_controls.get_parent():
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _water_system_controls)
-		_water_system_controls.menu.connect("generate_system_maps", self, "_on_generate_system_maps_pressed")
+		_water_system_controls.menu.connect("generate_system_maps", Callable(self, "_on_generate_system_maps_pressed"))
 
 
 func _hide_water_system_control_panel() -> void:
 	if _water_system_controls.get_parent():
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _water_system_controls)
-		_water_system_controls.menu.disconnect("generate_system_maps", self, "_on_generate_system_maps_pressed")
+		_water_system_controls.menu.disconnect("generate_system_maps", Callable(self, "_on_generate_system_maps_pressed"))

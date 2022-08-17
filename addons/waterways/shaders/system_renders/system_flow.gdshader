@@ -2,7 +2,7 @@ shader_type spatial;
 render_mode unshaded;
 
 uniform sampler2D flowmap : hint_normal;
-uniform sampler2D distmap : hint_white;
+uniform sampler2D distmap : hint_default_white;
 uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
 uniform float flow_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
@@ -14,7 +14,7 @@ varying vec3 binormal_world;
 
 
 void vertex() {
-	binormal_world = (WORLD_MATRIX * vec4(BINORMAL, 0.0)).xyz;
+	binormal_world = (MODEL_MATRIX * vec4(BINORMAL, 0.0)).xyz;
 }
 
 void fragment() {
@@ -38,7 +38,7 @@ void fragment() {
 	
 	// calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
-	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
 	
 	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
