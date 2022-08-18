@@ -1,4 +1,4 @@
-# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 tool
 extends EditorPlugin
@@ -6,15 +6,19 @@ extends EditorPlugin
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const WaterSystem = preload("./water_system_manager.gd")
 const RiverManager = preload("./river_manager.gd")
+const LakeManager = preload("./lake_manager.gd")
 const RiverGizmo = preload("./river_gizmo.gd")
+const LakeGizmo = preload("./lake_gizmo.gd")
 const GradientInspector = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./progress_window.tscn")
 const RiverControls = preload("./gui/river_controls.gd")
 
 var river_gizmo = RiverGizmo.new()
+var lake_gizmo = LakeGizmo.new()
 var gradient_inspector = GradientInspector.new()
 
 var _river_controls = preload("./gui/river_controls.tscn").instance()
+var _lake_controls = preload("./gui/lake_controls.tscn").instance()
 var _water_system_controls = preload("./gui/water_system_controls.tscn").instance()
 var _edited_node = null
 var _progress_window = null
@@ -27,13 +31,17 @@ var local_editing := false
 
 func _enter_tree() -> void:
 	add_custom_type("River", "Spatial", preload("./river_manager.gd"), preload("./icons/river.svg"))
+	add_custom_type("Lake", "Spatial", preload("./lake_manager.gd"), preload("./icons/lake.svg"))
 	add_custom_type("WaterSystem", "Spatial", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
 	add_custom_type("Buoyant", "Spatial", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
 	add_spatial_gizmo_plugin(river_gizmo)
+	add_spatial_gizmo_plugin(lake_gizmo)
 	add_inspector_plugin(gradient_inspector)
 	river_gizmo.editor_plugin = self
+	lake_gizmo.editor_plugin = self
 	_river_controls.connect("mode", self, "_on_mode_change")
 	_river_controls.connect("options", self, "_on_option_change")
+	_lake_controls.connect("mode", self, "_on_mode_change")
 	_progress_window = ProgressWindow.instance()
 	_river_controls.add_child(_progress_window)
 	_editor_selection = get_editor_interface().get_selection()
@@ -60,27 +68,36 @@ func _on_generate_system_maps_pressed() -> void:
 
 func _exit_tree() -> void:
 	remove_custom_type("River")
+	remove_custom_type("Lake")
 	remove_custom_type("Water System")
 	remove_custom_type("Buoyant")
 	remove_spatial_gizmo_plugin(river_gizmo)
+	remove_spatial_gizmo_plugin(lake_gizmo)
 	remove_inspector_plugin(gradient_inspector)
 	_river_controls.disconnect("mode", self, "_on_mode_change")
 	_river_controls.disconnect("options", self, "_on_option_change")
+	
+	_lake_controls.disconnect("mode", self, "_on_mode_change")
+	
 	_editor_selection.disconnect("selection_changed", self, "_on_selection_change")
-	disconnect("scene_changed", self, "_on_scene_changed");
-	disconnect("scene_closed", self, "_on_scene_closed");
+	disconnect("scene_changed", self, "_on_scene_changed")
+	disconnect("scene_closed", self, "_on_scene_closed")
 	_hide_river_control_panel()
+	_hide_lake_control_panel()
 	_hide_water_system_control_panel()
 
 
 func handles(node):
-	return node is RiverManager or node is WaterSystem
+	return node is RiverManager or node is LakeManager or node is WaterSystem
 
 
 func edit(node):
 	if node is RiverManager:
 		_show_river_control_panel()
 		_edited_node = node as RiverManager
+	if node is LakeManager:
+		_show_lake_control_panel()
+		_edited_node = node as LakeManager
 	if node is WaterSystem:
 		_show_water_system_control_panel()
 		_edited_node = node as WaterSystem
@@ -95,23 +112,31 @@ func _on_selection_change() -> void:
 		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
 		if not _edited_node.is_connected("progress_notified", self, "_river_progress_notified"):
 			_edited_node.connect("progress_notified", self, "_river_progress_notified")
+		_hide_lake_control_panel()
 		_hide_water_system_control_panel()
+	elif selected[0] is LakeManager:
+		_hide_water_system_control_panel()
+		_hide_river_control_panel()
 	elif selected[0] is WaterSystem:
 		# TODO - is there anything we need to add here?
 		_hide_river_control_panel()
+		_hide_lake_control_panel()
 	else:
 		_edited_node = null
 		_hide_river_control_panel()
+		_hide_lake_control_panel()
 		_hide_water_system_control_panel()
 
 
 func _on_scene_changed(scene_root : Node) -> void:
 	_hide_river_control_panel()
+	_hide_lake_control_panel()
 	_hide_water_system_control_panel()
 
 
 func _on_scene_closed(_value) -> void:
 	_hide_river_control_panel()
+	_hide_lake_control_panel()
 	_hide_water_system_control_panel()
 
 
@@ -185,6 +210,7 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 		if _mode == "select":
 			if not event.pressed:
 				river_gizmo.reset()
+				lake_gizmo.reset()
 			return false
 		if _mode == "add" and not event.pressed:
 			# if we don't have a point on the line, we'll calculate a point
@@ -236,19 +262,19 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				baked_closest_point = _edited_node.to_local(new_pos)
 			
 			var ur := get_undo_redo()
-			ur.create_action("Add River point")
+			ur.create_action("Add point")
 			ur.add_do_method(_edited_node, "add_point", baked_closest_point, closest_segment)
 			ur.add_do_method(_edited_node, "properties_changed")
-			ur.add_do_method(_edited_node, "set_materials", "i_valid_flowmap", false)
-			ur.add_do_property(_edited_node, "valid_flowmap", false)
+			#ur.add_do_method(_edited_node, "set_materials", "i_valid_flowmap", false)
+			#ur.add_do_property(_edited_node, "valid_flowmap", false)
 			ur.add_do_method(_edited_node, "update_configuration_warning")
 			if closest_segment == -1:
 				ur.add_undo_method(_edited_node, "remove_point", _edited_node.curve.get_point_count()) # remove last
 			else:
 				ur.add_undo_method(_edited_node, "remove_point", closest_segment + 1)
 			ur.add_undo_method(_edited_node, "properties_changed")
-			ur.add_undo_method(_edited_node, "set_materials", "i_valid_flowmap", _edited_node.valid_flowmap)
-			ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
+			#ur.add_undo_method(_edited_node, "set_materials", "i_valid_flowmap", _edited_node.valid_flowmap)
+			#ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
 			ur.add_undo_method(_edited_node, "update_configuration_warning")
 			ur.commit_action()
 		if _mode == "remove" and not event.pressed:
@@ -258,19 +284,19 @@ func forward_spatial_gui_input(camera: Camera, event: InputEvent) -> bool:
 				var closest_index = _edited_node.get_closest_point_to(baked_closest_point)
 				#_edited_node.remove_point(closest_index)
 				var ur = get_undo_redo()
-				ur.create_action("Remove River point")
+				ur.create_action("Remove point")
 				ur.add_do_method(_edited_node, "remove_point", closest_index)
 				ur.add_do_method(_edited_node, "properties_changed")
-				ur.add_do_method(_edited_node, "set_materials", "i_valid_flowmap", false)
-				ur.add_do_property(_edited_node, "valid_flowmap", false)
+				#ur.add_do_method(_edited_node, "set_materials", "i_valid_flowmap", false)
+				#ur.add_do_property(_edited_node, "valid_flowmap", false)
 				ur.add_do_method(_edited_node, "update_configuration_warning")
 				if closest_index == _edited_node.curve.get_point_count() - 1:
 					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), -1)
 				else:
 					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), closest_index - 1, _edited_node.curve.get_point_out(closest_index), _edited_node.widths[closest_index])
 				ur.add_undo_method(_edited_node, "properties_changed")
-				ur.add_undo_method(_edited_node, "set_materials", "i_valid_flowmap", _edited_node.valid_flowmap)
-				ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
+				#ur.add_undo_method(_edited_node, "set_materials", "i_valid_flowmap", _edited_node.valid_flowmap)
+				#ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
 				ur.add_undo_method(_edited_node, "update_configuration_warning")
 				ur.commit_action()
 		return true
@@ -311,6 +337,16 @@ func _hide_river_control_panel() -> void:
 		_river_controls.menu.disconnect("generate_flowmap", self, "_on_generate_flowmap_pressed")
 		_river_controls.menu.disconnect("generate_mesh", self, "_on_generate_mesh_pressed")
 		_river_controls.menu.disconnect("debug_view_changed", self, "_on_debug_view_changed")
+
+
+func _show_lake_control_panel() -> void:
+	if not _lake_controls.get_parent():
+		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _lake_controls)
+
+
+func _hide_lake_control_panel() -> void:
+	if _lake_controls.get_parent():
+		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _lake_controls)
 
 
 func _show_water_system_control_panel() -> void:
