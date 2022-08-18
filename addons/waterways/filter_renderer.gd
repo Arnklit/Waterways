@@ -28,7 +28,7 @@ var combine_pass_shader : Shader
 var dotproduct_pass_shader : Shader
 var flow_pressure_pass_shader : Shader
 
-var filter_mat : Material
+var filter_mat : ShaderMaterial
 
 
 func _enter_tree() -> void:
@@ -50,7 +50,7 @@ func _enter_tree() -> void:
 
 
 func apply_combine(r_texture : Texture2D, g_texture : Texture2D, b_texture : Texture2D = null, a_texture : Texture2D = null) -> ImageTexture:
-	filter_mat.gdshader = combine_pass_shader
+	filter_mat.shader = combine_pass_shader
 	size = r_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -69,7 +69,7 @@ func apply_combine(r_texture : Texture2D, g_texture : Texture2D, b_texture : Tex
 
 
 func apply_dotproduct(input_texture : Texture2D, resolution : float) -> ImageTexture:
-	filter_mat.gdshader = dotproduct_pass_shader
+	filter_mat.shader = dotproduct_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -85,7 +85,7 @@ func apply_dotproduct(input_texture : Texture2D, resolution : float) -> ImageTex
 
 
 func apply_flow_pressure(input_texture : Texture2D, resolution : float, rows : float) -> ImageTexture:
-	filter_mat.gdshader = flow_pressure_pass_shader
+	filter_mat.shader = flow_pressure_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -103,7 +103,7 @@ func apply_flow_pressure(input_texture : Texture2D, resolution : float, rows : f
 
 
 func apply_foam(input_texture : Texture2D, distance : float, cutoff : float, resolution : float) -> ImageTexture:
-	filter_mat.gdshader = foam_pass_shader
+	filter_mat.shader = foam_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -122,7 +122,7 @@ func apply_foam(input_texture : Texture2D, distance : float, cutoff : float, res
 
 
 func apply_blur(input_texture : Texture2D, blur : float, resolution : float) -> ImageTexture:
-	filter_mat.gdshader = blur_pass1_shader
+	filter_mat.shader = blur_pass1_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -136,7 +136,7 @@ func apply_blur(input_texture : Texture2D, blur : float, resolution : float) -> 
 	var pass1_result := ImageTexture.new()
 	pass1_result.create_from_image(image)
 	# Pass 2
-	filter_mat.gdshader = blur_pass2_shader
+	filter_mat.shader = blur_pass2_shader
 	$ColorRect.material.set_shader_uniform("input_texture", pass1_result)
 	$ColorRect.material.set_shader_uniform("size", resolution)
 	$ColorRect.material.set_shader_uniform("blur", blur)
@@ -151,7 +151,7 @@ func apply_blur(input_texture : Texture2D, blur : float, resolution : float) -> 
 
 
 func apply_vertical_blur(input_texture : Texture2D, blur : float, resolution : float) -> ImageTexture:
-	filter_mat.gdshader = blur_pass2_shader
+	filter_mat.shader = blur_pass2_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -168,7 +168,7 @@ func apply_vertical_blur(input_texture : Texture2D, blur : float, resolution : f
 
 
 func apply_normal_to_flow(input_texture : Texture2D, resolution : float) -> ImageTexture:
-	filter_mat.gdshader = normal_to_flow_pass_shader
+	filter_mat.shader = normal_to_flow_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -185,7 +185,7 @@ func apply_normal_to_flow(input_texture : Texture2D, resolution : float) -> Imag
 
 
 func apply_normal(input_texture : Texture2D, resolution : float) -> ImageTexture:
-	filter_mat.gdshader = normal_map_pass_shader
+	filter_mat.shader = normal_map_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -202,7 +202,7 @@ func apply_normal(input_texture : Texture2D, resolution : float) -> ImageTexture
 
 
 func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, resolution : float, fill_texture : Texture2D = null) -> ImageTexture:
-	filter_mat.gdshader = dilate_pass_1_shader
+	filter_mat.shader = dilate_pass_1_shader
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
@@ -216,7 +216,7 @@ func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, res
 	var pass1_result := ImageTexture.new()
 	pass1_result.create_from_image(image)
 	# Pass 2
-	filter_mat.gdshader = dilate_pass_2_shader
+	filter_mat.shader = dilate_pass_2_shader
 	$ColorRect.material.set_shader_uniform("input_texture", pass1_result)
 	$ColorRect.material.set_shader_uniform("size", resolution)
 	$ColorRect.material.set_shader_uniform("dilation", dilation)
@@ -227,7 +227,7 @@ func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, res
 	var pass2_result := ImageTexture.new()
 	pass2_result.create_from_image(image2)
 	# Pass 3
-	filter_mat.gdshader = dilate_pass_3_shader
+	filter_mat.shader = dilate_pass_3_shader
 	$ColorRect.material.set_shader_uniform("distance_texture", pass2_result)
 	if fill_texture != null:
 		$ColorRect.material.set_shader_uniform("color_texture", fill_texture)

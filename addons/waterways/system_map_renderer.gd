@@ -15,9 +15,9 @@ func grab_height(water_objects, aabb : AABB, resolution : float) -> ImageTexture
 	_camera = $Camera3D
 	_container = $Container
 	
-	var height_mat = ShaderMaterial.new()
+	var height_mat := ShaderMaterial.new()
 	var height_shader := load(HEIGHT_SHADER_PATH) as Shader
-	height_mat.gdshader = height_shader
+	height_mat.shader = height_shader
 	height_mat.set_shader_uniform("lower_bounds", aabb.position.y)
 	height_mat.set_shader_uniform("upper_bounds", aabb.end.y)
 	
@@ -61,9 +61,9 @@ func grab_alpha(water_objects, aabb : AABB, resolution : float) -> ImageTexture:
 	_camera = $Camera3D
 	_container = $Container
 	
-	var alpha_mat = ShaderMaterial.new()
+	var alpha_mat := ShaderMaterial.new()
 	var alpha_shader := load(ALPHA_SHADER_PATH) as Shader
-	alpha_mat.gdshader = alpha_shader
+	alpha_mat.shader = alpha_shader
 	
 	for object in water_objects:
 		var water_mesh_copy = object.mesh_instance.duplicate(true)
@@ -104,9 +104,9 @@ func grab_flow(water_objects, aabb : AABB, resolution : float) -> ImageTexture:
 	_camera = $Camera3D
 	_container = $Container
 	
-	var flow_mat = ShaderMaterial.new()
+	var flow_mat := ShaderMaterial.new()
 	var flow_shader := load(FLOW_SHADER_PATH) as Shader
-	flow_mat.gdshader = flow_shader
+	flow_mat.shader = flow_shader
 
 	for i in water_objects.size():
 		var water_mesh_copy = water_objects[i].mesh_instance.duplicate(true)

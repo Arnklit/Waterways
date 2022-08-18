@@ -117,17 +117,17 @@ func generate_system_maps() -> void:
 	var renderer = SystemMapRenderer.instantiate()
 	add_child(renderer)
 	var resolution = pow(2, system_bake_resolution + 7)
-	var flow_map = await renderer.grab_flow(rivers, _system_aabb, resolution).completed
-	var height_map = await renderer.grab_height(rivers, _system_aabb, resolution).completed
-	var alpha_map = await renderer.grab_alpha(rivers, _system_aabb, resolution).completed
+	var flow_map = await renderer.grab_flow(rivers, _system_aabb, resolution)
+	var height_map = await renderer.grab_height(rivers, _system_aabb, resolution)
+	var alpha_map = await renderer.grab_alpha(rivers, _system_aabb, resolution)
 	
 	remove_child(renderer)
 	
 	var filter_renderer = FilterRenderer.instantiate()
 	add_child(filter_renderer)
 	
-	#var dilated_height = await filter_renderer.apply_dilate(alpha_map, 0.1, 1.0, resolution, height_map).completed
-	self.system_map = await filter_renderer.apply_combine(flow_map, flow_map, height_map).completed
+	#var dilated_height = await filter_renderer.apply_dilate(alpha_map, 0.1, 1.0, resolution, height_map)
+	self.system_map = await filter_renderer.apply_combine(flow_map, flow_map, height_map)
 	
 	remove_child(filter_renderer)
 	
