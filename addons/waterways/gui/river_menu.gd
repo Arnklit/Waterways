@@ -25,7 +25,7 @@ func _enter_tree() -> void:
 	get_popup().add_item("Generate MeshInstance3D Sibling")
 	_debug_view_menu = PopupMenu.new()
 	_debug_view_menu.name = "DebugViewMenu"
-	_debug_view_menu.connect("about_to_show", Callable(self, "_on_debug_view_menu_about_to_show"))
+	_debug_view_menu.connect("about_to_popup", Callable(self, "_on_debug_view_menu_about_to_show"))
 	_debug_view_menu.connect("id_pressed", Callable(self, "_debug_menu_item_selected"))
 	get_popup().add_child(_debug_view_menu)
 	get_popup().add_submenu_item("Debug View", _debug_view_menu.name)

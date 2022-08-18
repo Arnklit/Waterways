@@ -103,7 +103,7 @@ var baking_foam_blur : float = 0.02
 
 # Public variables
 var curve : Curve3D
-var widths : Array = []: set = set_widths
+var widths : Array = [1.0, 1.0]: set = set_widths
 var valid_flowmap := false
 var debug_view : int = 0: set = set_debug_view
 var mesh_instance : MeshInstance3D
@@ -399,13 +399,14 @@ func _enter_tree() -> void:
 		curve.bake_interval = 0.05
 		curve.add_point(Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, -0.25), Vector3(0.0, 0.0, 0.25))
 		curve.add_point(Vector3(0.0, 0.0, 1.0), Vector3(0.0, 0.0, -0.25), Vector3(0.0, 0.0, 0.25))
-		widths = [1.0, 1.0]
 	
 	if get_child_count() <= 0:
+		## This is what happens on creating a new river
 		var new_mesh_instance := MeshInstance3D.new()
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
 		mesh_instance = get_child(0) as MeshInstance3D
+		print(mesh_instance)
 		_generate_river()
 	else:
 		mesh_instance = get_child(0) as MeshInstance3D
@@ -474,6 +475,7 @@ func set_curve_point_out(index : int, position : Vector3) -> void:
 
 
 func set_widths(new_widths : Array) -> void:
+	print("in set_width, _first_enter_tree is: ", _first_enter_tree)
 	widths = new_widths
 	if _first_enter_tree:
 		return
@@ -602,6 +604,7 @@ func set_lod0_distance(value : float) -> void:
 
 # Private Methods
 func _generate_river() -> void:
+	print("in _generate_river")
 	var average_width := WaterHelperMethods.sum_array(widths) / float(widths.size() / 2)
 	_steps = int( max(1.0, round(curve.get_baked_length() / average_width)) )
 	

@@ -3,21 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://b85tlq8wcklbo"
-path.s3tc="res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405bf0b2a66d64.s3tc.ctex"
-path.etc2="res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405bf0b2a66d64.etc2.ctex"
+path="res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405bf0b2a66d64.ctex"
 metadata={
-"imported_formats": ["s3tc", "etc2"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://addons/waterways/textures/water1_normal_bump.png"
-dest_files=["res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405bf0b2a66d64.s3tc.ctex", "res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405bf0b2a66d64.etc2.ctex"]
+dest_files=["res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405bf0b2a66d64.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/bptc_ldr=0

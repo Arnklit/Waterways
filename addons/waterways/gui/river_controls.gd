@@ -32,11 +32,11 @@ func spatial_gui_input(event: InputEvent) -> bool:
 		
 		# Early exit if any of the modifiers (except shift) is pressed to not
 		# override default shortcuts like Ctrl + Z
-		if event.alt or event.control or event.meta or event.command:
+		if event.keycode == KEY_ALT or event.keycode == KEY_CTRL or event.keycode == KEY_META:
 			return false
 		
 		# Handle local mode keybinding for toggling
-		if event.scancode == KEY_T:
+		if event.keycode == KEY_T:
 			# Set the input as handled to prevent default actions from the keys
 			$LocalMode.pressed = not $LocalMode.pressed
 			get_tree().set_input_as_handled()
@@ -44,7 +44,7 @@ func spatial_gui_input(event: InputEvent) -> bool:
 		
 		# Fetch the constraint that the user requested to toggle
 		var requested: int
-		match [event.scancode, event.shift]:
+		match [event.keycode, event.keycode == KEY_SHIFT]:
 			[KEY_S, _]: requested = CONSTRAINTS.COLLIDERS
 			[KEY_X, false]: requested = CONSTRAINTS.AXIS_X
 			[KEY_Y, false]: requested = CONSTRAINTS.AXIS_Y

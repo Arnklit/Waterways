@@ -1,83 +1,75 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=6 format=3 uid="uid://b4nx8h5jfldwt"]
 
-[ext_resource path="res://addons/waterways/icons/create.svg" type="Texture2D" id=1]
-[ext_resource path="res://addons/waterways/icons/select.svg" type="Texture2D" id=2]
-[ext_resource path="res://addons/waterways/icons/delete.svg" type="Texture2D" id=3]
-[ext_resource path="res://addons/waterways/gui/river_controls.gd" type="Script" id=4]
-[ext_resource path="res://addons/waterways/gui/river_menu.gd" type="Script" id=5]
+[ext_resource type="Texture2D" uid="uid://dnjok0de3mopo" path="res://addons/waterways/icons/create.svg" id="1"]
+[ext_resource type="Texture2D" uid="uid://dl2fd2kpkqfcs" path="res://addons/waterways/icons/select.svg" id="2"]
+[ext_resource type="Texture2D" uid="uid://cot00dv010gt2" path="res://addons/waterways/icons/delete.svg" id="3"]
+[ext_resource type="Script" path="res://addons/waterways/gui/river_controls.gd" id="4"]
+[ext_resource type="Script" path="res://addons/waterways/gui/river_menu.gd" id="5"]
 
 [node name="HBoxContainer" type="HBoxContainer"]
 offset_right = 128.0
 offset_bottom = 26.0
-script = ExtResource( 4 )
-__meta__ = {
-"_edit_use_anchors_": false
-}
+script = ExtResource("4")
 
 [node name="RiverMenu" type="MenuButton" parent="."]
-offset_right = 44.0
-offset_bottom = 26.0
+offset_right = 48.0
+offset_bottom = 31.0
 text = "River"
-items = ["Generate Flow & Foam Map", null, 0, false, false, 0, 0, null, "", false, "Generate MeshInstance3D Sibling", null, 0, false, false, 1, 0, null, "", false, "Debug View", null, 0, false, false, 2, 0, null, "DebugViewMenu", false]
-script = ExtResource( 5 )
+item_count = 3
+popup/item_0/text = "Generate Flow & Foam Map"
+popup/item_0/id = 0
+popup/item_1/text = "Generate MeshInstance3D Sibling"
+popup/item_1/id = 1
+popup/item_2/text = "Debug View"
+popup/item_2/id = 2
+script = ExtResource("5")
 
 [node name="VSeparator" type="VSeparator" parent="."]
-offset_left = 48.0
-offset_right = 52.0
-offset_bottom = 26.0
+offset_left = 52.0
+offset_right = 56.0
+offset_bottom = 31.0
 
 [node name="Select" type="Button" parent="."]
-offset_left = 56.0
+offset_left = 60.0
 offset_right = 84.0
-offset_bottom = 26.0
+offset_bottom = 31.0
 toggle_mode = true
-icon = ExtResource( 2 )
+icon = ExtResource("2")
 flat = true
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="Add" type="Button" parent="."]
 offset_left = 88.0
-offset_right = 116.0
-offset_bottom = 26.0
+offset_right = 112.0
+offset_bottom = 31.0
 toggle_mode = true
-icon = ExtResource( 1 )
+icon = ExtResource("1")
 flat = true
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="Remove" type="Button" parent="."]
-offset_left = 120.0
-offset_right = 148.0
-offset_bottom = 26.0
+offset_left = 116.0
+offset_right = 140.0
+offset_bottom = 31.0
 toggle_mode = true
-icon = ExtResource( 3 )
+icon = ExtResource("3")
 flat = true
-__meta__ = {
-"_edit_use_anchors_": false
-}
 
 [node name="VSeparator2" type="VSeparator" parent="."]
-offset_left = 152.0
-offset_right = 156.0
-offset_bottom = 26.0
+offset_left = 144.0
+offset_right = 148.0
+offset_bottom = 31.0
 
 [node name="Constraints" type="OptionButton" parent="."]
-offset_left = 160.0
-offset_right = 276.0
-offset_bottom = 26.0
-text = "No Constraint"
+offset_left = 152.0
+offset_right = 166.0
+offset_bottom = 31.0
 flat = true
-items = ["No Constraint", null, false, 0, null, "Snap to Colliders", null, false, 1, null, "Axis X", null, false, 2, null, "Axis Y", null, false, 3, null, "Axis Z", null, false, 4, null, "Plane YZ", null, false, 5, null, "Plane XZ", null, false, 6, null, "Plane XY", null, false, 7, null]
-selected = 0
 
 [node name="LocalMode" type="CheckBox" parent="."]
-offset_left = 280.0
-offset_right = 381.0
-offset_bottom = 26.0
+offset_left = 170.0
+offset_right = 287.0
+offset_bottom = 31.0
 text = "Local Mode"
+
 [connection signal="pressed" from="Select" to="." method="_on_select"]
 [connection signal="pressed" from="Add" to="." method="_on_add"]
 [connection signal="pressed" from="Remove" to="." method="_on_remove"]

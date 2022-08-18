@@ -71,6 +71,10 @@ func _init() -> void:
 	add_material("handle_lines", mat)
 
 
+func _get_gizmo_name():
+	return "Waterways"
+
+
 func reset() -> void:
 	_handle_base_transform = null
 
@@ -79,11 +83,11 @@ func get_name() -> String:
 	return "RiverInput"
 
 
-func has_gizmo(spatial) -> bool:
+func _has_gizmo(spatial) -> bool:
 	return spatial is RiverManager
 
-
-func get_handle_name(gizmo: EditorNode3DGizmo, index: int) -> String:
+# TODO - figure out of this new "secondary" bool should be used
+func _get_handle_name(gizmo: EditorNode3DGizmo, index: int, secondary: bool) -> String:
 	return "Handle " + str(index)
 
 # Handles are pushed to separate handle lists, one per material (using gizmo.add_handles).
@@ -161,8 +165,8 @@ func _get_point_index(curve_index: int, is_center: bool, is_cp_in: bool, is_cp_o
 	if is_width_right:
 		return point_count * 3 + 1 + curve_index * 2
 
-
-func get_handle_value(gizmo: EditorNode3DGizmo, index: int):
+# TODO - figure out of this new "secondary" bool should be used
+func _get_handle_value(gizmo: EditorNode3DGizmo, index: int, secondary: bool):
 	var river : RiverManager = gizmo.get_spatial_node()
 	var point_count = river.curve.get_point_count()
 	if _is_center_point(index, point_count):
@@ -176,7 +180,8 @@ func get_handle_value(gizmo: EditorNode3DGizmo, index: int):
 
 
 # Called when handle is moved
-func set_handle(gizmo: EditorNode3DGizmo, index: int, camera: Camera3D, point: Vector2) -> void:
+# TODO - figure out of this new "secondary" bool should be used
+func _set_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, camera: Camera3D, point: Vector2) -> void:
 	var river : RiverManager = gizmo.get_spatial_node()
 	var space_state := river.get_world_3d().direct_space_state
 
@@ -299,10 +304,11 @@ func set_handle(gizmo: EditorNode3DGizmo, index: int, camera: Camera3D, point: V
 
 		# Ensure width handles don't end up inside the center point
 		river.widths[p_index] = max(river.widths[p_index], MIN_DIST_TO_CENTER_HANDLE)
-	redraw(gizmo)
+	_redraw(gizmo)
 
 # Handle Undo / Redo of handle movements
-func commit_handle(gizmo: EditorNode3DGizmo, index: int, restore, cancel: bool = false) -> void:
+# TODO - figure out of this new "secondary" bool should be used
+func _commit_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, restore, cancel: bool = false) -> void:
 	var river : RiverManager = gizmo.get_spatial_node()
 	var point_count = river.curve.get_point_count()
 
@@ -339,9 +345,9 @@ func commit_handle(gizmo: EditorNode3DGizmo, index: int, restore, cancel: bool =
 	ur.add_undo_method(river, "update_configuration_warning")
 	ur.commit_action()
 	
-	redraw(gizmo)
+	_redraw(gizmo)
 
-func redraw(gizmo: EditorNode3DGizmo) -> void:
+func _redraw(gizmo: EditorNode3DGizmo) -> void:
 	# Work around for issue where using "get_material" doesn't return a
 	# material when redraw is being called manually from _set_handle()
 	# so I'm caching the materials instead
@@ -353,8 +359,8 @@ func redraw(gizmo: EditorNode3DGizmo) -> void:
 	
 	var river := gizmo.get_spatial_node() as RiverManager
 	
-	if not river.is_connected("river_changed", Callable(self, "redraw")):
-		river.connect("river_changed", Callable(self, "redraw").bind([gizmo]))
+	if not river.is_connected("river_changed", Callable(self, "_redraw")):
+		river.connect("river_changed", Callable(self, "_redraw").bind([gizmo]))
 	
 	_draw_path(gizmo, river.curve)
 	_draw_handles(gizmo, river)

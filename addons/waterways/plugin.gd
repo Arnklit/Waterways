@@ -73,11 +73,12 @@ func _exit_tree() -> void:
 	_hide_water_system_control_panel()
 
 
-func handles(node):
+func _handles(node):
 	return node is RiverManager or node is WaterSystem
 
 
-func edit(node):
+func _edit(node):
+	print("edit(), node is: ", node)
 	if node is RiverManager:
 		_show_river_control_panel()
 		_edited_node = node as RiverManager
@@ -88,6 +89,7 @@ func edit(node):
 
 func _on_selection_change() -> void:
 	_editor_selection = get_editor_interface().get_selection()
+	print("_on_selection_change(), Selection: ", _editor_selection)
 	var selected = _editor_selection.get_selected_nodes()
 	if len(selected) == 0:
 		return
@@ -100,6 +102,7 @@ func _on_selection_change() -> void:
 		# TODO - is there anything we need to add here?
 		_hide_river_control_panel()
 	else:
+		print("_edited_node set to null")
 		_edited_node = null
 		_hide_river_control_panel()
 		_hide_water_system_control_panel()
@@ -128,9 +131,10 @@ func _on_option_change(option, value) -> void:
 		local_editing = value
 
 
-func forward_spatial_gui_input(camera: Camera3D, event: InputEvent) -> bool:
+func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 	if not _edited_node:
-		return false
+		# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
+		return 0
 	
 	var global_transform: Transform3D = _edited_node.transform
 	if _edited_node.is_inside_tree():
@@ -185,7 +189,7 @@ func forward_spatial_gui_input(camera: Camera3D, event: InputEvent) -> bool:
 		if _mode == "select":
 			if not event.pressed:
 				river_gizmo.reset()
-			return false
+			return 0
 		if _mode == "add" and not event.pressed:
 			# if we don't have a point on the line, we'll calculate a point
 			# based of a plane of the last point of the curve
@@ -209,7 +213,7 @@ func forward_spatial_gui_input(camera: Camera3D, event: InputEvent) -> bool:
 					if result:
 						new_pos = result.position
 					else:
-						return false
+						return 0
 				elif constraint == RiverControls.CONSTRAINTS.NONE:
 					new_pos = plane.intersects_ray(ray_from, ray_from + ray_dir * 4096)
 				
@@ -273,7 +277,8 @@ func forward_spatial_gui_input(camera: Camera3D, event: InputEvent) -> bool:
 				ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
 				ur.add_undo_method(_edited_node, "update_configuration_warning")
 				ur.commit_action()
-		return true
+		# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
+		return 1
 	
 	elif _edited_node is RiverManager:
 		# Forward input to river controls. This is cleaner than handling
@@ -281,9 +286,11 @@ func forward_spatial_gui_input(camera: Camera3D, event: InputEvent) -> bool:
 		# the buttons. Handling it here would expose more private details
 		# of the controls than needed, instead only the spatial_gui_input()
 		# method needs to be exposed.
+		# TODO - so this was returning a bool before? Check this
 		return _river_controls.spatial_gui_input(event)
 	
-	return false
+	# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
+	return 0
 
 
 func _river_progress_notified(progress : float, message : String) -> void:
