@@ -2,8 +2,8 @@
 
 [ext_resource path="res://addons/waterways/filter_renderer.gd" type="Script" id=1]
 
-[node name="Renderer" type="Viewport"]
-size = Vector2( 256, 256 )
+[node name="Renderer" type="SubViewport"]
+size = Vector2(256, 256)
 own_world = true
 transparent_bg = true
 hdr = false
@@ -14,5 +14,5 @@ gui_disable_input = true
 script = ExtResource( 1 )
 
 [node name="ColorRect" type="ColorRect" parent="."]
-margin_right = 256.0
-margin_bottom = 256.0
+offset_right = 256.0
+offset_bottom = 256.0

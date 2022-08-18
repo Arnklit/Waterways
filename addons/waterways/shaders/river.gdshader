@@ -39,16 +39,16 @@ uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
 // Foam
-uniform vec4 foam_color : hint_color = vec4(0.9, 0.9, 0.9, 1.0);
+uniform vec4 foam_color : source_color = vec4(0.9, 0.9, 0.9, 1.0);
 uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
 uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
 
 // Internal uniforms - DO NOT CUSTOMIZE THESE
 uniform float i_lod0_distance : hint_range(5.0, 200.0) = 50.0;
-uniform sampler2D i_texture_foam_noise : hint_white;
+uniform sampler2D i_texture_foam_noise : hint_default_white;
 uniform sampler2D i_flowmap : hint_normal;
-uniform sampler2D i_distmap : hint_white;
+uniform sampler2D i_distmap : hint_default_white;
 uniform bool i_valid_flowmap = false;
 uniform int i_uv2_sides = 2;
 
@@ -133,7 +133,7 @@ void fragment() {
 	
 	// Calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
-	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
 	
 	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
@@ -187,14 +187,14 @@ void fragment() {
 	alb_t = ease(alb_t, albedo_depth_curve);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
-	NORMALMAP = vec3(water_norFBM, 0);
-	NORMALMAP_DEPTH = normal_scale;
+	NORMAL_MAP = vec3(water_norFBM, 0);
+	NORMAL_MAP_DEPTH = normal_scale;
 
 	
 	// Refraction - has to be done after normal is set
-	vec3 unpacted_normals = NORMALMAP * 2.0 - 1.0;
-	//vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMALMAP_DEPTH) );
-	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMALMAP_DEPTH * .1;
+	vec3 unpacted_normals = NORMAL_MAP * 2.0 - 1.0;
+	//vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMAL_MAP_DEPTH) );
+	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMAL_MAP_DEPTH * .1;
 	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * transparency_refraction;
 	float clar_t = clamp(water_depth / transparency_clarity, 0.0, 1.0);
 	clar_t = ease(clar_t, transparency_depth_curve);
@@ -225,7 +225,7 @@ void fragment() {
 
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
-	TRANSMISSION = vec3(0.9);
+	BACKLIGHT = vec3(0.9);
 
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;

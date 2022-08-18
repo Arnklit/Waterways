@@ -25,7 +25,7 @@ uniform mat4 emission_color = mat4(vec4(1.0, 1.0, 0.0, 0.0), vec4(1.0, 0.5, 0.0,
 uniform float emission_energy : hint_range(0.0, 20.0) = 4.0;
 uniform float emission_depth : hint_range(0.0, 200.0) = 3.0;
 uniform float emission_depth_curve = 0.25;
-uniform sampler2D emission_texture : hint_black_albedo;
+uniform sampler2D emission_texture : hint_default_black;
 
 // flow
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
@@ -37,7 +37,7 @@ uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 
 // Internal uniforms, do not customize these
 uniform sampler2D i_flowmap : hint_normal;
-uniform sampler2D i_distmap : hint_white;
+uniform sampler2D i_distmap : hint_default_white;
 uniform bool i_valid_flowmap = false;
 uniform int i_uv2_sides = 2;
 
@@ -118,7 +118,7 @@ void fragment() {
 	
 	// Calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
-	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
 	
 	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
@@ -148,8 +148,8 @@ void fragment() {
 	float lava_depth = surface_dist + VERTEX.z;
 	
 	ROUGHNESS = roughness;
-	NORMALMAP = vec3(lava_norFBM, 0);
-	NORMALMAP_DEPTH = normal_scale;
+	NORMAL_MAP = vec3(lava_norFBM, 0);
+	NORMAL_MAP_DEPTH = normal_scale;
 	
 	float emission_t = clamp(lava_depth / emission_depth, 0.0, 1.0);
 	emission_t = ease(emission_t, emission_depth_curve);

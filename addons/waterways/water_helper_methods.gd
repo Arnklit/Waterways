@@ -29,7 +29,7 @@ static func reset_all_colliders(node):
 	for n in node.get_children():
 		if n.get_child_count() > 0:
 			reset_all_colliders(n)
-		if n is CollisionShape:
+		if n is CollisionShape3D:
 			if n.disabled == false:
 				n.disabled = true
 				n.disabled = false
@@ -75,7 +75,7 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var curve_length := curve.get_baked_length()
-	st.add_smooth_group(true)
+	st.set_smooth_group(0)
 	
 	# Generating the verts
 	for step in steps * step_length_divs + 1:
@@ -88,7 +88,7 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 		var width_lerp : float = river_width_values[step]
 		
 		for w_sub in step_width_divs + 1:
-			st.add_uv(Vector2(float(w_sub) / (float(step_width_divs)), float(step) / float(step_length_divs) ))
+			st.set_uv(Vector2(float(w_sub) / (float(step_width_divs)), float(step) / float(step_length_divs) ))
 			st.add_vertex(position + right_vector * width_lerp - 2.0 * right_vector * width_lerp * float(w_sub) / (float(step_width_divs)))
 	
 	# Defining the tris
@@ -157,27 +157,27 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 	return mesh3
 
 
-static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, raycast_dist : float, raycast_layers : int, steps : int, step_length_divs : int, step_width_divs : int, river) -> Image:
-	var space_state := mesh_instance.get_world().direct_space_state
+static func generate_collisionmap(image : Image, mesh_instance : MeshInstance3D, raycast_dist : float, raycast_layers : int, steps : int, step_length_divs : int, step_width_divs : int, river) -> Image:
+	var space_state := mesh_instance.get_world_3d().direct_space_state
 	
-	var uv2 := mesh_instance.mesh.surface_get_arrays(0)[5] as PoolVector2Array
-	var verts := mesh_instance.mesh.surface_get_arrays(0)[0] as PoolVector3Array
+	var uv2 := mesh_instance.mesh.surface_get_arrays(0)[5] as PackedVector2Array
+	var verts := mesh_instance.mesh.surface_get_arrays(0)[0] as PackedVector3Array
 	# We need to move the verts into world space
-	var world_verts := PoolVector3Array()
+	var world_verts := PackedVector3Array()
 	for v in verts.size():
-		world_verts.append( mesh_instance.global_transform.xform(verts[v]) )
+		world_verts.append( mesh_instance.global_transform * (verts[v]) )
 	
 	var tris_in_step_quad := step_length_divs * step_width_divs * 2
 	var side := calculate_side(steps)
 	var percentage = 0.0
 	river.emit_signal("progress_notified", percentage, "Calculating Collisions (" + str(image.get_width()) + "x" + str(image.get_width()) + ")")
-	yield(river.get_tree(), "idle_frame")
+	await river.get_tree().idle_frame
 	for x in image.get_width():
 		var cur_percentage = float(x) / float(image.get_width())
 		if cur_percentage > percentage + 0.1:
 			percentage += 0.1
 			river.emit_signal("progress_notified", percentage, "Calculating Collisions (" + str(image.get_width()) + "x" + str(image.get_width()) + ")")
-			yield(river.get_tree(), "idle_frame")
+			await river.get_tree().idle_frame
 		for y in image.get_height():
 			var uv_coordinate := Vector2( ( 0.5 + float(x))  / float(image.get_width()), ( 0.5 + float(y)) / float(image.get_height()) )
 			var baryatric_coords : Vector3
@@ -193,7 +193,7 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, r
 			
 			for tris in tris_in_step_quad:
 				var offset_tris : int = (tris_in_step_quad * step_quad) + tris
-				var triangle := PoolVector2Array()
+				var triangle := PackedVector2Array()
 				triangle.append(uv2[offset_tris * 3])
 				triangle.append(uv2[offset_tris * 3 + 1])
 				triangle.append(uv2[offset_tris * 3 + 2])
@@ -215,8 +215,19 @@ static func generate_collisionmap(image : Image, mesh_instance : MeshInstance, r
 				var real_pos := bary2cart(vert0, vert1, vert2, baryatric_coords)
 				var real_pos_up := real_pos + Vector3.UP * raycast_dist
 				
-				var result_up = space_state.intersect_ray(real_pos, real_pos_up, [], raycast_layers)
-				var result_down = space_state.intersect_ray(real_pos_up, real_pos, [], raycast_layers)
+				var ray_params: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.new()
+				ray_params.from = real_pos
+				ray_params.to = real_pos_up
+				ray_params.exclude = []
+				ray_params.collision_mask = raycast_layers
+				var result_up = space_state.intersect_ray(ray_params)
+
+				ray_params = PhysicsRayQueryParameters3D.new()
+				ray_params.from = real_pos_up
+				ray_params.to = real_pos
+				ray_params.exclude = []
+				ray_params.collision_mask = raycast_layers
+				var result_down = space_state.intersect_ray(ray_params)
 				
 				var up_hit_frontface := false
 				if result_up:
@@ -248,7 +259,7 @@ static func reorder_params(unordered_params : Array) -> Array:
 	var ordered = []
 	
 	for param in unordered_params:
-		if param.hint_string != "Texture":
+		if param.hint_string != "Texture2D":
 			ordered.append(param)
 		else:
 			#find the last index in ordered with the same
@@ -263,7 +274,7 @@ static func reorder_params(unordered_params : Array) -> Array:
 
 static func last_prefix_occurence(array : Array, search : String) -> int:
 	var inverted_array = array.duplicate(true)
-	inverted_array.invert()
+	inverted_array.reverse()
 	
 	for i in array.size():
 		var prefix = inverted_array[i].name.rsplit("_")[0]

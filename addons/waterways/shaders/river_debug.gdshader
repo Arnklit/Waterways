@@ -19,8 +19,8 @@ const int FOAM_MIX = 9;
 uniform int mode = 1;
 
 uniform sampler2D normal_bump_texture : hint_normal;
-uniform sampler2D debug_pattern : hint_black;
-uniform sampler2D debug_arrow : hint_black;
+uniform sampler2D debug_pattern : hint_default_black;
+uniform sampler2D debug_arrow : hint_default_black;
 
 uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
 uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
@@ -34,9 +34,9 @@ uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
 uniform float foam_smoothness : hint_range(0.0, 1.0) = 1.0;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 
-uniform sampler2D i_texture_foam_noise : hint_white;
-uniform sampler2D i_flowmap : hint_black;
-uniform sampler2D i_distmap : hint_white;
+uniform sampler2D i_texture_foam_noise : hint_default_white;
+uniform sampler2D i_flowmap : hint_default_black;
+uniform sampler2D i_distmap : hint_default_white;
 uniform bool i_valid_flowmap = false;
 uniform int i_uv2_sides = 2;
 
@@ -94,7 +94,7 @@ void fragment() {
 	
 	// calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
-	vec3 up_viewspace = (INV_CAMERA_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 8.0;
 	
 	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
