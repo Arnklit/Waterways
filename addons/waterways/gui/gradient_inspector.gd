@@ -7,8 +7,8 @@ extends HBoxContainer
 func set_value(gradient : Transform3D):
 	$Color1.color = Color(gradient[0].x, gradient[0].y, gradient[0].z)
 	$Color2.color = Color(gradient[1].x, gradient[1].y, gradient[1].z)
-	$Gradient.material.set_shader_uniform("color1", $Color1.color)
-	$Gradient.material.set_shader_uniform("color2", $Color2.color)
+	$Gradient.material.set_shader_parameter("color1", $Color1.color)
+	$Gradient.material.set_shader_parameter("color2", $Color2.color)
 
 
 func get_value() -> Transform3D:

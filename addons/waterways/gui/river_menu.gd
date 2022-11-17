@@ -33,7 +33,7 @@ func _enter_tree() -> void:
 
 func _exit_tree() -> void:
 	get_popup().disconnect("id_pressed", Callable(self, "_menu_item_selected"))
-	_debug_view_menu.disconnect("about_to_show", Callable(self, "_on_debug_view_menu_about_to_show"))
+	_debug_view_menu.disconnect("about_to_popup", Callable(self, "_on_debug_view_menu_about_to_show"))
 	_debug_view_menu.disconnect("id_pressed", Callable(self, "_debug_menu_item_selected"))
 
 

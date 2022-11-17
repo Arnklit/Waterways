@@ -38,8 +38,8 @@ func spatial_gui_input(event: InputEvent) -> bool:
 		# Handle local mode keybinding for toggling
 		if event.keycode == KEY_T:
 			# Set the input as handled to prevent default actions from the keys
-			$LocalMode.pressed = not $LocalMode.pressed
-			get_tree().set_input_as_handled()
+			$LocalMode.toggle_mode = not $LocalMode.toggle_mode
+			get_viewport().set_input_as_handled()
 			return true
 		
 		# Fetch the constraint that the user requested to toggle
@@ -64,7 +64,7 @@ func spatial_gui_input(event: InputEvent) -> bool:
 		_on_constraint_selected(requested)
 		
 		# Set the input as handled to prevent default actions from the keys
-		get_tree().set_input_as_handled()
+		get_viewport().set_input_as_handled()
 		return true
 	
 	return false
@@ -73,21 +73,21 @@ func spatial_gui_input(event: InputEvent) -> bool:
 func _on_select() -> void:
 	_untoggle_buttons()
 	_disable_constraint_ui(false)
-	$Select.pressed = true
+	$Select.toggle_mode = true
 	emit_signal("mode", "select")
 
 
 func _on_add() -> void:
 	_untoggle_buttons()
 	_disable_constraint_ui(false)
-	$Add.pressed = true
+	$Add.toggle_mode = true
 	emit_signal("mode", "add")
 
 
 func _on_remove() -> void:
 	_untoggle_buttons()
 	_disable_constraint_ui(true)
-	$Remove.pressed = true
+	$Remove.toggle_mode = true
 	emit_signal("mode", "remove")
 
 
@@ -105,6 +105,6 @@ func _disable_constraint_ui(disable: bool) -> void:
 
 
 func _untoggle_buttons() -> void:
-	$Select.pressed = false
-	$Add.pressed = false
-	$Remove.pressed = false
+	$Select.toggle_mode = false
+	$Add.toggle_mode = false
+	$Remove.toggle_mode = false

@@ -12,7 +12,7 @@ const WaterSystem = preload("res://addons/waterways/water_system_manager.gd")
 @export var flow_force := 50.0
 @export var water_resistance := 5.0
 
-var _rb : RigidDynamicBody3D
+var _rb : RigidBody3D
 var _system : WaterSystem
 var _default_linear_damp := -1.0
 var _default_angular_damp := -1.0
@@ -20,8 +20,8 @@ var _default_angular_damp := -1.0
 
 func _enter_tree() -> void:
 	var parent = get_parent()
-	if parent is RigidDynamicBody3D:
-		_rb = parent as RigidDynamicBody3D
+	if parent is RigidBody3D:
+		_rb = parent as RigidBody3D
 		_default_linear_damp = _rb.linear_damp
 		_default_angular_damp = _rb.angular_damp
 
@@ -39,7 +39,7 @@ func _ready() -> void:
 
 func _get_configuration_warning() -> String:
 	if _rb == null:
-		return "Bouyant node must be a direct child of a RigidDynamicBody3D to function."
+		return "Bouyant node must be a direct child of a RigidBody3D to function."
 	return ""
 
 

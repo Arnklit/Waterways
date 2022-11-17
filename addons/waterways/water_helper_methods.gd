@@ -53,14 +53,14 @@ static func generate_river_width_values(curve : Curve3D, steps : int, step_lengt
 	var river_width_values := []
 	var length = curve.get_baked_length()
 	for step in steps * step_length_divs + 1:
-		var target_pos = curve.interpolate_baked((float(step) / float(steps * step_length_divs + 1)) * curve.get_baked_length())
+		var target_pos = curve.sample_baked((float(step) / float(steps * step_length_divs + 1)) * curve.get_baked_length())
 		var closest_dist := 4096.0
 		var closest_interpolate : float
 		var closest_point : int
 		for c_point in curve.get_point_count() - 1:
 			for i in 100:
 				var interpolate := float(i) / 100.0
-				var pos = curve.interpolate(c_point, interpolate)
+				var pos = curve.sample(c_point, interpolate)
 				var dist = pos.distance_to(target_pos)
 				if dist < closest_dist:
 					closest_dist = dist
@@ -79,9 +79,9 @@ static func generate_river_mesh(curve : Curve3D, steps : int, step_length_divs :
 	
 	# Generating the verts
 	for step in steps * step_length_divs + 1:
-		var position := curve.interpolate_baked(float(step) / float(steps * step_length_divs) * curve_length, false)
-		var backward_pos := curve.interpolate_baked((float(step) - smoothness) / float(steps * step_length_divs) * curve_length, false)
-		var forward_pos := curve.interpolate_baked((float(step) + smoothness) / float(steps * step_length_divs) * curve_length, false)
+		var position := curve.sample_baked(float(step) / float(steps * step_length_divs) * curve_length, false)
+		var backward_pos := curve.sample_baked((float(step) - smoothness) / float(steps * step_length_divs) * curve_length, false)
+		var forward_pos := curve.sample_baked((float(step) + smoothness) / float(steps * step_length_divs) * curve_length, false)
 		var forward_vector := forward_pos - backward_pos
 		var right_vector := forward_vector.cross(Vector3.UP).normalized()
 		

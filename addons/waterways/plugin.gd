@@ -29,7 +29,7 @@ func _enter_tree() -> void:
 	add_custom_type("River", "Node3D", preload("./river_manager.gd"), preload("./icons/river.svg"))
 	add_custom_type("WaterSystem", "Node3D", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
 	add_custom_type("Buoyant", "Node3D", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
-	add_spatial_gizmo_plugin(river_gizmo)
+	add_node_3d_gizmo_plugin(river_gizmo)
 	add_inspector_plugin(gradient_inspector)
 	river_gizmo.editor_plugin = self
 	_river_controls.connect("mode", Callable(self, "_on_mode_change"))
@@ -62,7 +62,7 @@ func _exit_tree() -> void:
 	remove_custom_type("River")
 	remove_custom_type("Water System")
 	remove_custom_type("Buoyant")
-	remove_spatial_gizmo_plugin(river_gizmo)
+	remove_node_3d_gizmo_plugin(river_gizmo)
 	remove_inspector_plugin(gradient_inspector)
 	_river_controls.disconnect("mode", Callable(self, "_on_mode_change"))
 	_river_controls.disconnect("options", Callable(self, "_on_option_change"))
@@ -78,7 +78,6 @@ func _handles(node):
 
 
 func _edit(node):
-	print("edit(), node is: ", node)
 	if node is RiverManager:
 		_show_river_control_panel()
 		_edited_node = node as RiverManager
@@ -89,20 +88,18 @@ func _edit(node):
 
 func _on_selection_change() -> void:
 	_editor_selection = get_editor_interface().get_selection()
-	print("_on_selection_change(), Selection: ", _editor_selection)
 	var selected = _editor_selection.get_selected_nodes()
 	if len(selected) == 0:
 		return
 	if selected[0] is RiverManager:
-		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
-		if not _edited_node.is_connected("progress_notified", Callable(self, "_river_progress_notified")):
-			_edited_node.connect("progress_notified", Callable(self, "_river_progress_notified"))
+		_river_controls.get_node('RiverMenu').debug_view_menu_selected = selected[0].debug_view
+		if selected[0].progress_notified.is_connected(_river_progress_notified):
+			selected[0].progress_notified.connect(_river_progress_notified)
 		_hide_water_system_control_panel()
 	elif selected[0] is WaterSystem:
 		# TODO - is there anything we need to add here?
 		_hide_river_control_panel()
 	else:
-		print("_edited_node set to null")
 		_edited_node = null
 		_hide_river_control_panel()
 		_hide_water_system_control_panel()
@@ -209,7 +206,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 				var new_pos
 				if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
 					var space_state = _edited_node.get_world_3d().direct_space_state
-					var result = space_state.intersect_ray(ray_from, ray_from + ray_dir * 4096)
+					var result = space_state.intersect_ray(PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 4096))
 					if result:
 						new_pos = result.position
 					else:
@@ -245,7 +242,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 			ur.add_do_method(_edited_node, "properties_changed")
 			ur.add_do_method(_edited_node, "set_materials", "i_valid_flowmap", false)
 			ur.add_do_property(_edited_node, "valid_flowmap", false)
-			ur.add_do_method(_edited_node, "update_configuration_warning")
+			ur.add_do_method(_edited_node, "update_configuration_warnings")
 			if closest_segment == -1:
 				ur.add_undo_method(_edited_node, "remove_point", _edited_node.curve.get_point_count()) # remove last
 			else:
@@ -253,7 +250,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 			ur.add_undo_method(_edited_node, "properties_changed")
 			ur.add_undo_method(_edited_node, "set_materials", "i_valid_flowmap", _edited_node.valid_flowmap)
 			ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
-			ur.add_undo_method(_edited_node, "update_configuration_warning")
+			ur.add_undo_method(_edited_node, "update_configuration_warnings")
 			ur.commit_action()
 		if _mode == "remove" and not event.pressed:
 			# A closest_segment of -1 means we didn't press close enough to a
@@ -267,7 +264,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 				ur.add_do_method(_edited_node, "properties_changed")
 				ur.add_do_method(_edited_node, "set_materials", "i_valid_flowmap", false)
 				ur.add_do_property(_edited_node, "valid_flowmap", false)
-				ur.add_do_method(_edited_node, "update_configuration_warning")
+				ur.add_do_method(_edited_node, "update_configuration_warnings")
 				if closest_index == _edited_node.curve.get_point_count() - 1:
 					ur.add_undo_method(_edited_node, "add_point", _edited_node.curve.get_point_position(closest_index), -1)
 				else:
@@ -275,7 +272,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 				ur.add_undo_method(_edited_node, "properties_changed")
 				ur.add_undo_method(_edited_node, "set_materials", "i_valid_flowmap", _edited_node.valid_flowmap)
 				ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
-				ur.add_undo_method(_edited_node, "update_configuration_warning")
+				ur.add_undo_method(_edited_node, "update_configuration_warnings")
 				ur.commit_action()
 		# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
 		return 1

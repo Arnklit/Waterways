@@ -185,7 +185,7 @@ func _get_property_list() -> Array:
 	var mat_categories = MATERIAL_CATEGORIES.duplicate(true)
 	
 	if _material.shader != null:
-		var shader_params := RenderingServer.shader_get_shader_uniform_list(_material.shader.get_rid())
+		var shader_params := RenderingServer.get_shader_parameter_list(_material.shader.get_rid())
 		# TODO fix shader_params is now a dictionary, but code below expects an array
 		shader_params = WaterHelperMethods.reorder_params(shader_params)
 		for p in shader_params:
@@ -338,7 +338,7 @@ func _get_property_list() -> Array:
 func _set(property: StringName, value) -> bool:
 	if str(property).begins_with("mat_"):
 		var param_name = str(property).right(len("mat_"))
-		_material.set_shader_uniform(param_name, value)
+		_material.set_shader_parameter(param_name, value)
 		return true
 	return false
 
@@ -346,7 +346,7 @@ func _set(property: StringName, value) -> bool:
 func _get(property : StringName):
 	if str(property).begins_with("mat_"):
 		var param_name = str(property).right(len("mat_"))
-		return  _material.get_shader_uniform(param_name)
+		return  _material.get_shader_parameter(param_name)
 
 
 func property_can_revert(property : String) -> bool:
@@ -380,14 +380,14 @@ func _init() -> void:
 	_debug_material = ShaderMaterial.new()
 	_debug_material.shader = load(DEBUG_SHADER.shader_path) as Shader
 	for texture in DEBUG_SHADER.texture_paths:
-		_debug_material.set_shader_uniform(texture.name, load(texture.path) as Texture2D)
+		_debug_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
 
 	_material = ShaderMaterial.new()
 	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
 	for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
-		_material.set_shader_uniform(texture.name, load(texture.path) as Texture2D)
+		_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
 	# Have to manually set the color or it does not default right. Not sure how to work around this
-	_material.set_shader_uniform("albedo_color", Transform3D(Vector3(0.0, 0.8, 1.0), Vector3(0.15, 0.2, 0.5), Vector3.ZERO, Vector3.ZERO))
+	_material.set_shader_parameter("albedo_color", Transform3D(Vector3(0.0, 0.8, 1.0), Vector3(0.15, 0.2, 0.5), Vector3.ZERO, Vector3.ZERO))
 
 
 func _enter_tree() -> void:
@@ -406,7 +406,6 @@ func _enter_tree() -> void:
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
 		mesh_instance = get_child(0) as MeshInstance3D
-		print(mesh_instance)
 		_generate_river()
 	else:
 		mesh_instance = get_child(0) as MeshInstance3D
@@ -475,7 +474,6 @@ func set_curve_point_out(index : int, position : Vector3) -> void:
 
 
 func set_widths(new_widths : Array) -> void:
-	print("in set_width, _first_enter_tree is: ", _first_enter_tree)
 	widths = new_widths
 	if _first_enter_tree:
 		return
@@ -483,8 +481,8 @@ func set_widths(new_widths : Array) -> void:
 
 
 func set_materials(param : String, value) -> void:
-	_material.set_shader_uniform(param, value)
-	_debug_material.set_shader_uniform(param, value)
+	_material.set_shader_parameter(param, value)
+	_debug_material.set_shader_parameter(param, value)
 
 
 func set_debug_view(index : int) -> void:
@@ -492,7 +490,7 @@ func set_debug_view(index : int) -> void:
 	if index == 0:
 		mesh_instance.material_override = null
 	else:
-		_debug_material.set_shader_uniform("mode", index)
+		_debug_material.set_shader_parameter("mode", index)
 		mesh_instance.material_override =_debug_material
 
 
@@ -573,7 +571,7 @@ func set_shader_type(type: int):
 	else:
 		_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path)
 		for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
-			_material.set_shader_uniform(texture.name, load(texture.path) as Texture)
+			_material.set_shader_parameter(texture.name, load(texture.path) as Texture)
 	
 	notify_property_list_changed()
 
@@ -604,13 +602,14 @@ func set_lod0_distance(value : float) -> void:
 
 # Private Methods
 func _generate_river() -> void:
-	print("in _generate_river")
 	var average_width := WaterHelperMethods.sum_array(widths) / float(widths.size() / 2)
 	_steps = int( max(1.0, round(curve.get_baked_length() / average_width)) )
 	
 	var river_width_values := WaterHelperMethods.generate_river_width_values(curve, _steps, shape_step_length_divs, shape_step_width_divs, widths)
 	mesh_instance.mesh = WaterHelperMethods.generate_river_mesh(curve, _steps, shape_step_length_divs, shape_step_width_divs, shape_smoothness, river_width_values)
 	mesh_instance.mesh.surface_set_material(0, _material)
+	for param in RenderingServer.get_shader_parameter_list(_material.shader.get_rid()):
+		print(param['name'], ': ', _material.get_shader_parameter(param['name']))
 
 
 func _generate_flowmap(flowmap_resolution : float) -> void:

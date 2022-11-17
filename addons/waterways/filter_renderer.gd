@@ -54,10 +54,10 @@ func apply_combine(r_texture : Texture2D, g_texture : Texture2D, b_texture : Tex
 	size = r_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("r_texture", r_texture)
-	$ColorRect.material.set_shader_uniform("g_texture", g_texture)
-	$ColorRect.material.set_shader_uniform("b_texture", b_texture)
-	$ColorRect.material.set_shader_uniform("a_texture", a_texture)
+	$ColorRect.material.set_shader_parameter("r_texture", r_texture)
+	$ColorRect.material.set_shader_parameter("g_texture", g_texture)
+	$ColorRect.material.set_shader_parameter("b_texture", b_texture)
+	$ColorRect.material.set_shader_parameter("a_texture", a_texture)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -73,7 +73,7 @@ func apply_dotproduct(input_texture : Texture2D, resolution : float) -> ImageTex
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -89,9 +89,9 @@ func apply_flow_pressure(input_texture : Texture2D, resolution : float, rows : f
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("rows", rows)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("rows", rows)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -107,10 +107,10 @@ func apply_foam(input_texture : Texture2D, distance : float, cutoff : float, res
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("offset", distance)
-	$ColorRect.material.set_shader_uniform("cutoff", cutoff)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("offset", distance)
+	$ColorRect.material.set_shader_parameter("cutoff", cutoff)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -126,9 +126,9 @@ func apply_blur(input_texture : Texture2D, blur : float, resolution : float) -> 
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("blur", blur)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("blur", blur)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -137,9 +137,9 @@ func apply_blur(input_texture : Texture2D, blur : float, resolution : float) -> 
 	pass1_result.create_from_image(image)
 	# Pass 2
 	filter_mat.shader = blur_pass2_shader
-	$ColorRect.material.set_shader_uniform("input_texture", pass1_result)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("blur", blur)
+	$ColorRect.material.set_shader_parameter("input_texture", pass1_result)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("blur", blur)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -155,9 +155,9 @@ func apply_vertical_blur(input_texture : Texture2D, blur : float, resolution : f
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("blur", blur)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("blur", blur)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -172,8 +172,8 @@ func apply_normal_to_flow(input_texture : Texture2D, resolution : float) -> Imag
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -189,8 +189,8 @@ func apply_normal(input_texture : Texture2D, resolution : float) -> ImageTexture
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -206,9 +206,9 @@ func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, res
 	size = input_texture.get_size()
 	$ColorRect.rect_position = Vector2(0, 0)
 	$ColorRect.size = size
-	$ColorRect.material.set_shader_uniform("input_texture", input_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("dilation", dilation)
+	$ColorRect.material.set_shader_parameter("input_texture", input_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("dilation", dilation)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -217,9 +217,9 @@ func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, res
 	pass1_result.create_from_image(image)
 	# Pass 2
 	filter_mat.shader = dilate_pass_2_shader
-	$ColorRect.material.set_shader_uniform("input_texture", pass1_result)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("dilation", dilation)
+	$ColorRect.material.set_shader_parameter("input_texture", pass1_result)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("dilation", dilation)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -228,11 +228,11 @@ func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, res
 	pass2_result.create_from_image(image2)
 	# Pass 3
 	filter_mat.shader = dilate_pass_3_shader
-	$ColorRect.material.set_shader_uniform("distance_texture", pass2_result)
+	$ColorRect.material.set_shader_parameter("distance_texture", pass2_result)
 	if fill_texture != null:
-		$ColorRect.material.set_shader_uniform("color_texture", fill_texture)
-	$ColorRect.material.set_shader_uniform("size", resolution)
-	$ColorRect.material.set_shader_uniform("fill", fill)
+		$ColorRect.material.set_shader_parameter("color_texture", fill_texture)
+	$ColorRect.material.set_shader_parameter("size", resolution)
+	$ColorRect.material.set_shader_parameter("fill", fill)
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame

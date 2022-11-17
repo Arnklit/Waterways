@@ -18,8 +18,8 @@ func grab_height(water_objects, aabb : AABB, resolution : float) -> ImageTexture
 	var height_mat := ShaderMaterial.new()
 	var height_shader := load(HEIGHT_SHADER_PATH) as Shader
 	height_mat.shader = height_shader
-	height_mat.set_shader_uniform("lower_bounds", aabb.position.y)
-	height_mat.set_shader_uniform("upper_bounds", aabb.end.y)
+	height_mat.set_shader_parameter("lower_bounds", aabb.position.y)
+	height_mat.set_shader_parameter("upper_bounds", aabb.end.y)
 	
 	for object in water_objects:
 		var water_mesh_copy = object.mesh_instance.duplicate(true)
@@ -113,14 +113,14 @@ func grab_flow(water_objects, aabb : AABB, resolution : float) -> ImageTexture:
 		_container.add_child(water_mesh_copy)
 		water_mesh_copy.transform = water_objects[i].transform
 		water_mesh_copy.material_override = flow_mat
-		water_mesh_copy.material_override.set_shader_uniform("flowmap", water_objects[i].flow_foam_noise)
-		water_mesh_copy.material_override.set_shader_uniform("distmap", water_objects[i].dist_pressure)
-		water_mesh_copy.material_override.set_shader_uniform("flow_base", water_objects[i].get_shader_uniform("flow_base"))
-		water_mesh_copy.material_override.set_shader_uniform("flow_steepness", water_objects[i].get_shader_uniform("flow_steepness"))
-		water_mesh_copy.material_override.set_shader_uniform("flow_distance", water_objects[i].get_shader_uniform("flow_distance"))
-		water_mesh_copy.material_override.set_shader_uniform("flow_pressure", water_objects[i].get_shader_uniform("flow_pressure"))
-		water_mesh_copy.material_override.set_shader_uniform("flow_max", water_objects[i].get_shader_uniform("flow_max"))
-		water_mesh_copy.material_override.set_shader_uniform("valid_flowmap", water_objects[i].get_shader_uniform("i_valid_flowmap"))
+		water_mesh_copy.material_override.set_shader_parameter("flowmap", water_objects[i].flow_foam_noise)
+		water_mesh_copy.material_override.set_shader_parameter("distmap", water_objects[i].dist_pressure)
+		water_mesh_copy.material_override.set_shader_parameter("flow_base", water_objects[i].get_shader_uniform("flow_base"))
+		water_mesh_copy.material_override.set_shader_parameter("flow_steepness", water_objects[i].get_shader_uniform("flow_steepness"))
+		water_mesh_copy.material_override.set_shader_parameter("flow_distance", water_objects[i].get_shader_uniform("flow_distance"))
+		water_mesh_copy.material_override.set_shader_parameter("flow_pressure", water_objects[i].get_shader_uniform("flow_pressure"))
+		water_mesh_copy.material_override.set_shader_parameter("flow_max", water_objects[i].get_shader_uniform("flow_max"))
+		water_mesh_copy.material_override.set_shader_parameter("valid_flowmap", water_objects[i].get_shader_uniform("i_valid_flowmap"))
 	
 	var longest_axis := aabb.get_longest_axis_index()
 	match longest_axis:

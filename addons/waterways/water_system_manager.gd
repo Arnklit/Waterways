@@ -142,8 +142,8 @@ func generate_system_maps() -> void:
 			material = node.material_override
 		
 		if material != null:
-			material.set_shader_uniform("water_systemmap", system_map)
-			material.set_shader_uniform("water_systemmap_coords", get_system_map_coordinates())
+			material.set_shader_parameter("water_systemmap", system_map)
+			material.set_shader_parameter("water_systemmap_coords", get_system_map_coordinates())
 
 
 # Returns the vetical distance to the water, positive values above water level,
