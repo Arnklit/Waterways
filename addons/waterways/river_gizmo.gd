@@ -1,4 +1,4 @@
-# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 extends EditorNode3DGizmoPlugin
 
@@ -167,7 +167,7 @@ func _get_point_index(curve_index: int, is_center: bool, is_cp_in: bool, is_cp_o
 
 # TODO - figure out of this new "secondary" bool should be used
 func _get_handle_value(gizmo: EditorNode3DGizmo, index: int, secondary: bool):
-	var river : RiverManager = gizmo.get_spatial_node()
+	var river : RiverManager = gizmo.get_node_3d()
 	var point_count = river.curve.get_point_count()
 	if _is_center_point(index, point_count):
 		return river.curve.get_point_position(_get_curve_index(index, point_count))
@@ -182,8 +182,8 @@ func _get_handle_value(gizmo: EditorNode3DGizmo, index: int, secondary: bool):
 # Called when handle is moved
 # TODO - figure out of this new "secondary" bool should be used
 func _set_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, camera: Camera3D, point: Vector2) -> void:
-	var river : RiverManager = gizmo.get_spatial_node()
-	var space_state := river.get_world_3d().direct_space_state
+	var river : RiverManager = gizmo.get_node_3d()
+	var space_state = river.get_world_3d().direct_space_state
 
 	var global_transform : Transform3D = river.transform
 	if river.is_inside_tree():
@@ -217,7 +217,9 @@ func _set_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, camera: 
 	
 	var old_pos_global : Vector3 = river.to_global(old_pos)
 	
-	if not _handle_base_transform:
+	#print("_handle_base_transform is: ", _handle_base_transform)
+	
+	if _handle_base_transform == null:
 		# This is the first set_handle() call since the last reset so we
 		# use the current handle position as our _handle_base_transform
 		var z := river.curve.get_point_out(p_index).normalized()
@@ -267,13 +269,13 @@ func _set_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, camera: 
 			new_pos = plane.intersects_ray(ray_from, ray_dir)
 		
 		# Discard if no valid position was found
-		if not new_pos:
+		if new_pos == null:
 			return
 		
 		# TODO: implement rounding when control is pressed.
 		# How do we round when in local axis/plane mode?
 		
-		var new_pos_local := river.to_local(new_pos)
+		var new_pos_local = river.to_local(new_pos)
 
 
 		if is_center:
@@ -309,7 +311,7 @@ func _set_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, camera: 
 # Handle Undo / Redo of handle movements
 # TODO - figure out of this new "secondary" bool should be used
 func _commit_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, restore, cancel: bool = false) -> void:
-	var river : RiverManager = gizmo.get_spatial_node()
+	var river : RiverManager = gizmo.get_node_3d()
 	var point_count = river.curve.get_point_count()
 
 	var ur = editor_plugin.get_undo_redo()
@@ -338,11 +340,11 @@ func _commit_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, resto
 	ur.add_do_method(river, "properties_changed")
 	ur.add_do_method(river, "set_materials", "i_valid_flowmap", false)
 	ur.add_do_property(river, "valid_flowmap", false)
-	ur.add_do_method(river, "update_configuration_warning")
+	ur.add_do_method(river, "update_configuration_warnings")
 	ur.add_undo_method(river, "properties_changed")
 	ur.add_undo_method(river, "set_materials", "i_valid_flowmap", river.valid_flowmap)
 	ur.add_undo_property(river, "valid_flowmap", river.valid_flowmap)
-	ur.add_undo_method(river, "update_configuration_warning")
+	ur.add_undo_method(river, "update_configuration_warnings")
 	ur.commit_action()
 	
 	_redraw(gizmo)
@@ -357,10 +359,10 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 		_handle_lines_mat = get_material("handle_lines", gizmo)
 	gizmo.clear()
 	
-	var river := gizmo.get_spatial_node() as RiverManager
+	var river := gizmo.get_node_3d() as RiverManager
 	
 	if not river.is_connected("river_changed", Callable(self, "_redraw")):
-		river.connect("river_changed", Callable(self, "_redraw").bind([gizmo]))
+		river.river_changed.connect(_redraw.bind(gizmo))
 	
 	_draw_path(gizmo, river.curve)
 	_draw_handles(gizmo, river)

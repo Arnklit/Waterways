@@ -1,0 +1,20 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://addons/waterways/gui/progress_window.gd" id="1_xgojc"]
+
+[node name="Popup" type="PopupPanel"]
+title = "Test"
+position = Vector2i(426, 240)
+size = Vector2i(300, 60)
+visible = true
+wrap_controls = false
+borderless = false
+min_size = Vector2i(300, 60)
+script = ExtResource("1_xgojc")
+
+[node name="ProgressBar" type="ProgressBar" parent="."]
+offset_left = 4.0
+offset_top = 4.0
+offset_right = 296.0
+offset_bottom = 56.0
+step = 1.0

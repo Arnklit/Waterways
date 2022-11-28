@@ -1,4 +1,4 @@
-# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 extends EditorInspectorPlugin
 
@@ -6,12 +6,12 @@ const RiverManager = preload("res://addons/waterways/river_manager.gd")
 var _editor = load("res://addons/waterways/editor_property.gd")
 
 
-func can_handle(object: Object) -> bool:
+func _can_handle(object) -> bool:
 	return object is RiverManager
 
 
-func parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int) -> bool:
-	if type == TYPE_TRANSFORM3D and "color" in path:
+func _parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int, wide: bool) -> bool:
+	if type == TYPE_PROJECTION and "color" in path:
 		var editor_property = _editor.new()
 		add_property_editor(path, editor_property)
 		return true

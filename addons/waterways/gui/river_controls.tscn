@@ -1,10 +1,10 @@
 [gd_scene load_steps=6 format=3 uid="uid://b4nx8h5jfldwt"]
 
-[ext_resource type="Texture2D" uid="uid://dnjok0de3mopo" path="res://addons/waterways/icons/create.svg" id="1"]
-[ext_resource type="Texture2D" uid="uid://dl2fd2kpkqfcs" path="res://addons/waterways/icons/select.svg" id="2"]
-[ext_resource type="Texture2D" uid="uid://cot00dv010gt2" path="res://addons/waterways/icons/delete.svg" id="3"]
+[ext_resource type="Texture2D" uid="uid://dl2fd2kpkqfcs" path="res://addons/waterways/icons/select.svg" id="3_c7fmo"]
 [ext_resource type="Script" path="res://addons/waterways/gui/river_controls.gd" id="4"]
+[ext_resource type="Texture2D" uid="uid://dnjok0de3mopo" path="res://addons/waterways/icons/create.svg" id="4_cumdu"]
 [ext_resource type="Script" path="res://addons/waterways/gui/river_menu.gd" id="5"]
+[ext_resource type="Texture2D" uid="uid://cot00dv010gt2" path="res://addons/waterways/icons/delete.svg" id="5_a4vrl"]
 
 [node name="HBoxContainer" type="HBoxContainer"]
 offset_right = 128.0
@@ -12,6 +12,7 @@ offset_bottom = 26.0
 script = ExtResource("4")
 
 [node name="RiverMenu" type="MenuButton" parent="."]
+layout_mode = 2
 offset_right = 48.0
 offset_bottom = 31.0
 text = "River"
@@ -25,48 +26,73 @@ popup/item_2/id = 2
 script = ExtResource("5")
 
 [node name="VSeparator" type="VSeparator" parent="."]
+layout_mode = 2
 offset_left = 52.0
 offset_right = 56.0
 offset_bottom = 31.0
 
 [node name="Select" type="Button" parent="."]
+layout_mode = 2
 offset_left = 60.0
 offset_right = 84.0
 offset_bottom = 31.0
 toggle_mode = true
-icon = ExtResource("2")
+icon = ExtResource("3_c7fmo")
 flat = true
 
 [node name="Add" type="Button" parent="."]
+layout_mode = 2
 offset_left = 88.0
 offset_right = 112.0
 offset_bottom = 31.0
 toggle_mode = true
-icon = ExtResource("1")
+icon = ExtResource("4_cumdu")
 flat = true
 
 [node name="Remove" type="Button" parent="."]
+layout_mode = 2
 offset_left = 116.0
 offset_right = 140.0
 offset_bottom = 31.0
 toggle_mode = true
-icon = ExtResource("3")
+icon = ExtResource("5_a4vrl")
 flat = true
 
 [node name="VSeparator2" type="VSeparator" parent="."]
+layout_mode = 2
 offset_left = 144.0
 offset_right = 148.0
 offset_bottom = 31.0
 
 [node name="Constraints" type="OptionButton" parent="."]
+layout_mode = 2
 offset_left = 152.0
-offset_right = 166.0
+offset_right = 325.0
 offset_bottom = 31.0
 flat = true
+item_count = 8
+selected = 0
+popup/item_0/text = "No Constraints"
+popup/item_0/id = 0
+popup/item_1/text = "Snap to Colliders"
+popup/item_1/id = 1
+popup/item_2/text = "Axis X"
+popup/item_2/id = 2
+popup/item_3/text = "Axis Y"
+popup/item_3/id = 3
+popup/item_4/text = "Axis Z"
+popup/item_4/id = 4
+popup/item_5/text = "Plane YZ"
+popup/item_5/id = 5
+popup/item_6/text = "Plane XZ"
+popup/item_6/id = 6
+popup/item_7/text = "Plane XY"
+popup/item_7/id = 7
 
 [node name="LocalMode" type="CheckBox" parent="."]
-offset_left = 170.0
-offset_right = 287.0
+layout_mode = 2
+offset_left = 329.0
+offset_right = 446.0
 offset_bottom = 31.0
 text = "Local Mode"
 

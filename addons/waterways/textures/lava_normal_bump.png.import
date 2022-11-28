@@ -3,21 +3,19 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://dijkdah7mtice"
-path.s3tc="res://.godot/imported/lava_normal_bump.png-7ae873772cb659577ce76e9649dce6a0.s3tc.ctex"
-path.etc2="res://.godot/imported/lava_normal_bump.png-7ae873772cb659577ce76e9649dce6a0.etc2.ctex"
+path="res://.godot/imported/lava_normal_bump.png-7ae873772cb659577ce76e9649dce6a0.ctex"
 metadata={
-"imported_formats": ["s3tc", "etc2"],
-"vram_texture": true
+"vram_texture": false
 }
 
 [deps]
 
 source_file="res://addons/waterways/textures/lava_normal_bump.png"
-dest_files=["res://.godot/imported/lava_normal_bump.png-7ae873772cb659577ce76e9649dce6a0.s3tc.ctex", "res://.godot/imported/lava_normal_bump.png-7ae873772cb659577ce76e9649dce6a0.etc2.ctex"]
+dest_files=["res://.godot/imported/lava_normal_bump.png-7ae873772cb659577ce76e9649dce6a0.ctex"]
 
 [params]
 
-compress/mode=2
+compress/mode=0
 compress/lossy_quality=0.7
 compress/hdr_compression=1
 compress/bptc_ldr=0

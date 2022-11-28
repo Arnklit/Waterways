@@ -1,4 +1,4 @@
-# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
 extends Node3D
@@ -12,7 +12,7 @@ const WaterSystem = preload("res://addons/waterways/water_system_manager.gd")
 @export var flow_force := 50.0
 @export var water_resistance := 5.0
 
-var _rb : RigidDynamicBody3D
+var _rb : RigidBody3D
 var _system : WaterSystem
 var _default_linear_damp := -1.0
 var _default_angular_damp := -1.0
@@ -20,8 +20,8 @@ var _default_angular_damp := -1.0
 
 func _enter_tree() -> void:
 	var parent = get_parent()
-	if parent is RigidDynamicBody3D:
-		_rb = parent as RigidDynamicBody3D
+	if parent is RigidBody3D:
+		_rb = parent as RigidBody3D
 		_default_linear_damp = _rb.linear_damp
 		_default_angular_damp = _rb.angular_damp
 

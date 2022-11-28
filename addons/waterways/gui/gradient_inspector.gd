@@ -1,18 +1,22 @@
-# Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
 extends HBoxContainer
 
-
-func set_value(gradient : Transform3D):
-	$Color1.color = Color(gradient[0].x, gradient[0].y, gradient[0].z)
-	$Color2.color = Color(gradient[1].x, gradient[1].y, gradient[1].z)
-	$Gradient.material.set_shader_uniform("color1", $Color1.color)
-	$Gradient.material.set_shader_uniform("color2", $Color2.color)
+@onready var color1 := $Color1 as ColorPickerButton
+@onready var color2 := $Color2 as ColorPickerButton
+@onready var gradient := $Gradient as ColorRect
 
 
-func get_value() -> Transform3D:
-	var gradient = Transform3D()
-	gradient[0] = Vector3($Color1.color.r, $Color1.color.g, $Color1.color.b)
-	gradient[1] = Vector3($Color2.color.r, $Color2.color.g, $Color2.color.b)
+func set_value(new_gradient : Projection):
+	color1.color = Color(new_gradient[0].x, new_gradient[0].y, new_gradient[0].z)
+	color2.color = Color(new_gradient[1].x, new_gradient[1].y, new_gradient[1].z)
+	gradient.material.set_shader_parameter("color1", color1.color)
+	gradient.material.set_shader_parameter("color2", color2.color)
+
+
+func get_value() -> Projection:
+	var gradient := Projection()
+	gradient[0] = Vector3(color1.color.r, color1.color.g, color1.color.b)
+	gradient[1] = Vector3(color2.color.r, color2.color.g, color2.color.b)
 	return gradient

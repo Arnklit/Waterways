@@ -1,4 +1,4 @@
-// Copyright © 2021 Kasper Arnklit Frandsen - MIT License
+// Copyright © 2022 Kasper Arnklit Frandsen - MIT License
 // See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
@@ -178,9 +178,11 @@ void fragment() {
 
 	// Depthtest
 	float depth_tex = textureLod(DEPTH_TEXTURE, SCREEN_UV, 0.0).r;
-	float depth_tex_unpacked = depth_tex * 2.0 - 1.0;
-	float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
-	float water_depth = surface_dist + VERTEX.z;
+	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
+	world_pos.xyz/=world_pos.w;
+	//float depth_tex_unpacked = depth_tex * 2.0 - 1.0;
+	//float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
+	float water_depth = VERTEX.z - world_pos.z;
 	
 	
 	float alb_t = clamp(water_depth / albedo_depth, 0.0, 1.0);
@@ -202,11 +204,13 @@ void fragment() {
 
 	// Depthtest 2
 	float depth_tex2 = textureLod(DEPTH_TEXTURE, ref_ofs, 0.0).r;
-	float depth_tex_unpacked2 = depth_tex2 * 2.0 - 1.0;
-	float surface_dist2 = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked2 + PROJECTION_MATRIX[2][2]);
-	float water_depth2 = surface_dist2 + VERTEX.z;
+	//float depth_tex_unpacked2 = depth_tex2 * 2.0 - 1.0;
+	vec4 world_pos2 = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex2,1.0);
+	world_pos2.xyz/=world_pos2.w;
+	//float surface_dist2 = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked2 + PROJECTION_MATRIX[2][2]);
+	float water_depth2 = VERTEX.z - world_pos2.z;
 	
-	if (surface_dist2 < -VERTEX.z) {
+	if (world_pos2.z < -VERTEX.z) {
 		ref_ofs = SCREEN_UV;
 	} else {
 		clar_t = clamp(water_depth2 / transparency_clarity, 0.0, 1.0);
@@ -225,9 +229,9 @@ void fragment() {
 
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
-	BACKLIGHT = vec3(0.9);
+	//BACKLIGHT = vec3(0.9);
 
-	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
+	//vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
 }
