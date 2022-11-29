@@ -133,7 +133,7 @@ signal progress_notified
 func _get_property_list() -> Array:
 	var props = [
 		{
-			name = "Shape3D",
+			name = "Shape",
 			type = TYPE_NIL,
 			hint_string = "shape_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
@@ -357,31 +357,28 @@ func _get(property : StringName):
 		return _material.get_shader_parameter(param_name)
 
 
-func get_transformed_aabb() -> AABB:
-	return global_transform * mesh_instance.get_aabb()
-
-
-func property_can_revert(property : String) -> bool:
-	if property.begins_with("mat_"):
-#		if "color" in property:
-#			# TODO - we are disabling revert for color parameters due to this
-#			# bug: https://github.com/godotengine/godot/issues/45388
-#			return false
-		var param_name = property.replace("mat_", "")
-		return _material.property_can_revert(str("shader_param/", param_name))
-
-	if not DEFAULT_PARAMETERS.has(property):
-		return false
-	if get(property) != DEFAULT_PARAMETERS[property]:
-		return true
-	return false
-
-
-func property_get_revert(property : String):
-	if property.begins_with("mat_"):
-		var param_name = property.replace("mat_", "")
-		var revert_value = _material.property_get_revert(str("shader_param/", param_name))
-		return revert_value
+# TODO - This doesn't currently work in Godot 4. https://github.com/godotengine/godot/issues/69335
+#func _property_can_revert(property : StringName) -> bool:
+#	if str(property).begins_with("mat_"):
+##		if "color" in property:
+##			# TODO - we are disabling revert for color parameters due to this
+##			# bug: https://github.com/godotengine/godot/issues/45388
+##			return false
+#		var param_name = str(property).replace("mat_", "")
+#		return _material._property_can_revert(str("shader_param/", param_name))
+#
+#	if not DEFAULT_PARAMETERS.has(property):
+#		return false
+#	if get(property) != DEFAULT_PARAMETERS[property]:
+#		return true
+#	return false
+#
+#
+#func _property_get_revert(property : StringName):
+#	if str(property).begins_with("mat_"):
+#		var param_name = str(property).replace("mat_", "")
+#		var revert_value = _material._property_get_revert(str("shader_param/", param_name))
+#		return revert_value
 
 
 func _init() -> void:
@@ -435,6 +432,10 @@ func _get_configuration_warning() -> String:
 		return ""
 	else:
 		return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
+
+
+func get_transformed_aabb() -> AABB:
+	return global_transform * mesh_instance.get_aabb()
 
 
 # Public Methods - These should all be good to use as API from other scripts
@@ -669,17 +670,23 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	var foam_blur_amount = baking_foam_blur / float(_uv2_sides) * flowmap_resolution
 	
 	var flow_pressure_map = await renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, _uv2_sides + 2.0)
-	var blurred_flow_pressure_map = await renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution)
-	var dilated_texture = await renderer_instance.apply_dilate(collision_with_margins, dilate_amount, 0.0, flowmap_resolution)
-	var normal_map = await renderer_instance.apply_normal(dilated_texture, flowmap_resolution)
-	var flow_map = await renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution)
-	var blurred_flow_map = await renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution)
-	var foam_map = await renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution)
-	#var blurred_foam_map = await renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution)
-	var blurred_foam_map = foam_map
+	var blurred_flow_pressure_map = await renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution + margin * 2)
+	var dilated_texture = await renderer_instance.apply_dilate(collision_with_margins, dilate_amount, 0.0, flowmap_resolution + margin * 2)
+	var normal_map = await renderer_instance.apply_normal(dilated_texture, flowmap_resolution + margin * 2)
+	var flow_map = await renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution + margin * 2)
+	var blurred_flow_map = await renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution + margin * 2)
+	var foam_map = await renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution + margin * 2)
+	var blurred_foam_map = await renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution + margin * 2)
 	var flow_foam_noise_img = await renderer_instance.apply_combine(blurred_flow_map, blurred_flow_map, blurred_foam_map, tiled_noise)
 	var dist_pressure_img = await renderer_instance.apply_combine(dilated_texture, blurred_flow_pressure_map)
-	print("after dist_pressure img")
+	
+	# Debug texture gen
+#	flow_pressure_map.get_image().save_png("res://test_assets/baked_pressure_map.png")
+#	blurred_flow_pressure_map.get_image().save_png("res://test_assets/baked_pressure_map_blurred.png")
+#	dilated_texture.get_image().save_png("res://test_assets/dilated_texture.png")
+#	normal_map.get_image().save_png("res://test_assets/normal_map.png")
+#	flow_map.get_image().save_png("res://test_assets/flow_map.png")
+#	blurred_flow_map.get_image().save_png("res://test_assets/blurred_flow_map.png")
 	
 	remove_child(renderer_instance) # cleanup
 	

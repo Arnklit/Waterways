@@ -157,7 +157,7 @@ void fragment() {
 	float water_foamFBM = water.b;
 
 	// Level 2 Water, only add in if closer than lod 0 distance
-	if (-VERTEX.z < i_lod0_distance) {
+	if (VERTEX.z < i_lod0_distance) {
 		vec3 waterx2_a = texture(normal_bump_texture, flowx2_uvA.xy).rgb;
 		vec3 waterx2_b = texture(normal_bump_texture, flowx2_uvB.xy, 0.0).rgb;
 		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
@@ -177,14 +177,14 @@ void fragment() {
 	float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 
 	// Depthtest
+	// We do two depth tests, one with the standard SCREEN_UV and one with the distorted 
+	// refraction UVs. We do this to be able to dismiss refractions that are in front 
+	// of objects
 	float depth_tex = textureLod(DEPTH_TEXTURE, SCREEN_UV, 0.0).r;
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
 	world_pos.xyz/=world_pos.w;
-	//float depth_tex_unpacked = depth_tex * 2.0 - 1.0;
-	//float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
 	float water_depth = VERTEX.z - world_pos.z;
-	
-	
+		
 	float alb_t = clamp(water_depth / albedo_depth, 0.0, 1.0);
 	alb_t = ease(alb_t, albedo_depth_curve);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
@@ -192,31 +192,28 @@ void fragment() {
 	NORMAL_MAP = vec3(water_norFBM, 0);
 	NORMAL_MAP_DEPTH = normal_scale;
 
-	
 	// Refraction - has to be done after normal is set
 	vec3 unpacted_normals = NORMAL_MAP * 2.0 - 1.0;
-	//vec3 ref_normal = normalize( mix(NORMAL, TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y + NORMAL, NORMAL_MAP_DEPTH) );
 	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMAL_MAP_DEPTH * .1;
-	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * transparency_refraction;
 	float clar_t = clamp(water_depth / transparency_clarity, 0.0, 1.0);
+	// We multiply the refraction offsets by the clarity to make the refractions stronger the deeper the water
+	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * transparency_refraction * clar_t;
 	clar_t = ease(clar_t, transparency_depth_curve);
 	float ref_amount = 1.0 - clamp(clar_t + combined_foam, 0.0, 1.0);
 
 	// Depthtest 2
-	float depth_tex2 = textureLod(DEPTH_TEXTURE, ref_ofs, 0.0).r;
-	//float depth_tex_unpacked2 = depth_tex2 * 2.0 - 1.0;
-	vec4 world_pos2 = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex2,1.0);
-	world_pos2.xyz/=world_pos2.w;
-	//float surface_dist2 = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked2 + PROJECTION_MATRIX[2][2]);
-	float water_depth2 = VERTEX.z - world_pos2.z;
+	float refracted_depth_tex = textureLod(DEPTH_TEXTURE, ref_ofs, 0.0).r;
+	vec4 refracted_world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, refracted_depth_tex, 1.0);
+	refracted_world_pos.xyz /= refracted_world_pos.w;
+	float refracted_water_depth = VERTEX.z - refracted_world_pos.z;
 	
-	if (world_pos2.z < -VERTEX.z) {
+	if (refracted_world_pos.z > VERTEX.z) {
 		ref_ofs = SCREEN_UV;
 	} else {
-		clar_t = clamp(water_depth2 / transparency_clarity, 0.0, 1.0);
+		clar_t = clamp(refracted_water_depth / transparency_clarity, 0.0, 1.0);
 		clar_t = ease(clar_t, transparency_depth_curve);
 		ref_amount = 1.0 - clamp(clar_t + combined_foam, 0.0, 1.0);
-		alb_t = clamp(water_depth2 / albedo_depth, 0.0, 1.0);
+		alb_t = clamp(refracted_water_depth / albedo_depth, 0.0, 1.0);
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
 	mat4 albedo_color_srgb = gradient_lin2srgb(albedo_color);
@@ -225,13 +222,13 @@ void fragment() {
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_color.rgb, combined_foam);
 	// TODO - Go over to using texelfetch to get the texture to avoid edge artifacts
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth2).rgb * ref_amount;
+	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth).rgb * ref_amount;
+	//EMISSION = vec3(0.0);
 
 	ALBEDO *= 1.0 - ref_amount;
 	ALPHA = 1.0;
 	//BACKLIGHT = vec3(0.9);
-
-	//vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
-	world_pos.xyz /= world_pos.w;
+	
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
+	//ALBEDO = vec3(water_depth);
 }

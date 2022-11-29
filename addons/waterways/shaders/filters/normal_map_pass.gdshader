@@ -3,9 +3,13 @@ shader_type canvas_item;
 uniform float size = 512.0;
 uniform sampler2D input_texture;
 
+vec2 pack_4x8_to_2x16(vec4 s) {
+	return s.rg + s.ba/256.0;
+}
+
 float input_in(vec2 uv) {
 	vec4 lodded_texture = textureLod(input_texture, uv, 0.0);
-return (dot((lodded_texture).rgb, vec3(1.0))/3.0);
+return lodded_texture.x;
 }
 
 vec3 fct(vec2 uv) {

@@ -194,7 +194,7 @@ func apply_normal(input_texture : Texture2D, resolution : float) -> ImageTexture
 	return result
 
 
-func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, resolution : float, fill_texture : Texture2D = null) -> ImageTexture:
+func apply_dilate(input_texture : Texture2D, dilation: float, fill: float, resolution: float, fill_texture: Texture2D = null) -> ImageTexture:
 	filter_mat.shader = dilate_pass_1_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -217,6 +217,7 @@ func apply_dilate(input_texture : Texture2D, dilation : float, fill : float, res
 	await get_tree().process_frame
 	var image2 : Image = get_texture().get_image()
 	var pass2_result := ImageTexture.create_from_image(image2)
+#	return pass2_result
 	# Pass 3
 	filter_mat.shader = dilate_pass_3_shader
 	$ColorRect.material.set_shader_parameter("distance_texture", pass2_result)
