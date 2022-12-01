@@ -1,4 +1,4 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=2 format=3 uid="uid://bkr2n0e2drrc4"]
 
 [ext_resource type="Script" path="res://addons/waterways/gui/progress_window.gd" id="1_xgojc"]
 
@@ -6,7 +6,6 @@
 title = "Test"
 position = Vector2i(426, 240)
 size = Vector2i(300, 60)
-visible = true
 wrap_controls = false
 borderless = false
 min_size = Vector2i(300, 60)

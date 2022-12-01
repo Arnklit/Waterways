@@ -596,13 +596,15 @@ func set_custom_shader(shader : Shader) -> void:
 	if mat_custom_shader != null:
 		_material.shader = mat_custom_shader
 		
-		if Engine.editor_hint:
+		if Engine.is_editor_hint:
 			# Ability to fork default shader
 			if shader.code == "":
 				var selected_shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
 				shader.code = selected_shader.code
 	
 	if shader != null:
+		print("shader != null - set shader type to custom")
+		print(shader)
 		set_shader_type(SHADER_TYPES.CUSTOM)
 	else:
 		set_shader_type(SHADER_TYPES.WATER)
