@@ -1,0 +1,44 @@
+[gd_scene load_steps=4 format=2]
+
+[ext_resource path="res://addons/waterways/gui/gradient_inspector.gd" type="Script" id=1]
+[ext_resource path="res://addons/waterways/shaders/gui/gradient.shader" type="Shader" id=2]
+
+[sub_resource type="ShaderMaterial" id=1]
+shader = ExtResource( 2 )
+shader_param/color1 = Color( 1, 0, 0, 1 )
+shader_param/color2 = Color( 0, 1, 0, 1 )
+
+[node name="HBoxContainer" type="HBoxContainer"]
+margin_right = 400.0
+margin_bottom = 24.0
+script = ExtResource( 1 )
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Color1" type="ColorPickerButton" parent="."]
+margin_right = 130.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+flat = true
+color = Color( 0.25098, 0.25098, 0.701961, 1 )
+edit_alpha = false
+
+[node name="Gradient" type="ColorRect" parent="."]
+material = SubResource( 1 )
+margin_left = 134.0
+margin_right = 265.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Color2" type="ColorPickerButton" parent="."]
+margin_left = 269.0
+margin_right = 400.0
+margin_bottom = 24.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+flat = true
+color = Color( 0.25098, 0.501961, 0.701961, 1 )
+edit_alpha = false
