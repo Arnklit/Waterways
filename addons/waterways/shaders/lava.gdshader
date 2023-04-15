@@ -3,6 +3,8 @@
 shader_type spatial;
 render_mode depth_draw_always, cull_disabled;
 
+uniform sampler2D DEPTH_TEXTURE : hint_depth_texture, filter_linear_mipmap;
+
 // If you are making your own shader, you can customize or add your own
 // parameters below and they will automatically get parsed and displayed in
 // the River inspector.

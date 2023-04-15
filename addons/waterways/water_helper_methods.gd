@@ -26,7 +26,7 @@ static func point_in_bariatric(v : Vector3) -> bool:
 	return 0 <= v.x and v.x <= 1 and 0 <= v.y and v.y <= 1 and 0 <= v.z and v.z <= 1;
 
 
-static func sum_array(array : Array[float]) -> float:
+static func sum_array(array : Array) -> float:
 	var sum := 0.0
 	for element in array:
 			sum += element
@@ -40,7 +40,7 @@ static func calculate_side(steps : int) -> int:
 	return int(side_float)
 
 
-static func generate_river_width_values(curve : Curve3D, steps : int, step_length_divs : int, step_width_divs : int, widths : Array[float]) -> Array[float]:
+static func generate_river_width_values(curve : Curve3D, steps : int, step_length_divs : int, step_width_divs : int, widths : Array) -> Array[float]:
 	var river_width_values: Array[float]
 	var length := curve.get_baked_length()
 	for step in steps * step_length_divs + 1:

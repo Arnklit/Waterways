@@ -10,7 +10,7 @@ func _can_handle(object) -> bool:
 	return object is RiverManager
 
 
-func _parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int, wide: bool) -> bool:
+func _parse_property(object: Object, type: Variant.Type, path: String, hint: PropertyHint, hint_text: String, usage: PropertyUsageFlags, wide: bool) -> bool:
 	if type == TYPE_PROJECTION and "color" in path:
 		var editor_property = _editor.new()
 		add_property_editor(path, editor_property)
