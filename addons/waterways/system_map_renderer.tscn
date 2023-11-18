@@ -3,6 +3,7 @@
 [ext_resource type="Script" path="res://addons/waterways/system_map_renderer.gd" id="1"]
 
 [node name="SystemMatRenderer" type="SubViewport"]
+own_world_3d = true
 transparent_bg = true
 debug_draw = 1
 gui_disable_input = true

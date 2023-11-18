@@ -9,6 +9,7 @@ uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
 uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
 uniform bool valid_flowmap = false;
+uniform int uv2_sides = 2;
 
 varying vec3 binormal_world;
 
@@ -18,8 +19,11 @@ void vertex() {
 }
 
 void fragment() {
-	vec2 flow_foam_noise = textureLod(flowmap, UV2, 0.0).rg;
-	vec2 dist_pressure = textureLod(distmap, UV2, 0.0).xy;
+	vec2 custom_UV = (UV2 + 1.0 / float(uv2_sides)) * (float(uv2_sides) / float(uv2_sides + 2));
+	
+	vec2 flow_foam_noise = textureLod(flowmap, custom_UV, 0.0).rg;
+	vec2 dist_pressure = textureLod(distmap, custom_UV, 0.0).xy;
+	
 	
 	vec2 flow;
 	float distance_map;
@@ -50,4 +54,5 @@ void fragment() {
 	mat2 rotation_mat = mat2(vec2(cosine, -sine), vec2(sine, cosine));
 	vec2 new_flow = rotation_mat * flow;
 	ALBEDO = vec3((new_flow), 0.0) * 0.5 + 0.5; // repack flowmap
+	//ALBEDO = vec3(flow, 0.0);
 }

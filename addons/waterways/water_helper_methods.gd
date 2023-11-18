@@ -1,4 +1,4 @@
-# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 #const RiverManager = preload("./river_manager.gd")
 
@@ -150,8 +150,6 @@ static func generate_river_mesh(curve: Curve3D, steps: int, step_length_divs: in
 
 static func generate_collisionmap(image: Image, mesh_instance: MeshInstance3D, raycast_dist: float, raycast_layers: int, steps: int, step_length_divs: int, step_width_divs: int, river) -> Image:
 	var space_state := mesh_instance.get_world_3d().direct_space_state
-	print("is the space state what we expect?")
-	print(space_state)
 	
 	var uv2 := mesh_instance.mesh.surface_get_arrays(0)[5] as PackedVector2Array
 	var verts := mesh_instance.mesh.surface_get_arrays(0)[0] as PackedVector3Array
@@ -167,13 +165,11 @@ static func generate_collisionmap(image: Image, mesh_instance: MeshInstance3D, r
 	river.emit_signal("progress_notified", percentage, "Calculating Collisions (" + str(image.get_width()) + "x" + str(image.get_width()) + ")")
 	await river.get_tree().process_frame
 	
-	var ray_params := PhysicsRayQueryParameters3D.create(Vector3(0.0, 5.0, 0.0), Vector3(0.0, 0.0, 0.0))
+	#var ray_params := PhysicsRayQueryParameters3D.create(Vector3(0.0, 5.0, 0.0), Vector3(0.0, 0.0, 0.0), raycast_layers)
 	#ray_params_up.collision_mask = raycast_layers
-	var result = space_state.intersect_ray(ray_params)
+	#var result = space_state.intersect_ray(ray_params)
 	
-	print("Single cast test!")
-	print(result)
-	print("done")
+	#print(result)
 	
 	for x in image.get_width():
 		var cur_percentage := float(x) / float(image.get_width())
@@ -219,22 +215,11 @@ static func generate_collisionmap(image: Image, mesh_instance: MeshInstance3D, r
 				var real_pos := bary2cart(vert0, vert1, vert2, baryatric_coords)
 				var real_pos_up := real_pos + Vector3.UP * raycast_dist
 
-				var ray_params_up := PhysicsRayQueryParameters3D.create(real_pos, real_pos_up)
-				#ray_params_up.collision_mask = raycast_layers
+				var ray_params_up := PhysicsRayQueryParameters3D.create(real_pos, real_pos_up, raycast_layers)
 				var result_up = space_state.intersect_ray(ray_params_up)
 
-				var ray_params_down := PhysicsRayQueryParameters3D.create(real_pos_up, real_pos)
-				#ray_params_down.collision_mask = raycast_layers
+				var ray_params_down := PhysicsRayQueryParameters3D.create(real_pos_up, real_pos, raycast_layers)
 				var result_down = space_state.intersect_ray(ray_params_down)
-
-				if (x == 32 and y == 32) or (x == 50 and y == 50):
-					print("real pos at x: ", x, ", y: ", y)
-					print(real_pos)
-					print(real_pos_up)
-					print("ray_params_down")
-					print(var_to_str(ray_params_down))
-					print(result_up)
-					print(result_down)
 
 				var up_hit_frontface := false
 				if result_up:
@@ -243,7 +228,6 @@ static func generate_collisionmap(image: Image, mesh_instance: MeshInstance3D, r
 				
 				if result_up or result_down:
 					if not up_hit_frontface and result_down:
-						# print("Does this ever happen") - Nope
 						image.set_pixel(x, y, Color(1.0, 1.0, 1.0))
 	return image
 

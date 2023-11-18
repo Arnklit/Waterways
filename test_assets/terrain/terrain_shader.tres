@@ -57,7 +57,7 @@ void fragment() {
 	vec3 n_b = unpacked_normal_map_1.y * world_binormal;
 	vec3 n_n = unpacked_normal_map_1.z * world_normal;
 	vec3 normal_applied = n_t + n_b + n_n;
-	float mask1 = smoothstep(0.9, 0.7, dot(vec3(0.0, 1.0, 0.0), world_normal));
+	float mask1 = smoothstep(0.9, 0.8, dot(vec3(0.0, 1.0, 0.0), world_normal));
 	float mask2 = smoothstep(0.9, 0.7, dot(vec3(0.0, 1.0, 0.0), normal_applied));
 	float mask = min(mask1, mask2);
 	

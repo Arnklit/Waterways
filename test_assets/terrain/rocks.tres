@@ -1,0 +1,21 @@
+[gd_resource type="ORMMaterial3D" load_steps=6 format=3]
+[ext_resource path="rocks_albedo.png" type="Texture" id=1]
+[ext_resource path="rocks_orm.png" type="Texture" id=2]
+[ext_resource path="rocks_normal.png" type="Texture" id=3]
+[ext_resource path="rocks_heightmap.png" type="Texture" id=4]
+[resource]
+albedo_color = Color(1, 1, 1, 1)
+albedo_texture = ExtResource( 1 )
+orm_texture = ExtResource( 2 )
+normal_enabled = true
+normal_scale = 1
+normal_texture = ExtResource( 3 )
+heightmap_enabled = true
+heightmap_scale = 25
+heightmap_deep_parallax = true
+heightmap_min_layers = 8
+heightmap_max_layers = 32
+depth_texture = ExtResource( 4 )
+
+
+

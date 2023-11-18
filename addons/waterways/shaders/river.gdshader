@@ -1,4 +1,4 @@
-// Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+// Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 // See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
@@ -52,6 +52,8 @@ uniform sampler2D i_distmap : hint_default_white;
 uniform bool i_valid_flowmap = false;
 uniform int i_uv2_sides = 2;
 
+uniform sampler2D depth_texture : hint_depth_texture;
+uniform sampler2D screen_texture : hint_screen_texture;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
@@ -180,7 +182,7 @@ void fragment() {
 	// We do two depth tests, one with the standard SCREEN_UV and one with the distorted 
 	// refraction UVs. We do this to be able to dismiss refractions that are in front 
 	// of objects
-	float depth_tex = textureLod(DEPTH_TEXTURE, SCREEN_UV, 0.0).r;
+	float depth_tex = textureLod(depth_texture, SCREEN_UV, 0.0).r;
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
 	world_pos.xyz/=world_pos.w;
 	float water_depth = VERTEX.z - world_pos.z;
@@ -202,7 +204,7 @@ void fragment() {
 	float ref_amount = 1.0 - clamp(clar_t + combined_foam, 0.0, 1.0);
 
 	// Depthtest 2
-	float refracted_depth_tex = textureLod(DEPTH_TEXTURE, ref_ofs, 0.0).r;
+	float refracted_depth_tex = textureLod(depth_texture, ref_ofs, 0.0).r;
 	vec4 refracted_world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, refracted_depth_tex, 1.0);
 	refracted_world_pos.xyz /= refracted_world_pos.w;
 	float refracted_water_depth = VERTEX.z - refracted_world_pos.z;
@@ -222,7 +224,7 @@ void fragment() {
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = mix(alb_mix, foam_color.rgb, combined_foam);
 	ALBEDO *= 1.0 - ref_amount;
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth).rgb * ref_amount;
+	EMISSION += textureLod(screen_texture, ref_ofs, ROUGHNESS * water_depth).rgb * ref_amount;
 	ALPHA = 1.0;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
 }

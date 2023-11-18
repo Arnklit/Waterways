@@ -1,4 +1,4 @@
-# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 extends EditorInspectorPlugin
 
@@ -10,9 +10,9 @@ func _can_handle(object) -> bool:
 	return object is RiverManager
 
 
-func _parse_property(object: Object, type: int, path: String, hint: int, hint_text: String, usage: int, wide: bool) -> bool:
-	if type == TYPE_PROJECTION and "color" in path:
+func _parse_property(object: Object, type: Variant.Type, name: String, hint_type: PropertyHint, hint_string: String, usage_flags, wide: bool) -> bool:
+	if type == TYPE_PROJECTION and "color" in name:
 		var editor_property = _editor.new()
-		add_property_editor(path, editor_property)
+		add_property_editor(name, editor_property)
 		return true
 	return false

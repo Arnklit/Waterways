@@ -1,4 +1,4 @@
-# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
 extends Node3D
@@ -62,10 +62,10 @@ func _physics_process(delta: float) -> void:
 	var altitude = _system.get_water_altitude(global_transform.origin)
 	if altitude < 0.0:
 		var flow = _system.get_water_flow(global_transform.origin)
-		_rb.add_central_force(Vector3.UP * buoyancy_force * -altitude)
+		_rb.apply_central_force(Vector3.UP * buoyancy_force * -altitude)
 		var rot = _get_rotation_correction()
-		_rb.add_torque(rot * up_correcting_force)
-		_rb.add_central_force(flow * flow_force)
+		_rb.apply_torque(rot * up_correcting_force)
+		_rb.apply_central_force(flow * flow_force)
 		_rb.linear_damp = water_resistance
 		_rb.angular_damp = water_resistance
 	else:

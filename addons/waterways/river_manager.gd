@@ -1,4 +1,4 @@
-# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
 extends Node3D
@@ -103,7 +103,7 @@ var baking_foam_blur : float = 0.02
 
 # Public variables
 var curve : Curve3D
-var widths := [1.0, 1.0]: set = set_widths
+var widths : Array[float] = [1.0, 1.0]: set = set_widths
 var valid_flowmap := false
 var debug_view : int = 0: set = set_debug_view
 var mesh_instance : MeshInstance3D
@@ -332,9 +332,6 @@ func _get_property_list() -> Array:
 	]
 	var combined_props = props + props2 + props3
 	
-	# TODO, remember to remove this
-	# print(var2str(combined_props))
-	
 	return combined_props
 
 
@@ -348,37 +345,32 @@ func _set(property: StringName, value) -> bool:
 
 
 func _get(property : StringName):
-	#print("in _get(), property: ", property)
 	if str(property).begins_with("mat_"):
 		var param_name = str(property).replace("mat_", "")
-		#print("property name in _get is: ", property)
-		#print("param name in _get is: ", param_name)
-		#print ("_material.get_shader_parameter(param_name): ", _material.get_shader_parameter(param_name))
 		return _material.get_shader_parameter(param_name)
 
 
-# TODO - This doesn't currently work in Godot 4. https://github.com/godotengine/godot/issues/69335
-#func _property_can_revert(property : StringName) -> bool:
-#	if str(property).begins_with("mat_"):
-##		if "color" in property:
-##			# TODO - we are disabling revert for color parameters due to this
-##			# bug: https://github.com/godotengine/godot/issues/45388
-##			return false
-#		var param_name = str(property).replace("mat_", "")
-#		return _material._property_can_revert(str("shader_param/", param_name))
-#
-#	if not DEFAULT_PARAMETERS.has(property):
-#		return false
-#	if get(property) != DEFAULT_PARAMETERS[property]:
-#		return true
-#	return false
-#
-#
-#func _property_get_revert(property : StringName):
-#	if str(property).begins_with("mat_"):
-#		var param_name = str(property).replace("mat_", "")
-#		var revert_value = _material._property_get_revert(str("shader_param/", param_name))
-#		return revert_value
+func _property_can_revert(property : StringName) -> bool:
+	if str(property).begins_with("mat_"):
+#		if "color" in property:
+#			# TODO - we are disabling revert for color parameters due to this
+#			# bug: https://github.com/godotengine/godot/issues/45388
+#			return false
+		var param_name = str(property).replace("mat_", "")
+		return _material.property_can_revert(str("shader_param/", param_name))
+
+	if not DEFAULT_PARAMETERS.has(property):
+		return false
+	if get(property) != DEFAULT_PARAMETERS[property]:
+		return true
+	return false
+
+
+func _property_get_revert(property : StringName):
+	if str(property).begins_with("mat_"):
+		var param_name = str(property).replace("mat_", "")
+		var revert_value = _material.property_get_revert(str("shader_param/", param_name))
+		return revert_value
 
 
 func _init() -> void:
@@ -443,12 +435,12 @@ func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, wi
 	if index == -1:
 		var last_index := curve.get_point_count() - 1
 		var dist = position.distance_to(curve.get_point_position(last_index))
-		var new_dir := dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25 * dist
+		var new_dir :Vector3 = dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25 * dist
 		curve.add_point(position, -new_dir, new_dir, -1)
 		widths.append(widths[widths.size() - 1]) # If this is a new point at the end, add a width that's the same as last
 	else:
 		var dist = curve.get_point_position(index).distance_to(curve.get_point_position(index + 1))
-		var new_dir := dir if dir != Vector3.ZERO else (curve.get_point_position(index + 1) - curve.get_point_position(index)).normalized() * 0.25 * dist
+		var new_dir : Vector3 = dir if dir != Vector3.ZERO else (curve.get_point_position(index + 1) - curve.get_point_position(index)).normalized() * 0.25 * dist
 		curve.add_point(position, -new_dir, new_dir, index + 1)
 		var new_width = width if width != 0.0 else (widths[index] + widths[index + 1]) / 2.0
 		widths.insert(index + 1, new_width) # We set the width to the average of the two surrounding widths
@@ -472,6 +464,7 @@ func bake_texture() -> void:
 
 
 func set_curve_point_position(index : int, position : Vector3) -> void:
+	print("set curve point position")
 	curve.set_point_position(index, position)
 	_generate_river()
 
@@ -487,6 +480,7 @@ func set_curve_point_out(index : int, position : Vector3) -> void:
 
 
 func set_widths(new_widths) -> void:
+	print("set widths")
 	widths = new_widths
 	if _first_enter_tree:
 		return

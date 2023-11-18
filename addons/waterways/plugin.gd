@@ -1,4 +1,4 @@
-# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
 extends EditorPlugin
@@ -6,12 +6,16 @@ extends EditorPlugin
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const WaterSystem = preload("./water_system_manager.gd")
 const RiverManager = preload("./river_manager.gd")
-const RiverGizmo = preload("./river_gizmo.gd")
+const WaterfallManager = preload("./waterfall_manager.gd")
+const WaterfallConfiguration = preload("./waterfall_configuration.gd")
+const RiverGizmo = preload("./gui/river_gizmo.gd")
+const WaterfallGizmo = preload("./gui/waterfall_gizmo.gd")
 const InspectorPlugin = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./gui/progress_window.tscn")
 const RiverControls = preload("./gui/river_controls.gd")
 
 var river_gizmo: RiverGizmo = RiverGizmo.new()
+var waterfall_gizmo: WaterfallGizmo = WaterfallGizmo.new()
 var gradient_inspector: InspectorPlugin = InspectorPlugin.new()
 
 var _river_controls = preload("./gui/river_controls.tscn").instantiate()
@@ -26,12 +30,16 @@ var local_editing := false
 
 
 func _enter_tree() -> void:
-	add_custom_type("River", "Node3D", preload("./river_manager.gd"), preload("./icons/river.svg"))
+	add_custom_type("River", "Node3D",RiverManager, preload("./icons/river.svg"))
+	add_custom_type("Waterfall", "Node3D", WaterfallManager, preload("./icons/river.svg"))
+	add_custom_type("WaterfallConfiguration", "Resource", WaterfallConfiguration, preload("./icons/river.svg"))
 	add_custom_type("WaterSystem", "Node3D", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
 	add_custom_type("Buoyant", "Node3D", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
 	add_node_3d_gizmo_plugin(river_gizmo)
+	add_node_3d_gizmo_plugin(waterfall_gizmo)
 	add_inspector_plugin(gradient_inspector)
 	river_gizmo.editor_plugin = self
+	waterfall_gizmo.editor_plugin = self
 	_river_controls.connect("mode", Callable(self, "_on_mode_change"))
 	_river_controls.connect("options", Callable(self, "_on_option_change"))
 	_progress_window = ProgressWindow.instantiate()
@@ -60,9 +68,12 @@ func _on_generate_system_maps_pressed() -> void:
 
 func _exit_tree() -> void:
 	remove_custom_type("River")
-	remove_custom_type("Water System")
+	remove_custom_type("Waterfall")
+	remove_custom_type("WaterfallConfiguration")
+	remove_custom_type("WaterSystem")
 	remove_custom_type("Buoyant")
 	remove_node_3d_gizmo_plugin(river_gizmo)
+	remove_node_3d_gizmo_plugin(waterfall_gizmo)
 	remove_inspector_plugin(gradient_inspector)
 	_river_controls.disconnect("mode", Callable(self, "_on_mode_change"))
 	_river_controls.disconnect("options", Callable(self, "_on_option_change"))
@@ -74,9 +85,10 @@ func _exit_tree() -> void:
 
 
 func _handles(node):
-	return node is RiverManager or node is WaterSystem
+	return node is RiverManager or node is WaterfallManager or node is WaterSystem
 
 
+# TODO - I think this was commented out for 4.0 conversion and isn't needed anymore
 #func _edit(node):
 #	print("edit(), node is: ", node)
 #	if node is RiverManager:
@@ -88,10 +100,11 @@ func _handles(node):
 
 
 func _on_selection_change() -> void:
-	
 	_editor_selection = get_editor_interface().get_selection()
-	#print("_on_selection_change(), Selection: ", _editor_selection)
 	var selected = _editor_selection.get_selected_nodes()
+	
+	_hide_water_system_control_panel()
+	_hide_river_control_panel()
 	
 	if len(selected) == 0:
 		return
@@ -101,22 +114,16 @@ func _on_selection_change() -> void:
 		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
 		if not _edited_node.is_connected("progress_notified", Callable(self, "_river_progress_notified")):
 			_edited_node.connect("progress_notified", Callable(self, "_river_progress_notified"))
-		_hide_water_system_control_panel()
+	elif selected[0] is WaterfallManager:
+		_edited_node = selected[0] as WaterfallManager
 	elif selected[0] is WaterSystem:
-		# TODO - is there anything we need to add here?
 		_show_water_system_control_panel()
 		_edited_node = selected[0] as WaterSystem
-		_hide_river_control_panel()
 	else:
-		print("_edited_node set to null")
 		_edited_node = null
-		_hide_river_control_panel()
-		_hide_water_system_control_panel()
 
 
 func _on_scene_changed(scene_root) -> void:
-	# TODO - Hmmm
-	# print(scene_root)
 	_hide_river_control_panel()
 	_hide_water_system_control_panel()
 
@@ -141,21 +148,29 @@ func _on_option_change(option, value) -> void:
 
 func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 	if not _edited_node:
-		# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
-		return 0
+		return AFTER_GUI_INPUT_PASS
 	
+	if _edited_node is RiverManager:
+		return _forward_3d_gui_input_river(camera, event)
+	elif _edited_node is WaterfallManager:
+		return AFTER_GUI_INPUT_PASS
+	
+	return AFTER_GUI_INPUT_PASS
+
+
+func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 	var global_transform: Transform3D = _edited_node.transform
 	if _edited_node.is_inside_tree():
 		global_transform = _edited_node.get_global_transform()
 	var global_inverse: Transform3D = global_transform.affine_inverse()
 	
 	if (event is InputEventMouseButton) and (event.button_index == MOUSE_BUTTON_LEFT):
-		
 		var ray_from = camera.project_ray_origin(event.position)
 		var ray_dir = camera.project_ray_normal(event.position)
 		var g1 = global_inverse * (ray_from)
 		var g2 = global_inverse * (ray_from + ray_dir * 4096)
 		
+			
 		# Iterate through points to find closest segment
 		var curve_points = _edited_node.get_curve_points()
 		var closest_distance = 4096.0
@@ -197,7 +212,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 		if _mode == "select":
 			if not event.pressed:
 				river_gizmo.reset()
-			return 0
+			return AFTER_GUI_INPUT_PASS
 		if _mode == "add" and not event.pressed:
 			# if we don't have a point on the line, we'll calculate a point
 			# based of a plane of the last point of the curve
@@ -221,7 +236,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 					if result:
 						new_pos = result.position
 					else:
-						return 0
+						return AFTER_GUI_INPUT_PASS
 				elif constraint == RiverControls.CONSTRAINTS.NONE:
 					new_pos = plane.intersects_ray(ray_from, ray_from + ray_dir * 4096)
 				
@@ -285,8 +300,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 				ur.add_undo_property(_edited_node, "valid_flowmap", _edited_node.valid_flowmap)
 				ur.add_undo_method(_edited_node, "update_configuration_warnings")
 				ur.commit_action()
-		# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
-		return 1
+		return AFTER_GUI_INPUT_STOP
 	
 	elif _edited_node is RiverManager:
 		# Forward input to river controls. This is cleaner than handling
@@ -296,9 +310,7 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 		# method needs to be exposed.
 		# TODO - so this was returning a bool before? Check this
 		return _river_controls.spatial_gui_input(event)
-	
-	# TODO - This should be updated to the enum when it's fixed https://github.com/godotengine/godot/pull/64465
-	return 0
+	return AFTER_GUI_INPUT_PASS
 
 
 func _river_progress_notified(progress : float, message : String) -> void:

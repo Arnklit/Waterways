@@ -1,11 +1,11 @@
-# Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
 extends Node3D
 
+const SystemMapRenderer = preload("./system_map_renderer.tscn")
+const FilterRenderer = preload("./filter_renderer.tscn")
 const RiverManager = preload("./river_manager.gd")
-const SystemMapRenderer = preload("./system_map_renderer.gd")
-const FilterRenderer = preload("./filter_renderer.gd")
 
 var system_map : ImageTexture = null: set = set_system_map
 var system_bake_resolution := 2
@@ -112,8 +112,9 @@ func generate_system_maps() -> void:
 	for river in rivers:
 		var river_aabb = river.get_transformed_aabb()
 		_system_aabb = _system_aabb.merge(river_aabb)
+	print(_system_aabb)
 	
-	var renderer: SystemMapRenderer = SystemMapRenderer.instantiate()
+	var renderer = SystemMapRenderer.instantiate()
 	add_child(renderer)
 	var resolution := pow(2, system_bake_resolution + 7)
 	var flow_map: ImageTexture = await renderer.grab_flow(rivers, _system_aabb, resolution)
@@ -122,7 +123,7 @@ func generate_system_maps() -> void:
 	
 	remove_child(renderer)
 	
-	var filter_renderer: FilterRenderer = FilterRenderer.instantiate()
+	var filter_renderer = FilterRenderer.instantiate()
 	add_child(filter_renderer)
 	
 	self.system_map = await filter_renderer.apply_combine(flow_map, flow_map, height_map) as ImageTexture

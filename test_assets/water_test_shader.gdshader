@@ -1,7 +1,9 @@
-// Copyright © 2022 Kasper Arnklit Frandsen - MIT License
+// Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 // See `LICENSE.md` included in the source distribution for details.
 shader_type spatial;
 render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
+
+// https://www.youtube.com/watch?v=wdcvPegJ1lw
 
 // If you are making your own shader, you can customize or add your own
 // parameters below and they will automatically get parsed and displayed in
@@ -16,6 +18,7 @@ render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
 // Main
 uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
 uniform sampler2D normal_bump_texture : hint_normal, filter_linear_mipmap_anisotropic;
+uniform sampler2D caustics_texture : hint_default_black, filter_linear_mipmap_anisotropic;
 uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
 uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
@@ -54,6 +57,9 @@ uniform int i_uv2_sides = 2;
 
 uniform int grid_size = 48;
 uniform float wave_scale = 8.0;
+
+uniform sampler2D depth_texture : hint_depth_texture;
+uniform sampler2D screen_texture : hint_screen_texture;
 
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
@@ -140,6 +146,22 @@ vec2 get_tiles(vec2 flow_uv, vec2 standard_uv, vec2 offset, vec2 flow) {
 	normalmap.xy = normalmap.xy * 0.5 + 0.5;
 	
 	return normalmap.xy;
+}
+
+vec3 screen_blend(vec3 background, vec3 foreground, float amount) {
+	return 1.0 - (vec3(1.0) - background) * (vec3(1.0) - foreground * amount);
+}
+
+vec3 color_dodge(vec3 background, vec3 foreground, float amount) {
+	return background / (vec3(1.0) - background);
+}
+
+vec2 warp(vec2 uv, float warp_strength, float warp_speed, float warp_scale) {
+	float x_warp = TIME * warp_speed + uv.y * TAU / warp_scale;
+	float y_warp = TIME * warp_speed + uv.x * TAU / warp_scale;
+	
+	vec2 distortion_offset = vec2(sin(x_warp), sin(y_warp)) * warp_strength;
+	return uv + distortion_offset;
 }
 
 void fragment() {
@@ -232,18 +254,18 @@ void fragment() {
 	// We do two depth tests, one with the standard SCREEN_UV and one with the distorted 
 	// refraction UVs. We do this to be able to dismiss refractions that are in front 
 	// of objects
-	float depth_tex = textureLod(DEPTH_TEXTURE, SCREEN_UV, 0.0).r;
+	float depth_tex = textureLod(depth_texture, SCREEN_UV, 0.0).r;
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
 	world_pos.xyz/=world_pos.w;
 	float water_depth = VERTEX.z - world_pos.z;
-		
+	
 	float alb_t = clamp(water_depth / albedo_depth, 0.0, 1.0);
 	alb_t = ease(alb_t, albedo_depth_curve);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
 	ROUGHNESS = roughness;
 	NORMAL_MAP = mix3;
 	NORMAL_MAP_DEPTH = normal_scale;
-
+	
 	// Refraction - has to be done after normal is set
 	vec3 unpacted_normals = NORMAL_MAP * 2.0 - 1.0;
 	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMAL_MAP_DEPTH * .1;
@@ -254,10 +276,15 @@ void fragment() {
 	float ref_amount = 1.0 - clamp(clar_t, 0.0, 1.0);
 
 	// Depthtest 2
-	float refracted_depth_tex = textureLod(DEPTH_TEXTURE, ref_ofs, 0.0).r;
+	float refracted_depth_tex = textureLod(depth_texture, ref_ofs, 0.0).r;
 	vec4 refracted_world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, refracted_depth_tex, 1.0);
 	refracted_world_pos.xyz /= refracted_world_pos.w;
 	float refracted_water_depth = VERTEX.z - refracted_world_pos.z;
+	
+	// Fake caustics	
+	float caustics1 = texture(caustics_texture, ((refracted_world_pos * VIEW_MATRIX).xz + CAMERA_POSITION_WORLD.xz) * 0.4 + vec2(TIME * .3)).r;
+	float caustics2 = texture(caustics_texture, ((refracted_world_pos * VIEW_MATRIX).xz + CAMERA_POSITION_WORLD.xz) * 0.5 + vec2(TIME * -.4)).r;
+	float caustics = min(caustics1, caustics2);
 	
 	if (refracted_world_pos.z > VERTEX.z) {
 		ref_ofs = SCREEN_UV;
@@ -268,13 +295,17 @@ void fragment() {
 		alb_t = clamp(refracted_water_depth / albedo_depth, 0.0, 1.0);
 		alb_t = ease(alb_t, albedo_depth_curve);
 	}
+
 	mat4 albedo_color_srgb = gradient_lin2srgb(albedo_color);
 	vec3 albedo_color_near = vec3(albedo_color_srgb[0].x, albedo_color_srgb[0].y, albedo_color_srgb[0].z);
 	vec3 albedo_color_far = vec3(albedo_color_srgb[1].x, albedo_color_srgb[1].y, albedo_color_srgb[1].z);
 	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
 	ALBEDO = alb_mix;
 	ALBEDO *= 1.0 - ref_amount;
-	EMISSION += textureLod(SCREEN_TEXTURE, ref_ofs, ROUGHNESS * water_depth).rgb * ref_amount;
+	vec3 refraction = textureLod(screen_texture, ref_ofs, ROUGHNESS * water_depth).rgb * ref_amount;
+	float luminosity = 0.21 * refraction.r + 0.72 * refraction.g + 0.07 * refraction.b;
+	EMISSION += refraction + vec3(caustics) * 2.0 * luminosity;
+	//EMISSION = vec3(caustics);
 	ALPHA = 1.0;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
 }
