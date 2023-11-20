@@ -9,8 +9,8 @@ border_color = Color(0, 0, 0, 1)
 
 [sub_resource type="ShaderMaterial" id="ShaderMaterial_hjpqg"]
 shader = ExtResource("2")
-shader_parameter/color1 = Color(0.109804, 0.109804, 0.901961, 1)
-shader_parameter/color2 = Color(0.160784, 0.517647, 0.8, 1)
+shader_parameter/color1 = Vector4(0.25, 0.25, 0.7, 1)
+shader_parameter/color2 = Vector4(0.25, 0.5, 0.7, 1)
 
 [node name="HBoxContainer" type="HBoxContainer"]
 offset_right = 400.0

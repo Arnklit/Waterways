@@ -1,12 +1,12 @@
-[gd_scene load_steps=3 format=2]
+[gd_scene load_steps=3 format=3 uid="uid://b7sb78as2wbok"]
 
-[ext_resource path="res://addons/waterways/gui/water_system_controls.gd" type="Script" id=1]
-[ext_resource path="res://addons/waterways/gui/water_system_menu.gd" type="Script" id=2]
+[ext_resource type="Script" path="res://addons/waterways/gui/water_system_controls.gd" id="1"]
+[ext_resource type="Script" path="res://addons/waterways/gui/water_system_menu.gd" id="2"]
 
 [node name="WaterSystemControls" type="HBoxContainer"]
 offset_right = 128.0
 offset_bottom = 26.0
-script = ExtResource( 1 )
+script = ExtResource("1")
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -16,4 +16,4 @@ offset_right = 97.0
 offset_bottom = 26.0
 text = "WaterSystem"
 items = ["Generate System Maps", null, 0, false, false, 0, 0, null, "", false]
-script = ExtResource( 2 )
+script = ExtResource("2")

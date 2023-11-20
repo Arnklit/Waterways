@@ -141,7 +141,9 @@ func _on_option_change(option, value) -> void:
 	if option == "constraint":
 		constraint = value
 		if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
-			WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
+			# WaterHelperMethods.reset_all_colliders(_edited_node.get_tree().root)
+			# TODO - figure out if this is needed any more
+			pass
 	elif option == "local_mode":
 		local_editing = value
 

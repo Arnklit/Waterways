@@ -14,6 +14,27 @@ uniform int uv2_sides = 2;
 varying vec3 binormal_world;
 
 
+// Converts a color from linear light gamma to sRGB gamma
+vec4 fromLinear(vec4 linearRGB)
+{
+    bvec4 cutoff = lessThan(linearRGB, vec4(0.0031308));
+    vec4 higher = vec4(1.055)*pow(linearRGB, vec4(1.0/2.4)) - vec4(0.055);
+    vec4 lower = linearRGB * vec4(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
+// Converts a color from sRGB gamma to linear light gamma
+vec4 toLinear(vec4 sRGB)
+{
+    bvec4 cutoff = lessThan(sRGB, vec4(0.04045));
+    vec4 higher = pow((sRGB + vec4(0.055))/vec4(1.055), vec4(2.4));
+    vec4 lower = sRGB/vec4(12.92);
+
+    return mix(higher, lower, cutoff);
+}
+
+
 void vertex() {
 	binormal_world = (MODEL_MATRIX * vec4(BINORMAL, 0.0)).xyz;
 }
@@ -53,6 +74,7 @@ void fragment() {
 	float sine = sin(rotation);
 	mat2 rotation_mat = mat2(vec2(cosine, -sine), vec2(sine, cosine));
 	vec2 new_flow = rotation_mat * flow;
+	new_flow = toLinear(vec4(new_flow, 0.0, 1.0)).rg;
 	ALBEDO = vec3((new_flow), 0.0) * 0.5 + 0.5; // repack flowmap
 	//ALBEDO = vec3(flow, 0.0);
 }
