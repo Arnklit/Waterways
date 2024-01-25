@@ -259,8 +259,8 @@ func _set_handle(gizmo: EditorNode3DGizmo, index: int, secondary: bool, camera: 
 			if editor_plugin.local_editing:
 				normal = _handle_base_transform.basis * (normal)
 			var projected : Vector3 = old_pos_global.project(normal)
-			var direction : Vector3 = sign(projected.dot(normal))
-			var distance : Vector3 = direction * projected.length()
+			var direction : float = signf(projected.dot(normal))
+			var distance : float = direction * projected.length()
 			var plane := Plane(normal, distance)
 			new_pos = plane.intersects_ray(ray_from, ray_dir)
 		

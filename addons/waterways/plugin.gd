@@ -234,7 +234,8 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 				var new_pos
 				if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
 					var space_state = _edited_node.get_world_3d().direct_space_state
-					var result = space_state.intersect_ray(ray_from, ray_from + ray_dir * 4096)
+					var ray_params = PhysicsRayQueryParameters3D.create(ray_from, ray_from + ray_dir * 4096)
+					var result = space_state.intersect_ray(ray_params)
 					if result:
 						new_pos = result.position
 					else:
@@ -257,8 +258,8 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 					if local_editing:
 						normal = _handle_base_transform.basis * (normal)
 					var projected : Vector3 = end_pos_global.project(normal)
-					var direction : Vector3 = sign(projected.dot(normal))
-					var distance : Vector3 = direction * projected.length()
+					var direction : float = signf(projected.dot(normal))
+					var distance : float = direction * projected.length()
 					plane = Plane(normal, distance)
 					new_pos = plane.intersects_ray(ray_from, ray_dir)
 						
