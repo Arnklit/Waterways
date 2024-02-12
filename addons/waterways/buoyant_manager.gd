@@ -7,7 +7,7 @@ const WaterSystem = preload("res://addons/waterways/water_system_manager.gd")
 
 
 @export var water_system_group_name : String = "waterways_system"
-@export var buoyancy_force := 50.0
+@export var buoyancy_force := 5.0
 @export var up_correcting_force := 5.0
 @export var flow_force := 50.0
 @export var water_resistance := 5.0
@@ -60,9 +60,9 @@ func _physics_process(delta: float) -> void:
 	if Engine.is_editor_hint() || _system == null || _rb == null:
 		return
 	var altitude = _system.get_water_altitude(global_transform.origin)
-	if altitude < 0.0:
+	if global_transform.origin.y - altitude < 0.0:
 		var flow = _system.get_water_flow(global_transform.origin)
-		_rb.apply_central_force(Vector3.UP * buoyancy_force * -altitude)
+		_rb.apply_central_force(Vector3.UP * buoyancy_force * max(altitude - global_transform.origin.y, 5.0))
 		var rot = _get_rotation_correction()
 		_rb.apply_torque(rot * up_correcting_force)
 		_rb.apply_central_force(flow * flow_force)

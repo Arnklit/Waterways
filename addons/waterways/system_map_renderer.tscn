@@ -1,6 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://dy1hxw3ejv2a3"]
+[gd_scene load_steps=3 format=3 uid="uid://dy1hxw3ejv2a3"]
 
 [ext_resource type="Script" path="res://addons/waterways/system_map_renderer.gd" id="1"]
+
+[sub_resource type="Environment" id="Environment_o46ac"]
 
 [node name="SystemMatRenderer" type="SubViewport"]
 own_world_3d = true
@@ -18,3 +20,6 @@ current = true
 size = 50.0
 
 [node name="Container" type="Node3D" parent="."]
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_o46ac")

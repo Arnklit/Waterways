@@ -16,9 +16,9 @@ dest_files=["res://.godot/imported/water1_normal_bump.png-1e68aa6d8e854a1982405b
 [params]
 
 compress/mode=0
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/hdr_compression=1
-compress/bptc_ldr=0
 compress/normal_map=2
 compress/channel_pack=0
 mipmaps/generate=true

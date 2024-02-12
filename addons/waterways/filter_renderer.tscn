@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://addons/waterways/filter_renderer.gd" id="1"]
 
-[sub_resource type="ShaderMaterial" id="ShaderMaterial_wr5gn"]
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_n87ho"]
 
 [node name="Renderer" type="SubViewport"]
 own_world_3d = true
@@ -14,6 +14,6 @@ render_target_update_mode = 1
 script = ExtResource("1")
 
 [node name="ColorRect" type="ColorRect" parent="."]
-material = SubResource("ShaderMaterial_wr5gn")
+material = SubResource("ShaderMaterial_n87ho")
 offset_right = 256.0
 offset_bottom = 256.0

@@ -16,9 +16,9 @@ dest_files=["res://.godot/imported/flow_offset_noise.png-f3f9e08ae624dc7c49a4bff
 [params]
 
 compress/mode=1
+compress/high_quality=false
 compress/lossy_quality=0.7
 compress/hdr_compression=1
-compress/bptc_ldr=0
 compress/normal_map=2
 compress/channel_pack=0
 mipmaps/generate=true

@@ -74,7 +74,7 @@ void fragment() {
 	float sine = sin(rotation);
 	mat2 rotation_mat = mat2(vec2(cosine, -sine), vec2(sine, cosine));
 	vec2 new_flow = rotation_mat * flow;
-	new_flow = toLinear(vec4(new_flow, 0.0, 1.0)).rg;
+	//new_flow = toLinear(vec4(f, 0.0, 1.0)).rg;
 	ALBEDO = vec3((new_flow), 0.0) * 0.5 + 0.5; // repack flowmap
 	//ALBEDO = vec3(flow, 0.0);
 }
