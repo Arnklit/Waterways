@@ -41,6 +41,8 @@ uniform sampler2D i_distmap : hint_default_white;
 uniform bool i_valid_flowmap = false;
 uniform int i_uv2_sides = 2;
 
+uniform sampler2D depth_texture : hint_depth_texture;
+
 vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
 	float phaseOffset = flowB ? 0.5 : 0.0;
 	float progress = fract(time + phaseOffset);
@@ -142,10 +144,10 @@ void fragment() {
 	float lava_bumpFBM = lava_nor_bump.b; // TODO - Will we use this?
 	
 	// Depthtest
-	float depth_tex = textureLod(DEPTH_TEXTURE, SCREEN_UV, 0.0).r;
-	float depth_tex_unpacked = depth_tex * 2.0 - 1.0;
-	float surface_dist = PROJECTION_MATRIX[3][2] / (depth_tex_unpacked + PROJECTION_MATRIX[2][2]);
-	float lava_depth = surface_dist + VERTEX.z;
+	float depth_tex = textureLod(depth_texture, SCREEN_UV, 0.0).r;
+	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
+	world_pos.xyz/=world_pos.w;
+	float lava_depth = VERTEX.z - world_pos.z;
 	
 	ROUGHNESS = roughness;
 	NORMAL_MAP = vec3(lava_norFBM, 0);
@@ -163,7 +165,7 @@ void fragment() {
 	ALBEDO = vec3(0.0);
 	EMISSION = final_lava * emission_energy;
 	
-	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
+	//vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, depth_tex * 2.0 - 1.0, 1.0);
 	world_pos.xyz /= world_pos.w;
 	ALPHA = 1.0;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);

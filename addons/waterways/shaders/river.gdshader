@@ -21,7 +21,8 @@ uniform float roughness : hint_range(0.0, 1.0) = 0.2;
 uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
 
 // Albedo
-uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
+//uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
+uniform mat4 albedo_color = mat4(vec4(0.0, 0.8, 1.0, 0.0), vec4(0.15, 0.2, 0.5, 0.0), vec4(0.0), vec4(0.0));
 uniform float albedo_depth : hint_range(0.0, 200.0) = 10.0;
 uniform float albedo_depth_curve = 0.25;
 

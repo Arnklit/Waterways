@@ -186,7 +186,6 @@ func _get_property_list() -> Array:
 	
 	if _material.shader != null:
 		var shader_params := RenderingServer.get_shader_parameter_list(_material.shader.get_rid())
-		
 		for p in shader_params:
 			if p.name.begins_with("i_"):
 				continue
@@ -352,12 +351,8 @@ func _get(property : StringName):
 
 func _property_can_revert(property : StringName) -> bool:
 	if str(property).begins_with("mat_"):
-#		if "color" in property:
-#			# TODO - we are disabling revert for color parameters due to this
-#			# bug: https://github.com/godotengine/godot/issues/45388
-#			return false
 		var param_name = str(property).replace("mat_", "")
-		return _material.property_can_revert(str("shader_param/", param_name))
+		return _material.property_can_revert(str("shader_parameter/", param_name))
 
 	if not DEFAULT_PARAMETERS.has(property):
 		return false
@@ -369,8 +364,11 @@ func _property_can_revert(property : StringName) -> bool:
 func _property_get_revert(property : StringName):
 	if str(property).begins_with("mat_"):
 		var param_name = str(property).replace("mat_", "")
-		var revert_value = _material.property_get_revert(str("shader_param/", param_name))
+		var revert_value = _material.property_get_revert(str("shader_parameter/", param_name))
 		return revert_value
+	
+	if DEFAULT_PARAMETERS.has(property):
+		return DEFAULT_PARAMETERS[property]
 
 
 func _init() -> void:
@@ -464,7 +462,6 @@ func bake_texture() -> void:
 
 
 func set_curve_point_position(index : int, position : Vector3) -> void:
-	print("set curve point position")
 	curve.set_point_position(index, position)
 	_generate_river()
 
@@ -480,7 +477,6 @@ func set_curve_point_out(index : int, position : Vector3) -> void:
 
 
 func set_widths(new_widths) -> void:
-	print("set widths")
 	widths = new_widths
 	if _first_enter_tree:
 		return
