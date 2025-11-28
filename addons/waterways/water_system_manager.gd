@@ -126,7 +126,7 @@ func generate_system_maps() -> void:
 	var filter_renderer = FilterRenderer.instantiate()
 	add_child(filter_renderer)
 	
-	self.system_map = await filter_renderer.apply_combine(flow_map, flow_map, height_map) as ImageTexture
+	system_map = await filter_renderer.apply_combine(flow_map, flow_map, height_map) as ImageTexture
 	
 	remove_child(filter_renderer)
 	
@@ -145,25 +145,25 @@ func generate_system_maps() -> void:
 			material.set_shader_parameter("water_systemmap_coords", get_system_map_coordinates())
 
 
-# Returns the vetical distance to the water, positive values above water level,
+# Returns the vertical distance to the water, positive values above water level,
 # negative numbers below the water
 func get_water_altitude(query_pos : Vector3) -> float:
 	if _system_img == null:
 		return min(query_pos.y, minimum_water_level)
 	var position_in_aabb = query_pos - _system_aabb.position
-	var pos_2d = Vector2(position_in_aabb.x, position_in_aabb.z)
+	var pos_2d : Vector2 = Vector2(position_in_aabb.x, position_in_aabb.z)
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
 		# We are outside the aabb of the Water System
 		return min(query_pos.y, minimum_water_level)
 	
 	pos_2d = pos_2d * _system_img.get_width()
-	var col = _system_img.get_pixelv(pos_2d)
+	var col : Color = _system_img.get_pixelv(pos_2d)
 	if col == Color(0, 0, 0, 1):
 		# We hit the empty part of the System Map
 		return min(query_pos.y, minimum_water_level)
 	# Throw a warning if the map is not baked
-	var height = col.b * _system_aabb.size.y + _system_aabb.position.y
+	var height : float = col.b * _system_aabb.size.y + _system_aabb.position.y
 	return height
 
 
