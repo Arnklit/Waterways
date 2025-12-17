@@ -1,0 +1,73 @@
+[gd_resource type="Shader" format=3 uid="uid://fb5b3ielsfie"]
+
+[resource]
+code = "// NOTE: Shader automatically converted from Godot Engine 4.0.beta5's StandardMaterial3D.
+
+shader_type spatial;
+render_mode blend_mix,depth_draw_opaque,cull_back,diffuse_burley,specular_schlick_ggx;
+
+uniform sampler2D texture_albedo_1 : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D texture_albedo_2 : source_color, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D texture_normal_1 : hint_roughness_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+uniform sampler2D texture_normal_2 : hint_roughness_normal, filter_linear_mipmap_anisotropic, repeat_enable;
+
+uniform float normal_scale : hint_range(-16,16);
+varying vec3 uv1_triplanar_pos;
+uniform float uv1_blend_sharpness;
+varying vec3 uv1_power_normal;
+uniform vec3 uv1_scale;
+
+
+void vertex() {
+	TANGENT = vec3(0.0,0.0,-1.0) * abs(NORMAL.x);
+	TANGENT+= vec3(1.0,0.0,0.0) * abs(NORMAL.y);
+	TANGENT+= vec3(1.0,0.0,0.0) * abs(NORMAL.z);
+	TANGENT = normalize(TANGENT);
+	BINORMAL = vec3(0.0,1.0,0.0) * abs(NORMAL.x);
+	BINORMAL+= vec3(0.0,0.0,-1.0) * abs(NORMAL.y);
+	BINORMAL+= vec3(0.0,1.0,0.0) * abs(NORMAL.z);
+	BINORMAL = normalize(BINORMAL);
+	uv1_power_normal=pow(abs(NORMAL),vec3(uv1_blend_sharpness));
+	uv1_triplanar_pos = VERTEX * uv1_scale;
+	uv1_power_normal/=dot(uv1_power_normal,vec3(1.0));
+	uv1_triplanar_pos *= vec3(1.0,-1.0, 1.0);
+}
+
+
+
+
+vec4 triplanar_texture(sampler2D p_sampler,vec3 p_weights,vec3 p_triplanar_pos) {
+	vec4 samp=vec4(0.0);
+	samp+= texture(p_sampler,p_triplanar_pos.xy) * p_weights.z;
+	samp+= texture(p_sampler,p_triplanar_pos.xz) * p_weights.y;
+	samp+= texture(p_sampler,p_triplanar_pos.zy * vec2(-1.0,1.0)) * p_weights.x;
+	return samp;
+}
+
+
+void fragment() {
+	vec3 world_normal = NORMAL * mat3(VIEW_MATRIX);
+	vec3 world_tangent = TANGENT * mat3(VIEW_MATRIX);
+	vec3 world_binormal = BINORMAL * mat3(VIEW_MATRIX);
+	vec3 normal_map_1 = triplanar_texture(texture_normal_1,uv1_power_normal,uv1_triplanar_pos).rgb;
+	vec3 normal_map_2 = triplanar_texture(texture_normal_2,uv1_power_normal,uv1_triplanar_pos).rgb;
+	vec3 unpacked_normal_map_1 = normal_map_1 * 2.0 - 1.0;
+	unpacked_normal_map_1.z = sqrt(1.0 - unpacked_normal_map_1.x * unpacked_normal_map_1.x - unpacked_normal_map_1.y * unpacked_normal_map_1.y);
+	vec3 n_t = unpacked_normal_map_1.x * world_tangent;
+	vec3 n_b = unpacked_normal_map_1.y * world_binormal;
+	vec3 n_n = unpacked_normal_map_1.z * world_normal;
+	vec3 normal_applied = n_t + n_b + n_n;
+	float mask1 = smoothstep(0.9, 0.8, dot(vec3(0.0, 1.0, 0.0), world_normal));
+	float mask2 = smoothstep(0.9, 0.7, dot(vec3(0.0, 1.0, 0.0), normal_applied));
+	float mask = min(mask1, mask2);
+	
+	vec4 albedo_tex_1 = triplanar_texture(texture_albedo_1, uv1_power_normal, uv1_triplanar_pos);
+	vec4 albedo_tex_2 = triplanar_texture(texture_albedo_2, uv1_power_normal, uv1_triplanar_pos);
+	ALBEDO = mix(albedo_tex_2.rgb, albedo_tex_1.rgb, mask);
+	vec4 roughness_texture_channel = vec4(1.0,0.0,0.0,0.0);
+	ROUGHNESS = 1.0;
+	NORMAL_MAP = mix(normal_map_2, normal_map_1, mask);
+	NORMAL_MAP_DEPTH = normal_scale;
+	//ALBEDO = vec3(mask);
+}
+"

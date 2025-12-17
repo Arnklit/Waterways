@@ -1,0 +1,311 @@
+// Copyright © 2023 Kasper Arnklit Frandsen - MIT License
+// See `LICENSE.md` included in the source distribution for details.
+shader_type spatial;
+render_mode depth_draw_always, specular_schlick_ggx, cull_disabled;
+
+// https://www.youtube.com/watch?v=wdcvPegJ1lw
+
+// If you are making your own shader, you can customize or add your own
+// parameters below and they will automatically get parsed and displayed in
+// the River inspector.
+
+// Use prefixes: albedo_, emission_, transparency_, flow_, foam_ and custom_
+// to automatically put your parameters into categories in the inspector.
+
+// If "curve" is in the name, the inspector will represent and easing curve.
+// mat4´s with "color" in their name will get parsed as gradients.
+
+// Main
+uniform float normal_scale : hint_range(-16.0, 16.0) = 1.0;
+uniform sampler2D normal_bump_texture : hint_normal, filter_linear_mipmap_anisotropic;
+uniform sampler2D caustics_texture : hint_default_black, filter_linear_mipmap_anisotropic;
+uniform vec3 uv_scale = vec3(1.0, 1.0, 1.0);
+uniform float roughness : hint_range(0.0, 1.0) = 0.2;
+uniform float edge_fade : hint_range(0.0, 1.0) = 0.25;
+
+// Albedo
+uniform mat4 albedo_color = mat4(vec4(0.0, 0.15, 0.0, 0.0), vec4(0.8, 0.2, 0.0, 0.0), vec4(1.0, 0.5, 0.0, 0.0), vec4(0.0));
+uniform float albedo_depth : hint_range(0.0, 200.0) = 10.0;
+uniform float albedo_depth_curve = 0.25;
+
+// Transparency
+uniform float transparency_clarity : hint_range(0.0, 200.0) = 10.0;
+uniform float transparency_depth_curve = 0.25;
+uniform float transparency_refraction : hint_range(-1.0, 1.0) = 0.05;
+
+// Flow
+uniform float flow_speed : hint_range(0.0, 10.0) = 1.0;
+uniform float flow_base : hint_range(0.0, 8.0) = 0.0;
+uniform float flow_steepness : hint_range(0.0, 8.0) = 2.0;
+uniform float flow_distance : hint_range(0.0, 8.0) = 1.0;
+uniform float flow_pressure : hint_range(0.0, 8.0) = 1.0;
+uniform float flow_max : hint_range(0.0, 8.0) = 4.0;
+
+// Foam
+uniform vec4 foam_color : source_color = vec4(0.9, 0.9, 0.9, 1.0);
+uniform float foam_amount : hint_range(0.0, 4.0) = 2.0;
+uniform float foam_steepness : hint_range(0.0, 8.0) = 2.0;
+uniform float foam_smoothness : hint_range(0.0, 1.0) = 0.3;
+
+// Internal uniforms - DO NOT CUSTOMIZE THESE
+uniform float i_lod0_distance : hint_range(5.0, 200.0) = 50.0;
+uniform sampler2D i_texture_foam_noise : hint_default_white;
+uniform sampler2D i_flowmap : hint_normal;
+uniform sampler2D i_distmap : hint_default_white;
+uniform bool i_valid_flowmap = false;
+uniform int i_uv2_sides = 2;
+
+uniform int grid_size = 48;
+uniform float wave_scale = 8.0;
+
+uniform sampler2D depth_texture : hint_depth_texture;
+uniform sampler2D screen_texture : hint_screen_texture;
+
+vec3 FlowUVW(vec2 uv_in, vec2 flowVector, vec2 jump, vec3 tiling, float time, bool flowB) {
+	float phaseOffset = flowB ? 0.5 : 0.0;
+	float progress = fract(time + phaseOffset);
+	vec3 uvw;
+	uvw.xy = uv_in - flowVector * (progress - 0.5);
+	uvw.xy *= tiling.xy;
+	uvw.xy += phaseOffset;
+	uvw.xy += (time - progress) * jump;
+	uvw.z = 1.0 - abs(1.0 - 2.0 * progress);
+	return uvw;
+}
+
+// ease implementation copied from math_funcs.cpp in source
+float ease(float p_x, float p_c) {
+	if (p_x < 0.0) {
+		p_x = 0.0;
+	} else if (p_x > 1.0) {
+		p_x = 1.0;
+	}
+	if (p_c > 0.0) {
+		if (p_c < 1.0) {
+			return 1.0 - pow(1.0 - p_x, 1.0 / p_c);
+		} else {
+			return pow(p_x, p_c);
+		}
+	} else if (p_c < 0.0) {
+		//inout ease
+		
+		if (p_x < 0.5) {
+			return pow(p_x * 2.0, -p_c) * 0.5;
+		} else {
+			return (1.0 - pow(1.0 - (p_x - 0.5) * 2.0, -p_c)) * 0.5 + 0.5;
+		}
+	} else {
+		return 0.0; // no ease (raw)
+	}
+}
+
+float lin2srgb(float lin) {
+	return pow(lin, 2.2);
+}
+
+mat4 gradient_lin2srgb(mat4 lin_mat) {
+	mat4 srgb_mat = mat4(
+		vec4(lin2srgb(lin_mat[0].x), lin2srgb(lin_mat[0].y), lin2srgb(lin_mat[0].z), lin2srgb(lin_mat[0].w)),
+		vec4(lin2srgb(lin_mat[1].x), lin2srgb(lin_mat[1].y), lin2srgb(lin_mat[1].z), lin2srgb(lin_mat[1].w)),
+		vec4(0.0),
+		vec4(0.0)
+	);
+	return srgb_mat;
+}
+
+vec2 rotate(vec2 uv, float rotate) {
+	vec2 rv;
+	rv.x = cos(rotate) * uv.x + sin(rotate) * uv.y;
+	rv.y = -sin(rotate) * uv.x + cos(rotate) * uv.y;
+    return rv;
+}
+
+float mip_map_level(in vec2 texture_coordinate) {
+    vec2  dx_vtc = dFdx(texture_coordinate);
+    vec2  dy_vtc = dFdy(texture_coordinate);
+    float delta_max_sqr = max(dot(dx_vtc, dx_vtc), dot(dy_vtc, dy_vtc));
+    float mml = 0.5 * log2(delta_max_sqr);
+    return max(0, mml);
+}
+
+vec2 get_tiles(vec2 flow_uv, vec2 standard_uv, vec2 offset, vec2 flow) {
+	vec2 grid_uv = floor(flow_uv * float(grid_size) + offset) / float(grid_size) + 1.0 / float(grid_size * 2);
+	
+	vec2 flowmap = texture(i_flowmap, grid_uv).rg;
+	flowmap = (flowmap - 0.5) * 2.0;
+	flowmap.x *= -1.0;
+	float rotation = -atan(flowmap.y, flowmap.x);
+	
+	vec2 rotated_uv = rotate(standard_uv, rotation);
+	
+	float lod = mip_map_level(flow_uv * float(grid_size) * vec2(textureSize(normal_bump_texture, 0)));
+	//vec3 normalmap = texture(normal_bump_texture, rotated_uv * wave_scale + vec2(1.0, 0.0) * TIME * length(flowmap) * 8.0 + flowmap).rgb;
+	vec3 normalmap = textureLod(normal_bump_texture, rotated_uv * wave_scale + vec2(1.0, 0.0) * TIME * length(flowmap) * 8.0 + flowmap, lod).rgb;
+	normalmap.xy = (normalmap.xy - 0.5) * 2.0;
+	normalmap.xy = rotate(normalmap.xy, rotation).xy;
+	normalmap.xy = normalmap.xy * 0.5 + 0.5;
+	
+	return normalmap.xy;
+}
+
+vec3 screen_blend(vec3 background, vec3 foreground, float amount) {
+	return 1.0 - (vec3(1.0) - background) * (vec3(1.0) - foreground * amount);
+}
+
+vec3 color_dodge(vec3 background, vec3 foreground, float amount) {
+	return background / (vec3(1.0) - background);
+}
+
+vec2 warp(vec2 uv, float warp_strength, float warp_speed, float warp_scale) {
+	float x_warp = TIME * warp_speed + uv.y * TAU / warp_scale;
+	float y_warp = TIME * warp_speed + uv.x * TAU / warp_scale;
+	
+	vec2 distortion_offset = vec2(sin(x_warp), sin(y_warp)) * warp_strength;
+	return uv + distortion_offset;
+}
+
+void fragment() {
+	// Sample the UV2 textures. To avoid issues with the UV2 seams, margins
+	// are left on the textures, so the UV2 needs to be rescaled to cut off
+	// the margins.
+	vec2 custom_UV = (UV2 + 1.0 / float(i_uv2_sides)) * (float(i_uv2_sides) / float(i_uv2_sides + 2));
+	vec4 flow_foam_noise = textureLod(i_flowmap, custom_UV, 0.0);
+	vec2 dist_pressure = textureLod(i_distmap, custom_UV, 0.0).xy;
+	
+	vec2 flow;
+	float distance_map;
+	float pressure_map;
+	float foam_mask;
+	if (i_valid_flowmap) {
+		flow = flow_foam_noise.xy;
+		distance_map = (1.0 - dist_pressure.r) * 2.0;
+		pressure_map = dist_pressure.g * 2.0;
+		foam_mask = flow_foam_noise.b;
+	} else {
+		flow = vec2(0.5, 0.572);
+		distance_map = 0.5;
+		pressure_map = 0.5;
+		foam_mask = 0.0;
+	}
+	
+	flow = (flow - 0.5) * 2.0; // unpack the flow vectors
+	
+	// Calculate the steepness map
+	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
+	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
+	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
+	
+	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
+	flow *= flow_force;
+	
+	//vec2 jump1 = vec2(0.24, 0.2083333);
+	//vec2 jump2 = vec2(0.20, 0.25);
+	//vec2 jump3 = vec2(0.22, 0.27);
+	//float time = TIME * flow_speed + flow_foam_noise.a;
+	//vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_scale, time, false);
+	//vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
+	//vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
+	//vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
+	
+	// Level 1 Water
+	//vec3 water_a = texture(normal_bump_texture, flow_uvA.xy).rgb;
+	//vec3 water_b = texture(normal_bump_texture, flow_uvB.xy).rgb;
+	//vec3 water = water_a * flow_uvA.z + water_b * flow_uvB.z;
+
+	//vec2 water_norFBM = water.rg;
+	//float water_foamFBM = water.b;
+
+	// Level 2 Water, only add in if closer than lod 0 distance
+//	if (VERTEX.z < i_lod0_distance) {
+//		vec3 waterx2_a = texture(normal_bump_texture, flowx2_uvA.xy).rgb;
+//		vec3 waterx2_b = texture(normal_bump_texture, flowx2_uvB.xy, 0.0).rgb;
+//		vec3 waterx2 = waterx2_a * flowx2_uvA.z + waterx2_b * flowx2_uvB.z;
+//
+//		water_norFBM *= 0.65;
+//		water_norFBM += waterx2.rg * 0.35;
+//		water_foamFBM *= waterx2.b * 2.0;
+//	}
+//
+//	float foam_randomness = texture(i_texture_foam_noise, UV * uv_scale.xy).r;
+	
+//	foam_mask += steepness_map * foam_steepness * foam_randomness;
+//	foam_mask = clamp(foam_mask, 0.0, 1.0);
+//	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
+//	float foam_smooth = clamp(water_foamFBM * foam_mask, 0.0, 1.0);
+//	float foam_sharp = clamp(water_foamFBM - (1.0 - foam_mask), 0.0, 1.0);
+//	float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
+
+	//vec3 norm_tex = texture(normal_bump_texture, UV).rgb;
+
+	vec2 mask = fract(custom_UV * float(grid_size));
+	mask = min(mask, vec2(1.0) - mask) * 2.0;
+	//mask = smoothstep(vec2(0.0), vec2(1.0), mask);
+	
+	vec3 normalmap1 = vec3(get_tiles(custom_UV, UV, vec2(0.0, 0.0), flow), 0.0);
+	vec3 normalmap2 = vec3(get_tiles(custom_UV, UV, vec2(0.5, 0.0), flow), 0.0);
+	vec3 normalmap3 = vec3(get_tiles(custom_UV, UV, vec2(0.0, 0.5), flow), 0.0);
+	vec3 normalmap4 = vec3(get_tiles(custom_UV, UV, vec2(0.5, 0.5), flow), 0.0);
+	
+	vec3 mix1 = mix(normalmap2, normalmap1, mask.x);
+	vec3 mix2 = mix(normalmap4, normalmap3, mask.x);
+	vec3 mix3 = mix(mix2, mix1, mask.y);
+
+	// Depthtest
+	// We do two depth tests, one with the standard SCREEN_UV and one with the distorted 
+	// refraction UVs. We do this to be able to dismiss refractions that are in front 
+	// of objects
+	float depth_tex = textureLod(depth_texture, SCREEN_UV, 0.0).r;
+	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
+	world_pos.xyz/=world_pos.w;
+	float water_depth = VERTEX.z - world_pos.z;
+	
+	float alb_t = clamp(water_depth / albedo_depth, 0.0, 1.0);
+	alb_t = ease(alb_t, albedo_depth_curve);
+	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
+	ROUGHNESS = roughness;
+	NORMAL_MAP = mix3;
+	NORMAL_MAP_DEPTH = normal_scale;
+	
+	// Refraction - has to be done after normal is set
+	vec3 unpacted_normals = NORMAL_MAP * 2.0 - 1.0;
+	vec3 ref_normal = normalize(TANGENT * unpacted_normals.x + BINORMAL * unpacted_normals.y) * NORMAL_MAP_DEPTH * .1;
+	float clar_t = clamp(water_depth / transparency_clarity, 0.0, 1.0);
+	// We multiply the refraction offsets by the clarity to make the refractions stronger the deeper the water
+	vec2 ref_ofs = SCREEN_UV - ref_normal.xy * transparency_refraction * clar_t;
+	clar_t = ease(clar_t, transparency_depth_curve);
+	float ref_amount = 1.0 - clamp(clar_t, 0.0, 1.0);
+
+	// Depthtest 2
+	float refracted_depth_tex = textureLod(depth_texture, ref_ofs, 0.0).r;
+	vec4 refracted_world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, refracted_depth_tex, 1.0);
+	refracted_world_pos.xyz /= refracted_world_pos.w;
+	float refracted_water_depth = VERTEX.z - refracted_world_pos.z;
+	
+	// Fake caustics	
+	float caustics1 = texture(caustics_texture, ((refracted_world_pos * VIEW_MATRIX).xz + CAMERA_POSITION_WORLD.xz) * 0.4 + vec2(TIME * .3)).r;
+	float caustics2 = texture(caustics_texture, ((refracted_world_pos * VIEW_MATRIX).xz + CAMERA_POSITION_WORLD.xz) * 0.5 + vec2(TIME * -.4)).r;
+	float caustics = min(caustics1, caustics2);
+	
+	if (refracted_world_pos.z > VERTEX.z) {
+		ref_ofs = SCREEN_UV;
+	} else {
+		clar_t = clamp(refracted_water_depth / transparency_clarity, 0.0, 1.0);
+		clar_t = ease(clar_t, transparency_depth_curve);
+		ref_amount = 1.0 - clamp(clar_t, 0.0, 1.0);
+		alb_t = clamp(refracted_water_depth / albedo_depth, 0.0, 1.0);
+		alb_t = ease(alb_t, albedo_depth_curve);
+	}
+
+	mat4 albedo_color_srgb = gradient_lin2srgb(albedo_color);
+	vec3 albedo_color_near = vec3(albedo_color_srgb[0].x, albedo_color_srgb[0].y, albedo_color_srgb[0].z);
+	vec3 albedo_color_far = vec3(albedo_color_srgb[1].x, albedo_color_srgb[1].y, albedo_color_srgb[1].z);
+	vec3 alb_mix = mix(albedo_color_near.rgb, albedo_color_far.rgb, alb_t);
+	ALBEDO = alb_mix;
+	ALBEDO *= 1.0 - ref_amount;
+	vec3 refraction = textureLod(screen_texture, ref_ofs, ROUGHNESS * water_depth).rgb * ref_amount;
+	float luminosity = 0.21 * refraction.r + 0.72 * refraction.g + 0.07 * refraction.b;
+	EMISSION += refraction + vec3(caustics) * 2.0 * luminosity;
+	//EMISSION = vec3(caustics);
+	ALPHA = 1.0;
+	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
+}
