@@ -337,7 +337,7 @@ func _get_property_list() -> Array:
 func _set(property: StringName, value) -> bool:
 	if str(property).begins_with("mat_"):
 		# TODO, is there a better way to do this, now that right() has changed?
-		var param_name = str(property).replace("mat_", "")
+		var param_name : String = str(property).replace("mat_", "")
 		_material.set_shader_parameter(param_name, value)
 		return true
 	return false
@@ -345,13 +345,13 @@ func _set(property: StringName, value) -> bool:
 
 func _get(property : StringName):
 	if str(property).begins_with("mat_"):
-		var param_name = str(property).replace("mat_", "")
+		var param_name : String = str(property).replace("mat_", "")
 		return _material.get_shader_parameter(param_name)
 
 
 func _property_can_revert(property : StringName) -> bool:
 	if str(property).begins_with("mat_"):
-		var param_name = str(property).replace("mat_", "")
+		var param_name : String = str(property).replace("mat_", "")
 		return _material.property_can_revert(str("shader_parameter/", param_name))
 
 	if not DEFAULT_PARAMETERS.has(property):
@@ -363,7 +363,7 @@ func _property_can_revert(property : StringName) -> bool:
 
 func _property_get_revert(property : StringName):
 	if str(property).begins_with("mat_"):
-		var param_name = str(property).replace("mat_", "")
+		var param_name : String = str(property).replace("mat_", "")
 		var revert_value = _material.property_get_revert(str("shader_parameter/", param_name))
 		return revert_value
 	
@@ -431,9 +431,9 @@ func get_transformed_aabb() -> AABB:
 # Public Methods - These should all be good to use as API from other scripts
 func add_point(position : Vector3, index : int, dir : Vector3 = Vector3.ZERO, width : float = 0.0) -> void:
 	if index == -1:
-		var last_index := curve.get_point_count() - 1
-		var dist = position.distance_to(curve.get_point_position(last_index))
-		var new_dir :Vector3 = dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25 * dist
+		var last_index : int = curve.get_point_count() - 1
+		var dist : float = position.distance_to(curve.get_point_position(last_index))
+		var new_dir : Vector3 = dir if dir != Vector3.ZERO else (position - curve.get_point_position(last_index) - curve.get_point_out(last_index) ).normalized() * 0.25 * dist
 		curve.add_point(position, -new_dir, new_dir, -1)
 		widths.append(widths[widths.size() - 1]) # If this is a new point at the end, add a width that's the same as last
 	else:
@@ -494,7 +494,7 @@ func set_debug_view(index : int) -> void:
 		mesh_instance.material_override = null
 	else:
 		_debug_material.set_shader_parameter("mode", index)
-		mesh_instance.material_override =_debug_material
+		mesh_instance.material_override = _debug_material
 
 
 func spawn_mesh() -> void:
@@ -505,7 +505,7 @@ func spawn_mesh() -> void:
 	get_parent().add_child(sibling_mesh)
 	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
 	sibling_mesh.position = position
-	sibling_mesh.material_override = null;
+	sibling_mesh.material_override = null
 
 
 func get_curve_points() -> PackedVector3Array:
@@ -517,7 +517,6 @@ func get_curve_points() -> PackedVector3Array:
 
 
 func get_closest_point_to(point : Vector3) -> int:
-	var points = []
 	var closest_distance := 4096.0
 	var closest_index
 	for p in curve.get_point_count():
@@ -616,7 +615,6 @@ func _generate_river() -> void:
 
 
 func _generate_flowmap(flowmap_resolution : float) -> void:
-	#WaterHelperMethods.reset_all_colliders(get_tree().root)
 	
 	var image := Image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
 	image.fill(Color(0.0, 0.0, 0.0))
@@ -629,7 +627,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
 	await get_tree().process_frame
 	
-	# Calculate how many colums are in UV2
+	# Calculate how many columns are in UV2
 	_uv2_sides = WaterHelperMethods.calculate_side(_steps)
 	
 	var margin := int(round(float(flowmap_resolution) / float(_uv2_sides)))
@@ -692,7 +690,7 @@ func _generate_flowmap(flowmap_resolution : float) -> void:
 	set_materials("i_distmap", dist_pressure)
 	set_materials("i_valid_flowmap", true)
 	set_materials("i_uv2_sides", _uv2_sides)
-	valid_flowmap = true;
+	valid_flowmap = true
 	emit_signal("progress_notified", 100.0, "finished")
 	update_configuration_warnings()
 
