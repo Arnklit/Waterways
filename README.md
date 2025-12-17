@@ -56,7 +56,7 @@ Adding a *Buoyant* node as a child to a *RigidBody* will allow the object to flo
 
 You can automatically assign the global textures from the *WaterSystem* node to *MeshInstances* to use them in shaders. See the *WaterSystem* parameters for details. Once the textures and coordinates are assigned you can use them in a shader like this:
 
-```
+```glsl
 shader_type spatial;
 
 uniform sampler2D water_systemmap;

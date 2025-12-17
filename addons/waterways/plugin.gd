@@ -27,6 +27,7 @@ var _heightmap_renderer = null
 var _mode := "select"
 var constraint: int = RiverControls.CONSTRAINTS.NONE
 var local_editing := false
+var selection_locked := false
 
 
 func _enter_tree() -> void:
@@ -102,10 +103,22 @@ func _handles(node):
 func _on_selection_change() -> void:
 	_editor_selection = get_editor_interface().get_selection()
 	var selected = _editor_selection.get_selected_nodes()
-	
+
+	# If selection is locked to a river, revert any selection change
+	if selection_locked and _edited_node is RiverManager:
+		if len(selected) == 0 or selected[0] != _edited_node:
+			_editor_selection.clear()
+			_editor_selection.add_node(_edited_node)
+			_show_river_control_panel()
+			_edited_node = selected[0] as RiverManager
+			_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
+			if not _edited_node.is_connected("progress_notified", Callable(self, "_river_progress_notified")):
+				_edited_node.connect("progress_notified", Callable(self, "_river_progress_notified"))
+			return
+
 	_hide_water_system_control_panel()
 	_hide_river_control_panel()
-	
+
 	if len(selected) == 0:
 		return
 	if selected[0] is RiverManager:
@@ -146,17 +159,19 @@ func _on_option_change(option, value) -> void:
 			pass
 	elif option == "local_mode":
 		local_editing = value
+	elif option == "lock_selection":
+		selection_locked = value
 
 
 func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 	if not _edited_node:
 		return AFTER_GUI_INPUT_PASS
-	
+
 	if _edited_node is RiverManager:
 		return _forward_3d_gui_input_river(camera, event)
 	elif _edited_node is WaterfallManager:
 		return AFTER_GUI_INPUT_PASS
-	
+
 	return AFTER_GUI_INPUT_PASS
 
 
@@ -165,19 +180,19 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 	if _edited_node.is_inside_tree():
 		global_transform = _edited_node.get_global_transform()
 	var global_inverse: Transform3D = global_transform.affine_inverse()
-	
+
 	if (event is InputEventMouseButton) and (event.button_index == MOUSE_BUTTON_LEFT):
 		var ray_from = camera.project_ray_origin(event.position)
 		var ray_dir = camera.project_ray_normal(event.position)
 		var g1 = global_inverse * (ray_from)
 		var g2 = global_inverse * (ray_from + ray_dir * 4096)
-		
-			
+
+
 		# Iterate through points to find closest segment
 		var curve_points = _edited_node.get_curve_points()
 		var closest_distance = 4096.0
 		var closest_segment = -1
-		
+
 		for point in curve_points.size() -1:
 			var p1 = curve_points[point]
 			var p2 = curve_points[point + 1]
@@ -186,14 +201,14 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 			if dist < closest_distance:
 				closest_distance = dist
 				closest_segment = point
-		
+
 		# Iterate through baked points to find the closest position on the
 		# curved path
 		var baked_curve_points = _edited_node.curve.get_baked_points()
 		var baked_closest_distance = 4096.0
 		var baked_closest_point = Vector3()
 		var baked_point_found = false
-		
+
 		for baked_point in baked_curve_points.size() - 1:
 			var p1 = baked_curve_points[baked_point]
 			var p2 = baked_curve_points[baked_point + 1]
@@ -203,12 +218,12 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 				baked_closest_distance = dist
 				baked_closest_point = result[0]
 				baked_point_found = true
-		
+
 		# In case we were close enough to a line segment to find a segment,
 		# but not close enough to the curved line
 		if not baked_point_found:
 			closest_segment = -1
-		
+
 		# We'll use this closest point to add a point in between if on the line
 		# and to remove if close to a point
 		if _mode == "select":
@@ -221,7 +236,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 			if closest_segment == -1:
 				var end_pos = _edited_node.curve.get_point_position(_edited_node.curve.get_point_count() - 1)
 				var end_pos_global : Vector3 = _edited_node.to_global(end_pos)
-					
+
 				var z : Vector3 = _edited_node.curve.get_point_out(_edited_node.curve.get_point_count() - 1).normalized()
 				var x := z.cross(Vector3.DOWN).normalized()
 				var y := z.cross(x).normalized()
@@ -229,7 +244,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 					Basis(x, y, z) * global_transform.basis,
 					end_pos_global
 				)
-			
+
 				var plane := Plane(end_pos_global, end_pos_global + camera.transform.basis.x, end_pos_global + camera.transform.basis.y)
 				var new_pos
 				if constraint == RiverControls.CONSTRAINTS.COLLIDERS:
@@ -242,7 +257,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 						return AFTER_GUI_INPUT_PASS
 				elif constraint == RiverControls.CONSTRAINTS.NONE:
 					new_pos = plane.intersects_ray(ray_from, ray_from + ray_dir * 4096)
-				
+
 				elif constraint in RiverGizmo.AXIS_MAPPING:
 					var axis: Vector3 = RiverGizmo.AXIS_MAPPING[constraint]
 					if local_editing:
@@ -252,7 +267,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 					var ray_to = ray_from + (ray_dir * RiverGizmo.AXIS_CONSTRAINT_LENGTH)
 					var result = Geometry3D.get_closest_points_between_segments(axis_from, axis_to, ray_from, ray_to)
 					new_pos = result[0]
-				
+
 				elif constraint in RiverGizmo.PLANE_MAPPING:
 					var normal: Vector3 = RiverGizmo.PLANE_MAPPING[constraint]
 					if local_editing:
@@ -262,9 +277,9 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 					var distance : float = direction * projected.length()
 					plane = Plane(normal, distance)
 					new_pos = plane.intersects_ray(ray_from, ray_dir)
-						
+
 				baked_closest_point = _edited_node.to_local(new_pos)
-			
+
 			var ur := get_undo_redo()
 			ur.create_action("Add River point")
 			ur.add_do_method(_edited_node, "add_point", baked_closest_point, closest_segment)
@@ -284,7 +299,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 		if _mode == "remove" and not event.pressed:
 			# A closest_segment of -1 means we didn't press close enough to a
 			# point for it to be removed
-			if not closest_segment == -1: 
+			if not closest_segment == -1:
 				var closest_index = _edited_node.get_closest_point_to(baked_closest_point)
 				#_edited_node.remove_point(closest_index)
 				var ur = get_undo_redo()
@@ -304,7 +319,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 				ur.add_undo_method(_edited_node, "update_configuration_warnings")
 				ur.commit_action()
 		return AFTER_GUI_INPUT_STOP
-	
+
 	elif _edited_node is RiverManager:
 		# Forward input to river controls. This is cleaner than handling
 		# the keybindings here as the keybindings need to interact with
@@ -319,11 +334,11 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 func _river_progress_notified(progress : float, message : String) -> void:
 	if message == "finished":
 		_progress_window.hide()
-	
+
 	else:
 		if not _progress_window.visible:
 			_progress_window.popup_centered()
-		
+
 		_progress_window.show_progress(message, progress)
 
 
@@ -341,6 +356,12 @@ func _hide_river_control_panel() -> void:
 		_river_controls.menu.disconnect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
 		_river_controls.menu.disconnect("generate_mesh", Callable(self, "_on_generate_mesh_pressed"))
 		_river_controls.menu.disconnect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
+
+		if _river_controls.lock_selection:
+			_river_controls.lock_selection.button_pressed = false
+
+		if selection_locked:
+			selection_locked = false
 
 
 func _show_water_system_control_panel() -> void:

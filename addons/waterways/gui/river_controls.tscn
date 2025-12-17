@@ -1,10 +1,12 @@
-[gd_scene load_steps=6 format=3 uid="uid://b4nx8h5jfldwt"]
+[gd_scene load_steps=8 format=3 uid="uid://b4nx8h5jfldwt"]
 
 [ext_resource type="Texture2D" uid="uid://dl2fd2kpkqfcs" path="res://addons/waterways/icons/select.svg" id="3_c7fmo"]
 [ext_resource type="Script" path="res://addons/waterways/gui/river_controls.gd" id="4"]
 [ext_resource type="Texture2D" uid="uid://dnjok0de3mopo" path="res://addons/waterways/icons/create.svg" id="4_cumdu"]
 [ext_resource type="Script" path="res://addons/waterways/gui/river_menu.gd" id="5"]
 [ext_resource type="Texture2D" uid="uid://cot00dv010gt2" path="res://addons/waterways/icons/delete.svg" id="5_a4vrl"]
+[ext_resource type="Texture2D" path="res://addons/waterways/icons/lock_open.svg" id="6_lock_open"]
+[ext_resource type="Texture2D" path="res://addons/waterways/icons/lock_closed.svg" id="7_lock_closed"]
 
 [node name="HBoxContainer" type="HBoxContainer"]
 offset_right = 128.0
@@ -96,8 +98,18 @@ offset_right = 446.0
 offset_bottom = 31.0
 text = "Local Mode"
 
+[node name="VSeparator3" type="VSeparator" parent="."]
+layout_mode = 2
+
+[node name="LockSelection" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+icon = ExtResource("6_lock_open")
+flat = true
+
 [connection signal="pressed" from="Select" to="." method="_on_select"]
 [connection signal="pressed" from="Add" to="." method="_on_add"]
 [connection signal="pressed" from="Remove" to="." method="_on_remove"]
 [connection signal="item_selected" from="Constraints" to="." method="_on_constraint_selected"]
 [connection signal="toggled" from="LocalMode" to="." method="_on_local_mode_toggled"]
+[connection signal="toggled" from="LockSelection" to="." method="_on_lock_selection_toggled"]

@@ -19,12 +19,16 @@ enum CONSTRAINTS {
 
 var menu
 var constraints
+var lock_selection
 
 var _mouse_down
+var _lock_icon_open = preload("res://addons/waterways/icons/lock_open.svg")
+var _lock_icon_closed = preload("res://addons/waterways/icons/lock_closed.svg")
 
 func _enter_tree() -> void:
 	menu = $RiverMenu
 	constraints = $Constraints
+	lock_selection = $LockSelection
 
 
 func spatial_gui_input(event: InputEvent) -> bool:
@@ -105,6 +109,11 @@ func _on_constraint_selected(index: int) -> void:
 
 func _on_local_mode_toggled(enabled: bool) -> void:
 	emit_signal("options", "local_mode", enabled)
+
+
+func _on_lock_selection_toggled(enabled: bool) -> void:
+	lock_selection.icon = _lock_icon_closed if enabled else _lock_icon_open
+	emit_signal("options", "lock_selection", enabled)
 
 
 func _disable_constraint_ui(disable: bool) -> void:
