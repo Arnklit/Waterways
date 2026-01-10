@@ -1,13 +1,18 @@
 @tool
 extends Node3D
 
-@export var width_top: float = 1.0
-@export var width_bottom: float = 1.0
-@export var step_length_divs: int = 1
-@export var step_width_divs: int = 1
+@export var line_sample_resolution: int = 100:
+	set = set_line_sample_resolution
+@export var width_top: float = 1.0:
+	set = set_width_top
+@export var width_bottom: float = 1.0:
+	set = set_width_bottom
+@export var step_length_divs: int = 1:
+	set = set_step_length_divs
+@export var step_width_divs: int = 1:
+	set = set_step_width_divs
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
-const LINE_SAMPLE_RESOLUTION := 100
 
 const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
 
@@ -163,11 +168,10 @@ func _generate_waterfall() -> void:
 	var dist = to_from_2d.length()
 
 	var line_points := PackedVector3Array()
-
 	var curve := Curve3D.new()
 
-	for i in LINE_SAMPLE_RESOLUTION + 1:
-		var val = float(i) / float(LINE_SAMPLE_RESOLUTION)
+	for i in line_sample_resolution + 1:
+		var val = float(i) / float(line_sample_resolution)
 		var position = points[0] + to_from_2d * val + Vector3(0.0, ease_back_in(val) * to_from.y, 0.0)
 		curve.add_point(position)
 		line_points.append(position)
@@ -219,6 +223,41 @@ func ease_back_in(x: float) -> float:
 	var c1 = 1.70158
 	var c3 = c1 + 1
 	return c3 * x * x * x - c1 * x * x
+
+
+func set_line_sample_resolution(value: int) -> void:
+	line_sample_resolution = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_width_top(value: float) -> void:
+	width_top = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_width_bottom(value: float) -> void:
+	width_bottom = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_step_length_divs(value: int) -> void:
+	step_length_divs = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_step_width_divs(value: int) -> void:
+	step_width_divs = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
 
 
 func set_shader_type(type: int) -> void:
