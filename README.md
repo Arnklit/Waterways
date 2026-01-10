@@ -115,38 +115,38 @@ The river's parameters are split into 4 sections.
 - *Roughness* - The roughness of the river surface, also affects the blurring that occurs in the refractions.
 - *Edge Fade* - The distance the river fades out when it intesects other objects to give the shore line a softer look.
 - *Flow* - Subcategory for flow options.
-    - *Speed* - How fast the river flows.
-    - *Base Strength* - Base multiplier of the flow vectors.
-    - *Steepness Strength* - Flow vectors multiplied by the steepness of the river.
-    - *Distance Strength* - Flow vectors multiplied by the distance field for faster flows further away from shore.
-    - *Pressure Strength* - Flow vectors multiplied by a pressure map, to imitate the flow increasing when there is less available space in the river.
-    - *Max Strength* - Clamps the maximum multiplier of the flow vectors.
+	- *Speed* - How fast the river flows.
+	- *Base Strength* - Base multiplier of the flow vectors.
+	- *Steepness Strength* - Flow vectors multiplied by the steepness of the river.
+	- *Distance Strength* - Flow vectors multiplied by the distance field for faster flows further away from shore.
+	- *Pressure Strength* - Flow vectors multiplied by a pressure map, to imitate the flow increasing when there is less available space in the river.
+	- *Max Strength* - Clamps the maximum multiplier of the flow vectors.
 
 *Parameters specific to Water shader*
 
 - *Albedo* - Subcategory for the albedo parameters.
-    - *Color* - The two colours of the water mixed based on the depth set in *Depth*.
-    - *Depth* - The water depth at which the far colour of the gradient is returned.
-    - *Depth Curve* - The interpolation curve used for the depth gradient.
+	- *Color* - The two colours of the water mixed based on the depth set in *Depth*.
+	- *Depth* - The water depth at which the far colour of the gradient is returned.
+	- *Depth Curve* - The interpolation curve used for the depth gradient.
 
 - *Transparency* - Subcategory for the transparency parameters.
-    - *Clarity* - How far light can travel in the water before only returning the albedo colour.
-    - *Depth Curve* - The interpolation curve used for the clarity depth.
-    - *Refraction* - How much the background gets bent by the water shape.
-    
+	- *Clarity* - How far light can travel in the water before only returning the albedo colour.
+	- *Depth Curve* - The interpolation curve used for the clarity depth.
+	- *Refraction* - How much the background gets bent by the water shape.
+	
 - *Foam* - Subcategory for the foam options.
-    - *Color* - The colour of the foam.
-    - *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
-    - *Steepness* - Gives the option to add in foam where the river is steep.
-    - *Smoothness* - Controls how the foam layers are combined to give a sharper or softer look.
+	- *Color* - The colour of the foam.
+	- *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
+	- *Steepness* - Gives the option to add in foam where the river is steep.
+	- *Smoothness* - Controls how the foam layers are combined to give a sharper or softer look.
 
 *Parameters specific to the Lava shader*
 
 - *Emission* - Subcategory for the emission options.
-    - *Color* - The two colours multiplied by the emission texture of the lava mixed based on the depth set in *Depth*.
-    - *Depth* - The lava depth at which the far colour of the gradient is returned.
-    - *Depth Curve* - The interpolation curve used for the depth gradient.
-    - *Texture* - The emission texture.
+	- *Color* - The two colours multiplied by the emission texture of the lava mixed based on the depth set in *Depth*.
+	- *Depth* - The lava depth at which the far colour of the gradient is returned.
+	- *Depth Curve* - The interpolation curve used for the depth gradient.
+	- *Texture* - The emission texture.
 
 **Lod**
 
@@ -210,9 +210,9 @@ WaterSystem Parameters
 - *System Group Name* - This group name is assigned at runtime, it is used by the *Buoyant* node to find the WaterSystem. If you only have one *WaterSystem*, you can just leave this be.
 - *Minimum Water Level* - This is the value returned when an object queries the Water System heightmap, but hits outside the baked height data.
 - *Auto Assign Texture & Coordinates On Generate* - Subcategory for auto assign setting, used to send the system map and coordinates to materials to be used in shaders
-    - *Wet Group Name* - This name will be used to find any *MeshInstances* that should have the maps assigned
-    - *Surface Index* - The surface index the material you want to send the maps to is set on the *MeshInstance*, -1 means disabled.
-    - *Material Override* - If the material is instead set as a Material Override, check this box for the maps to be assigned there.
+	- *Wet Group Name* - This name will be used to find any *MeshInstances* that should have the maps assigned
+	- *Surface Index* - The surface index the material you want to send the maps to is set on the *MeshInstance*, -1 means disabled.
+	- *Material Override* - If the material is instead set as a Material Override, check this box for the maps to be assigned there.
 
 Buoyant Parameters
 ------------------

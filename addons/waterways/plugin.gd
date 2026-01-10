@@ -6,9 +6,8 @@ extends EditorPlugin
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const WaterSystem = preload("./water_system_manager.gd")
 const RiverManager = preload("./river_manager.gd")
-const WaterfallManager = preload("./waterfall_manager.gd")
-const WaterfallConfiguration = preload("./waterfall_configuration.gd")
 const RiverGizmo = preload("./gui/river_gizmo.gd")
+const WaterfallManager = preload("./waterfall_manager.gd")
 const WaterfallGizmo = preload("./gui/waterfall_gizmo.gd")
 const InspectorPlugin = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./gui/progress_window.tscn")
@@ -33,7 +32,6 @@ var selection_locked := false
 func _enter_tree() -> void:
 	add_custom_type("River", "Node3D",RiverManager, preload("./icons/river.svg"))
 	add_custom_type("Waterfall", "Node3D", WaterfallManager, preload("./icons/river.svg"))
-	add_custom_type("WaterfallConfiguration", "Resource", WaterfallConfiguration, preload("./icons/river.svg"))
 	add_custom_type("WaterSystem", "Node3D", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
 	add_custom_type("Buoyant", "Node3D", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
 	add_node_3d_gizmo_plugin(river_gizmo)
@@ -70,7 +68,6 @@ func _on_generate_system_maps_pressed() -> void:
 func _exit_tree() -> void:
 	remove_custom_type("River")
 	remove_custom_type("Waterfall")
-	remove_custom_type("WaterfallConfiguration")
 	remove_custom_type("WaterSystem")
 	remove_custom_type("Buoyant")
 	remove_node_3d_gizmo_plugin(river_gizmo)
@@ -87,17 +84,6 @@ func _exit_tree() -> void:
 
 func _handles(node):
 	return node is RiverManager or node is WaterfallManager or node is WaterSystem
-
-
-# TODO - I think this was commented out for 4.0 conversion and isn't needed anymore
-#func _edit(node):
-#	print("edit(), node is: ", node)
-#	if node is RiverManager:
-#		_show_river_control_panel()
-#		_edited_node = node as RiverManager
-#	if node is WaterSystem:
-#		_show_water_system_control_panel()
-#		_edited_node = node as WaterSystem
 
 
 func _on_selection_change() -> void:

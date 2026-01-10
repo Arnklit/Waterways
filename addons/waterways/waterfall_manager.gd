@@ -1,42 +1,79 @@
 @tool
 extends Node3D
 
-const WaterfallConfiguration = preload("./waterfall_configuration.gd")
+@export var waterfall_width: float = 3.0
+@export var step_length_divs: int = 1
+@export var step_width_divs: int = 1
+
 const WaterHelperMethods = preload("./water_helper_methods.gd")
-const line_sample_resolution := 100
+const LINE_SAMPLE_RESOLUTION := 100
 
-@export var configuration: WaterfallConfiguration:
-	set(value):
-		configuration = value
-		configuration.changed.connect(_configuration_changed)
-		print("configuration set function is called")
-#@export var width := 3.0:
-#	set(value):
-#		width = value
-#		_generate_waterfall()
-#@export var step_length_divs := 1:
-#	set(value):
-#		step_length_divs = value
-#		_generate_waterfall()
-#@export var step_width_divs := 1:
-#	set(value):
-#		step_width_divs = value
-#		_generate_waterfall()
+const FOAM_NOISE_PATH = "res://addons/waterways/textures/foam_noise.png"
 
+const MATERIAL_CATEGORIES = {
+	albedo_ = "Albedo",
+	emission_ = "Emission",
+	transparency_ = "Transparency",
+	flow_ = "Flow",
+	foam_ = "Foam",
+	custom_ = "Custom",
+}
+
+enum SHADER_TYPES { WATER, LAVA, CUSTOM }
+const BUILTIN_SHADERS = [
+	{
+		name = "Water",
+		shader_path = "res://addons/waterways/shaders/river.gdshader",
+		texture_paths = [
+			{
+				name = "normal_bump_texture",
+				path = "res://addons/waterways/textures/water1_normal_bump.png",
+			},
+		],
+	},
+	{
+		name = "Lava",
+		shader_path = "res://addons/waterways/shaders/lava.gdshader",
+		texture_paths = [
+			{
+				name = "normal_bump_texture",
+				path = "res://addons/waterways/textures/lava_normal_bump.png",
+			},
+			{
+				name = "emission_texture",
+				path = "res://addons/waterways/textures/lava_emission.png",
+			},
+		],
+	},
+]
+
+var mesh_instance: MeshInstance3D
 var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)]):
 	set(value):
 		points = value
 		_generate_waterfall()
 		emit_signal("waterfall_changed")
-var mesh_instance : MeshInstance3D
 
-var _st : SurfaceTool
-var _mdt : MeshDataTool
+# Material Properties
+var mat_shader_type: SHADER_TYPES:
+	set = set_shader_type
+var mat_custom_shader: Shader:
+	set = set_custom_shader
+
+var _material: ShaderMaterial
+var _st: SurfaceTool
+var _mdt: MeshDataTool
 var _steps := 2
 var _first_enter_tree = true
 
-# TODO - connect this
 signal waterfall_changed
+
+
+func _init() -> void:
+	_material = ShaderMaterial.new()
+	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
+	for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
+		_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
 
 
 func get_points() -> PackedVector3Array:
@@ -45,13 +82,6 @@ func get_points() -> PackedVector3Array:
 
 func set_point(id: int, position: Vector3) -> void:
 	points[id] = position
-	_generate_waterfall()
-	emit_signal("waterfall_changed")
-
-
-func _configuration_changed() -> void:
-	print("_configuration changed")
-	# TODO - I assume we can pass a parameter about whether a re-gen is needed
 	_generate_waterfall()
 	emit_signal("waterfall_changed")
 
@@ -68,65 +98,63 @@ func _enter_tree() -> void:
 		_generate_waterfall()
 	else:
 		mesh_instance = get_child(0) as MeshInstance3D
-		# TODO set material?
-	
+		if mesh_instance.mesh:
+			_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
+
 
 func _generate_waterfall() -> void:
-	
-	# TODO - This spams "the target vector can't be zero", not sure which part, maybe cross product
-	
 	var to_from: Vector3 = points[1] - points[0]
 	var to_from_2d = Vector3(to_from.x, 0.0, to_from.z)
 	var dist = to_from_2d.length()
-	
+
 	var line_points := PackedVector3Array()
-	
+
 	var curve := Curve3D.new()
-	
-	for i in line_sample_resolution + 1:
-		var val = float(i) / float(line_sample_resolution)
+
+	for i in LINE_SAMPLE_RESOLUTION + 1:
+		var val = float(i) / float(LINE_SAMPLE_RESOLUTION)
 		var position = points[0] + to_from_2d * val + Vector3(0.0, ease_back_in(val) * to_from.y, 0.0)
 		curve.add_point(position)
 		line_points.append(position)
-	
+
 	var curve_length := curve.get_baked_length()
-		
-	_steps = int( max(1.0, round(curve_length / configuration.width)))
-	
+
+	_steps = int(max(1.0, round(curve_length / waterfall_width)))
+
 	_st = SurfaceTool.new()
 	_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_st.set_smooth_group(0)
-	
+
 	# Generating the verts
-	for step in _steps * configuration.step_length_divs + 1:
-		var position := curve.sample_baked(float(step) / float(_steps * configuration.step_length_divs) * curve_length, false)
-		var backward_pos := curve.sample_baked((float(step) - 0.05) / float(_steps * configuration.step_length_divs) * curve_length, false)
-		var forward_pos := curve.sample_baked((float(step) + 0.05) / float(_steps *configuration. step_length_divs) * curve_length, false)
+	for step in _steps * step_length_divs + 1:
+		var position := curve.sample_baked(float(step) / float(_steps * step_length_divs) * curve_length, false)
+		var backward_pos := curve.sample_baked((float(step) - 0.05) / float(_steps * step_length_divs) * curve_length, false)
+		var forward_pos := curve.sample_baked((float(step) + 0.05) / float(_steps * step_length_divs) * curve_length, false)
 		var forward_vector := forward_pos - backward_pos
 		var right_vector := forward_vector.cross(Vector3.UP).normalized()
-		
-				
-		for w_sub in configuration.step_width_divs + 1:
-			_st.set_uv(Vector2(float(w_sub) / (float(configuration.step_width_divs)), float(step) / float(configuration.step_length_divs) ))
-			_st.add_vertex(position + right_vector * configuration.width - 2.0 * right_vector * configuration.width * float(w_sub) / (float(configuration.step_width_divs)))
-	
+
+		for w_sub in step_width_divs + 1:
+			_st.set_uv(Vector2(float(w_sub) / (float(step_width_divs)), float(step) / float(step_length_divs)))
+			_st.add_vertex(position + right_vector * waterfall_width - 2.0 * right_vector * waterfall_width * float(w_sub) / (float(step_width_divs)))
+
 	# Defining the tris
-	for step in _steps * configuration.step_length_divs:
-		for w_sub in configuration.step_width_divs:
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 1)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 2 + configuration.step_width_divs - 1)
-			
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 1)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 3 + configuration.step_width_divs - 1)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 2 + configuration.step_width_divs - 1)
-		
+	for step in _steps * step_length_divs:
+		for w_sub in step_width_divs:
+			_st.add_index((step * (step_width_divs + 1)) + w_sub)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 1)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 2 + step_width_divs - 1)
+
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 1)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 3 + step_width_divs - 1)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 2 + step_width_divs - 1)
+
 	_st.generate_normals()
 	_st.generate_tangents()
 	_st.deindex()
-	
+
 	var mesh := ArrayMesh.new()
 	mesh = _st.commit()
+	mesh.surface_set_material(0, _material)
 	mesh_instance.mesh = mesh
 
 
@@ -134,6 +162,35 @@ func ease_back_in(x: float) -> float:
 	var c1 = 1.70158
 	var c3 = c1 + 1
 	return c3 * x * x * x - c1 * x * x
+
+
+func set_shader_type(type: int) -> void:
+	if type == mat_shader_type:
+		return
+	mat_shader_type = type
+
+	if mat_shader_type == SHADER_TYPES.CUSTOM:
+		_material.shader = mat_custom_shader
+	else:
+		_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path)
+		for texture in BUILTIN_SHADERS[mat_shader_type].texture_paths:
+			_material.set_shader_parameter(texture.name, load(texture.path) as Texture)
+
+	notify_property_list_changed()
+
+
+func set_custom_shader(shader: Shader) -> void:
+	if mat_custom_shader == shader:
+		return
+	mat_custom_shader = shader
+	if mat_custom_shader != null:
+		_material.shader = mat_custom_shader
+
+		if Engine.is_editor_hint:
+			# Ability to fork default shader
+			if shader.code == "":
+				var selected_shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
+				shader.code = selected_shader.code
 
 
 # Signal Methods
