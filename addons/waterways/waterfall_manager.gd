@@ -1,7 +1,8 @@
 @tool
 extends Node3D
 
-@export var waterfall_width: float = 3.0
+@export var width_top: float = 1.0
+@export var width_bottom: float = 1.0
 @export var step_length_divs: int = 1
 @export var step_width_divs: int = 1
 
@@ -69,6 +70,23 @@ var _first_enter_tree = true
 signal waterfall_changed
 
 
+func _get_property_list() -> Array:
+	return [
+		{
+			name = "points",
+			type = TYPE_PACKED_VECTOR3_ARRAY,
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+		{
+			name = "_material",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			hint_string = "ShaderMaterial",
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+	]
+
+
 func _init() -> void:
 	_material = ShaderMaterial.new()
 	_material.shader = load(BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
@@ -103,6 +121,9 @@ func _enter_tree() -> void:
 
 
 func _generate_waterfall() -> void:
+	if mesh_instance == null:
+		return
+
 	var to_from: Vector3 = points[1] - points[0]
 	var to_from_2d = Vector3(to_from.x, 0.0, to_from.z)
 	var dist = to_from_2d.length()
@@ -118,8 +139,9 @@ func _generate_waterfall() -> void:
 		line_points.append(position)
 
 	var curve_length := curve.get_baked_length()
+	var avg_width := (width_top + width_bottom) / 2.0
 
-	_steps = int(max(1.0, round(curve_length / waterfall_width)))
+	_steps = int(max(1.0, round(curve_length / avg_width)))
 
 	_st = SurfaceTool.new()
 	_st.begin(Mesh.PRIMITIVE_TRIANGLES)
@@ -127,15 +149,17 @@ func _generate_waterfall() -> void:
 
 	# Generating the verts
 	for step in _steps * step_length_divs + 1:
-		var position := curve.sample_baked(float(step) / float(_steps * step_length_divs) * curve_length, false)
-		var backward_pos := curve.sample_baked((float(step) - 0.05) / float(_steps * step_length_divs) * curve_length, false)
-		var forward_pos := curve.sample_baked((float(step) + 0.05) / float(_steps * step_length_divs) * curve_length, false)
+		var t := float(step) / float(_steps * step_length_divs)
+		var position := curve.sample_baked(t * curve_length, false)
+		var backward_pos := curve.sample_baked((t - 0.05 / float(_steps * step_length_divs)) * curve_length, false)
+		var forward_pos := curve.sample_baked((t + 0.05 / float(_steps * step_length_divs)) * curve_length, false)
 		var forward_vector := forward_pos - backward_pos
 		var right_vector := forward_vector.cross(Vector3.UP).normalized()
+		var width := lerpf(width_top, width_bottom, t)
 
 		for w_sub in step_width_divs + 1:
 			_st.set_uv(Vector2(float(w_sub) / (float(step_width_divs)), float(step) / float(step_length_divs)))
-			_st.add_vertex(position + right_vector * waterfall_width - 2.0 * right_vector * waterfall_width * float(w_sub) / (float(step_width_divs)))
+			_st.add_vertex(position + right_vector * width - 2.0 * right_vector * width * float(w_sub) / (float(step_width_divs)))
 
 	# Defining the tris
 	for step in _steps * step_length_divs:
@@ -195,4 +219,5 @@ func set_custom_shader(shader: Shader) -> void:
 
 # Signal Methods
 func properties_changed() -> void:
+	_generate_waterfall()
 	emit_signal("waterfall_changed")
