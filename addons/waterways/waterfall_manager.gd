@@ -55,6 +55,10 @@ var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)
 		_generate_waterfall()
 		emit_signal("waterfall_changed")
 
+# Direction vectors at each endpoint (normalized, in XZ plane). Zero means auto-calculate from points.
+var direction_top := Vector3.ZERO
+var direction_bottom := Vector3.ZERO
+
 # Material Properties
 var mat_shader_type: SHADER_TYPES:
 	set = set_shader_type
@@ -78,6 +82,16 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
+			name = "direction_top",
+			type = TYPE_VECTOR3,
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+		{
+			name = "direction_bottom",
+			type = TYPE_VECTOR3,
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+		{
 			name = "_material",
 			type = TYPE_OBJECT,
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
@@ -85,6 +99,26 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_STORAGE,
 		},
 	]
+
+
+func get_right_vector_top() -> Vector3:
+	if direction_top != Vector3.ZERO:
+		return direction_top.cross(Vector3.UP).normalized()
+	return _get_default_right_vector()
+
+
+func get_right_vector_bottom() -> Vector3:
+	if direction_bottom != Vector3.ZERO:
+		return direction_bottom.cross(Vector3.UP).normalized()
+	return _get_default_right_vector()
+
+
+func _get_default_right_vector() -> Vector3:
+	var to_from: Vector3 = points[1] - points[0]
+	var to_from_2d = Vector3(to_from.x, 0.0, to_from.z)
+	if to_from_2d.length() < 0.001:
+		return Vector3.RIGHT
+	return to_from_2d.cross(Vector3.UP).normalized()
 
 
 func _init() -> void:
@@ -148,13 +182,12 @@ func _generate_waterfall() -> void:
 	_st.set_smooth_group(0)
 
 	# Generating the verts
+	var right_top := get_right_vector_top()
+	var right_bottom := get_right_vector_bottom()
 	for step in _steps * step_length_divs + 1:
 		var t := float(step) / float(_steps * step_length_divs)
 		var position := curve.sample_baked(t * curve_length, false)
-		var backward_pos := curve.sample_baked((t - 0.05 / float(_steps * step_length_divs)) * curve_length, false)
-		var forward_pos := curve.sample_baked((t + 0.05 / float(_steps * step_length_divs)) * curve_length, false)
-		var forward_vector := forward_pos - backward_pos
-		var right_vector := forward_vector.cross(Vector3.UP).normalized()
+		var right_vector := right_top.slerp(right_bottom, t).normalized()
 		var width := lerpf(width_top, width_bottom, t)
 
 		for w_sub in step_width_divs + 1:
