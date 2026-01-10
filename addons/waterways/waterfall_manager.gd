@@ -11,6 +11,8 @@ extends Node3D
 	set = set_step_length_divs
 @export var step_width_divs: int = 1:
 	set = set_step_width_divs
+@export var overshoot: float = 1.60158:
+	set = set_overshoot
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 
@@ -220,9 +222,8 @@ func _generate_waterfall() -> void:
 
 
 func ease_back_in(x: float) -> float:
-	var c1 = 1.70158
-	var c3 = c1 + 1
-	return c3 * x * x * x - c1 * x * x
+	var c3 = overshoot + 1
+	return c3 * x * x * x - overshoot * x * x
 
 
 func set_line_sample_resolution(value: int) -> void:
@@ -255,6 +256,13 @@ func set_step_length_divs(value: int) -> void:
 
 func set_step_width_divs(value: int) -> void:
 	step_width_divs = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_overshoot(value: float) -> void:
+	overshoot = value
 	if _first_enter_tree:
 		return
 	_generate_waterfall()

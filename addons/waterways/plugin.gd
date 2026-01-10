@@ -155,8 +155,15 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 
 	if _edited_node is RiverManager:
 		return _forward_3d_gui_input_river(camera, event)
-	elif _edited_node is WaterfallManager:
-		return AFTER_GUI_INPUT_PASS
+	if _edited_node is WaterfallManager:
+		return _forward_3d_gui_input_waterfall(camera, event)
+
+	return AFTER_GUI_INPUT_PASS
+
+
+func _forward_3d_gui_input_waterfall(_camera: Camera3D, _event: InputEvent) -> int:
+	var waterfall: WaterfallManager = _edited_node
+	var global_transform: Transform3D = waterfall.transform
 
 	return AFTER_GUI_INPUT_PASS
 
@@ -326,6 +333,7 @@ func _river_progress_notified(progress : float, message : String) -> void:
 			_progress_window.popup_centered()
 
 		_progress_window.show_progress(message, progress)
+
 
 
 func _show_river_control_panel() -> void:
