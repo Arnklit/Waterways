@@ -1,6 +1,9 @@
 extends EditorNode3DGizmoPlugin
 
 const WaterfallManager = preload("./../waterfall_manager.gd")
+const RiverManager = preload("./../river_manager.gd")
+
+const SNAP_DISTANCE = 2.0
 
 var editor_plugin: EditorPlugin
 
@@ -59,6 +62,11 @@ func _set_handle(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool, came
 	var plane = Plane(old_pos_global, old_pos_global + camera.transform.basis.x, old_pos_global + camera.transform.basis.y)
 	new_pos = plane.intersects_ray(ray_from, ray_dir)
 
+	# Snap to river/waterfall endpoints when close
+	var snap_target := _find_snap_target(waterfall, new_pos)
+	if snap_target != Vector3.INF:
+		new_pos = snap_target
+
 	var new_pos_local = waterfall.to_local(new_pos)
 
 	waterfall.set_point(handle_id, new_pos_local)
@@ -95,3 +103,49 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 
 	if waterfall.has_signal("waterfall_changed") and not waterfall.is_connected("waterfall_changed", Callable(self, "_redraw")):
 		waterfall.waterfall_changed.connect(_redraw.bind(gizmo))
+
+
+func _find_snap_target(exclude_node: Node3D, global_pos: Vector3) -> Vector3:
+	var closest := Vector3.INF
+	var closest_dist := SNAP_DISTANCE
+
+	var root := exclude_node.get_tree().edited_scene_root
+	if root == null:
+		print("No edited_scene_root")
+		return Vector3.INF
+
+	var water_nodes = _get_all_water_nodes(root, exclude_node)
+	print("Found water nodes: ", water_nodes.size())
+	for node in water_nodes:
+		var endpoints := _get_endpoints(node)
+		print("  Node: ", node.name, " endpoints: ", endpoints)
+		for ep in endpoints:
+			var dist := global_pos.distance_to(ep)
+			print("    dist to ", ep, ": ", dist)
+			if dist < closest_dist:
+				closest_dist = dist
+				closest = ep
+	return closest
+
+
+func _get_all_water_nodes(node: Node, exclude: Node) -> Array:
+	var result := []
+	if node != exclude:
+		if node is WaterfallManager or node is RiverManager:
+			result.append(node)
+	for child in node.get_children():
+		result.append_array(_get_all_water_nodes(child, exclude))
+	return result
+
+
+func _get_endpoints(node: Node3D) -> PackedVector3Array:
+	var points := PackedVector3Array()
+	if node is WaterfallManager:
+		var pts = node.get_points()
+		points.append(node.to_global(pts[0]))
+		points.append(node.to_global(pts[pts.size() - 1]))
+	elif node is RiverManager:
+		var curve_pts = node.get_curve_points()
+		points.append(node.to_global(curve_pts[0]))
+		points.append(node.to_global(curve_pts[curve_pts.size() - 1]))
+	return points
