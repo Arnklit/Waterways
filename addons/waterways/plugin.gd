@@ -83,7 +83,7 @@ func _exit_tree() -> void:
 
 
 func _handles(node):
-	return node is RiverManager or node is WaterfallManager or node is WaterSystem
+	return node is Node3D
 
 
 func _on_selection_change() -> void:
@@ -322,6 +322,16 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 		# TODO - so this was returning a bool before? Check this
 		return _river_controls.spatial_gui_input(event)
 	return AFTER_GUI_INPUT_PASS
+
+
+
+func _find_all_rivers(node: Node) -> Array[RiverManager]:
+	var rivers: Array[RiverManager] = []
+	if node is RiverManager:
+		rivers.append(node)
+	for child in node.get_children():
+		rivers.append_array(_find_all_rivers(child))
+	return rivers
 
 
 func _river_progress_notified(progress : float, message : String) -> void:
