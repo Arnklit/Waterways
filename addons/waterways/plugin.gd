@@ -12,6 +12,8 @@ const WaterfallGizmo = preload("./gui/waterfall_gizmo.gd")
 const InspectorPlugin = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./gui/progress_window.tscn")
 const RiverControls = preload("./gui/river_controls.gd")
+const RiverIcon = preload("./icons/river.svg")
+const SystemIcon = preload("./icons/system.svg")
 
 var river_gizmo: RiverGizmo = RiverGizmo.new()
 var waterfall_gizmo: WaterfallGizmo = WaterfallGizmo.new()
@@ -30,13 +32,15 @@ var selection_locked := false
 
 
 func _enter_tree() -> void:
-	add_custom_type("River", "Node3D",RiverManager, preload("./icons/river.svg"))
-	add_custom_type("Waterfall", "Node3D", WaterfallManager, preload("./icons/river.svg"))
-	add_custom_type("WaterSystem", "Node3D", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
+	add_custom_type("River", "Node3D", RiverManager, RiverIcon)
+	add_custom_type("Waterfall", "Node3D", WaterfallManager, RiverIcon)
+	add_custom_type("WaterSystem", "Node3D", WaterSystem, SystemIcon)
 	add_custom_type("Buoyant", "Node3D", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
+
 	add_node_3d_gizmo_plugin(river_gizmo)
 	add_node_3d_gizmo_plugin(waterfall_gizmo)
 	add_inspector_plugin(gradient_inspector)
+
 	river_gizmo.editor_plugin = self
 	waterfall_gizmo.editor_plugin = self
 	_river_controls.connect("mode", Callable(self, "_on_mode_change"))
@@ -122,7 +126,7 @@ func _on_selection_change() -> void:
 		_edited_node = null
 
 
-func _on_scene_changed(scene_root) -> void:
+func _on_scene_changed(_scene_root) -> void:
 	_hide_river_control_panel()
 	_hide_water_system_control_panel()
 
@@ -223,6 +227,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 			if not event.pressed:
 				river_gizmo.reset()
 			return AFTER_GUI_INPUT_PASS
+
 		if _mode == "add" and not event.pressed:
 			# if we don't have a point on the line, we'll calculate a point
 			# based of a plane of the last point of the curve
@@ -313,7 +318,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 				ur.commit_action()
 		return AFTER_GUI_INPUT_STOP
 
-	elif _edited_node is RiverManager:
+	if _edited_node is RiverManager:
 		# Forward input to river controls. This is cleaner than handling
 		# the keybindings here as the keybindings need to interact with
 		# the buttons. Handling it here would expose more private details
@@ -321,6 +326,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 		# method needs to be exposed.
 		# TODO - so this was returning a bool before? Check this
 		return _river_controls.spatial_gui_input(event)
+
 	return AFTER_GUI_INPUT_PASS
 
 
