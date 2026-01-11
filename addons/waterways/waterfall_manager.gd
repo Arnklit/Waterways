@@ -103,7 +103,7 @@ func _get_property_list() -> Array:
 			type = TYPE_OBJECT,
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
 			hint_string = "ShaderMaterial",
-			usage = PROPERTY_USAGE_STORAGE,
+			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
 		},
 	]
 
