@@ -1,0 +1,26 @@
+[gd_scene load_steps=4 format=3 uid="uid://dorqj61wirtnh"]
+
+[ext_resource type="Script" uid="uid://dmf7pg68pcttl" path="res://addons/waterways/gui/waterfall_controls.gd" id="2_script"]
+[ext_resource type="Script" path="res://addons/waterways/gui/waterfall_menu.gd" id="3_menu_script"]
+[ext_resource type="Texture2D" uid="uid://dh7gjig2p584k" path="res://addons/waterways/icons/lock_open.svg" id="5_lock_open"]
+
+[node name="HBoxContainer" type="HBoxContainer"]
+offset_right = 128.0
+offset_bottom = 26.0
+script = ExtResource("2_script")
+
+[node name="WaterfallMenu" type="MenuButton" parent="."]
+layout_mode = 2
+text = "Waterfall"
+script = ExtResource("3_menu_script")
+
+[node name="VSeparator2" type="VSeparator" parent="."]
+layout_mode = 2
+
+[node name="LockSelection" type="Button" parent="."]
+layout_mode = 2
+toggle_mode = true
+icon = ExtResource("5_lock_open")
+flat = true
+
+[connection signal="toggled" from="LockSelection" to="." method="_on_lock_selection_toggled"]

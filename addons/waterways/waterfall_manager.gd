@@ -13,6 +13,8 @@ extends Node3D
 	set = set_step_width_divs
 @export var overshoot: float = 1.60158:
 	set = set_overshoot
+@export var baking_resolution: int = 2:
+	set = set_baking_resolution
 
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 
@@ -226,11 +228,24 @@ func ease_back_in(x: float) -> float:
 	return c3 * x * x * x - overshoot * x * x
 
 
+func bake_texture() -> void:
+	print("Baking texture...")
+	_generate_waterfall()
+	_generate_flowmap(pow(2, 6 + baking_resolution))
+
+
+func _generate_flowmap(flowmap_resolution: float) -> void:
+	print("Generating flowmap...")
+	print("Flowmap resolution: ", flowmap_resolution)
+	print("Flowmap resolution: ", flowmap_resolution)
+
+
 func set_line_sample_resolution(value: int) -> void:
 	line_sample_resolution = value
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
+	notify_property_list_changed()
 
 
 func set_width_top(value: float) -> void:
@@ -238,6 +253,7 @@ func set_width_top(value: float) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
+	notify_property_list_changed()
 
 
 func set_width_bottom(value: float) -> void:
@@ -245,6 +261,7 @@ func set_width_bottom(value: float) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
+	notify_property_list_changed()
 
 
 func set_step_length_divs(value: int) -> void:
@@ -252,6 +269,7 @@ func set_step_length_divs(value: int) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
+	notify_property_list_changed()
 
 
 func set_step_width_divs(value: int) -> void:
@@ -259,13 +277,24 @@ func set_step_width_divs(value: int) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
+	notify_property_list_changed()
 
 
 func set_overshoot(value: float) -> void:
 	overshoot = value
 	if _first_enter_tree:
 		return
+
+	notify_property_list_changed()
 	_generate_waterfall()
+
+
+func set_baking_resolution(value: int) -> void:
+	baking_resolution = value
+	if _first_enter_tree:
+		return
+
+	notify_property_list_changed()
 
 
 func set_shader_type(type: int) -> void:
