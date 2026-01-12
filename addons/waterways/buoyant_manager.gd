@@ -1,19 +1,16 @@
-# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
-# See `LICENSE.md` included in the source distribution for details.
 @tool
 extends Node3D
 
 const WaterSystem = preload("res://addons/waterways/water_system_manager.gd")
 
-
-@export var water_system_group_name : String = "waterways_system"
+@export var water_system_group_name: String = "waterways_system"
 @export var buoyancy_force := 5.0
 @export var up_correcting_force := 5.0
 @export var flow_force := 50.0
 @export var water_resistance := 5.0
 
-var _rb : RigidBody3D
-var _system : WaterSystem
+var _rb: RigidBody3D
+var _system: WaterSystem
 var _default_linear_damp := -1.0
 var _default_angular_damp := -1.0
 
@@ -48,7 +45,7 @@ func _get_rotation_correction() -> Vector3:
 	var up_vector := global_transform.basis.y
 	var angle := up_vector.angle_to(Vector3.UP)
 	if angle < 0.1:
-		# Don't reaturn a rotation as object is almost upright, since the cross 
+		# Don't reaturn a rotation as object is almost upright, since the cross
 		# product at an angle that small might cause precission errors.
 		return Vector3.ZERO
 	var cross := up_vector.cross(Vector3.UP).normalized()

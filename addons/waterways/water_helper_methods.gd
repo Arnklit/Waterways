@@ -1,5 +1,3 @@
-# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
-# See `LICENSE.md` included in the source distribution for details.
 #const RiverManager = preload("./river_manager.gd")
 
 static func cart2bary(p : Vector3, a : Vector3, b : Vector3, c: Vector3) -> Vector3:

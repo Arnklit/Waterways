@@ -26,3 +26,4 @@ func spatial_gui_input(event: InputEvent) -> bool:
 func _on_lock_selection_toggled(enabled: bool) -> void:
 	lock_selection.icon = _lock_icon_closed if enabled else _lock_icon_open
 	emit_signal("options", "lock_selection", enabled)
+

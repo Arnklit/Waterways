@@ -1,5 +1,3 @@
-# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
-# See `LICENSE.md` included in the source distribution for details.
 extends EditorNode3DGizmoPlugin
 
 const RiverManager = preload("./../river_manager.gd")

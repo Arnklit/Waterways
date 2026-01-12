@@ -1,5 +1,3 @@
-# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
-# See `LICENSE.md` included in the source distribution for details.
 @tool
 extends MenuButton
 
@@ -10,12 +8,12 @@ signal debug_view_changed
 enum RIVER_MENU {
 	GENERATE,
 	GENERATE_MESH,
-	DEBUG_VIEW_MENU
+	DEBUG_VIEW_MENU,
 }
 
 var debug_view_menu_selected := 0
 
-var _debug_view_menu : PopupMenu
+var _debug_view_menu: PopupMenu
 
 
 func _enter_tree() -> void:
@@ -37,7 +35,7 @@ func _exit_tree() -> void:
 	_debug_view_menu.disconnect("id_pressed", Callable(self, "_debug_menu_item_selected"))
 
 
-func _menu_item_selected(index : int) -> void:
+func _menu_item_selected(index: int) -> void:
 	match index:
 		RIVER_MENU.GENERATE:
 			emit_signal("generate_flowmap")
