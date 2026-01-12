@@ -384,8 +384,10 @@ func _show_waterfall_control_panel() -> void:
 	if not _waterfall_controls.get_parent():
 		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _waterfall_controls)
 		_waterfall_controls.menu.connect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
+		_waterfall_controls.menu.connect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
 
 func _hide_waterfall_control_panel() -> void:
 	if _waterfall_controls.get_parent():
 		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _waterfall_controls)
 		_waterfall_controls.menu.disconnect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
+		_waterfall_controls.menu.disconnect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
