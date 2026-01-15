@@ -1,23 +1,24 @@
 @tool
 extends Node3D
 
-@export var line_sample_resolution: int = 100:
-	set = set_line_sample_resolution
-@export var width_top: float = 1.0:
-	set = set_width_top
-@export var width_bottom: float = 1.0:
-	set = set_width_bottom
-@export var step_length_divs: int = 1:
-	set = set_step_length_divs
-@export var step_width_divs: int = 1:
-	set = set_step_width_divs
-@export var overshoot: float = 1.60158:
-	set = set_overshoot
-
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const Constants = preload("./consts.gd")
 
-var mesh_instance: MeshInstance3D
+# Shape Properties
+var line_sample_resolution: int = 100:
+	set = set_line_sample_resolution
+var width_top: float = 1.0:
+	set = set_width_top
+var width_bottom: float = 1.0:
+	set = set_width_bottom
+var step_length_divs: int = 1:
+	set = set_step_length_divs
+var step_width_divs: int = 1:
+	set = set_step_width_divs
+var overshoot: float = 1.60158:
+	set = set_overshoot
+
+var _mesh_instance: MeshInstance3D
 var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)]):
 	set(value):
 		points = value
@@ -40,17 +41,8 @@ var mat_shader_type: Constants.SHADER_TYPES:
 var mat_custom_shader: Shader:
 	set = set_custom_shader
 
-# Shape Properties
-var shape_step_length_divs: int = 1:
-	set = set_step_length_divs
-var shape_step_width_divs: int = 1:
-	set = set_step_width_divs
-var shape_smoothness: float = 0.5:
-	set = set_smoothness
-
 # Bake Properties
-@export var baking_resolution: int = 2:
-	set = set_baking_resolution
+var baking_resolution: int = 2
 var baking_raycast_distance: float = 10.0
 var baking_raycast_layers: int = 1
 var baking_dilate: float = 0.6
@@ -74,6 +66,54 @@ signal progress_notified # Used to update progress bar when baking maps
 
 func _get_property_list() -> Array:
 	return [
+		{
+			name = "Shape",
+			type = TYPE_NIL,
+			hint_string = "shape_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "line_sample_resolution",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1, 200",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "width_top",
+			type = TYPE_FLOAT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.1, 10.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "width_bottom",
+			type = TYPE_FLOAT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.1, 10.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "step_length_divs",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1, 8",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "step_width_divs",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1, 8",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "overshoot",
+			type = TYPE_FLOAT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0, 5.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
 		{
 			name = "points",
 			type = TYPE_PACKED_VECTOR3_ARRAY,
@@ -221,16 +261,16 @@ func _enter_tree() -> void:
 		var new_mesh_instance := MeshInstance3D.new()
 		new_mesh_instance.name = "WaterfallMeshInstance"
 		add_child(new_mesh_instance)
-		mesh_instance = get_child(0) as MeshInstance3D
+		_mesh_instance = get_child(0) as MeshInstance3D
 		_generate_waterfall()
 	else:
-		mesh_instance = get_child(0) as MeshInstance3D
-		if mesh_instance.mesh:
-			_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
+		_mesh_instance = get_child(0) as MeshInstance3D
+		if _mesh_instance.mesh:
+			_material = _mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 
 
 func _generate_waterfall() -> void:
-	if mesh_instance == null:
+	if _mesh_instance == null:
 		return
 
 	var to_from: Vector3 = points[1] - points[0]
@@ -286,7 +326,7 @@ func _generate_waterfall() -> void:
 	var mesh := ArrayMesh.new()
 	mesh = _st.commit()
 	mesh.surface_set_material(0, _material)
-	mesh_instance.mesh = mesh
+	_mesh_instance.mesh = mesh
 
 
 func ease_back_in(x: float) -> float:
@@ -306,7 +346,7 @@ func _generate_flowmap(flowmap_resolution: float) -> void:
 	emit_signal("progress_notified", 0.0, "Calculating Collisions (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
 	await get_tree().process_frame
 
-	image = await WaterHelperMethods.generate_collisionmap(image, mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, shape_step_length_divs, shape_step_width_divs, self, false)
+	image = await WaterHelperMethods.generate_collisionmap(image, _mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, step_length_divs, step_width_divs, self, false)
 
 	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
 	await get_tree().process_frame
@@ -383,7 +423,6 @@ func set_line_sample_resolution(value: int) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
-	notify_property_list_changed()
 
 
 func set_width_top(value: float) -> void:
@@ -391,7 +430,6 @@ func set_width_top(value: float) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
-	notify_property_list_changed()
 
 
 func set_width_bottom(value: float) -> void:
@@ -399,7 +437,6 @@ func set_width_bottom(value: float) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
-	notify_property_list_changed()
 
 
 func set_step_length_divs(value: int) -> void:
@@ -407,7 +444,6 @@ func set_step_length_divs(value: int) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
-	notify_property_list_changed()
 
 
 func set_step_width_divs(value: int) -> void:
@@ -415,15 +451,6 @@ func set_step_width_divs(value: int) -> void:
 	if _first_enter_tree:
 		return
 	_generate_waterfall()
-	notify_property_list_changed()
-
-
-func set_smoothness(value: float) -> void:
-	shape_smoothness = value
-	if _first_enter_tree:
-		return
-	_generate_waterfall()
-	notify_property_list_changed()
 
 
 func set_overshoot(value: float) -> void:
@@ -431,16 +458,7 @@ func set_overshoot(value: float) -> void:
 	if _first_enter_tree:
 		return
 
-	notify_property_list_changed()
 	_generate_waterfall()
-
-
-func set_baking_resolution(value: int) -> void:
-	baking_resolution = value
-	if _first_enter_tree:
-		return
-
-	notify_property_list_changed()
 
 
 func set_materials(param: String, value) -> void:
@@ -452,10 +470,10 @@ func set_debug_view(index: int) -> void:
 	print("Setting debug view to ", index)
 	debug_view = index
 	if index == 0:
-		mesh_instance.material_override = null
+		_mesh_instance.material_override = null
 	else:
 		_debug_material.set_shader_parameter("mode", index)
-		mesh_instance.material_override = _debug_material
+		_mesh_instance.material_override = _debug_material
 
 
 func set_shader_type(type: int) -> void:

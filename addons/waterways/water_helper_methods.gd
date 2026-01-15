@@ -111,12 +111,12 @@ static func generate_river_mesh(curve: Curve3D, steps: int, step_length_divs: in
 	var y_grid_sub_length := grid_side_length / float(step_length_divs)
 	var grid_size := pow(grid_side, 2)
 	var index := 0
-	var UVs := steps * step_width_divs * step_length_divs * 6
+	var uvs := steps * step_width_divs * step_length_divs * 6
 	var x_offset := 0.0
 	for x in grid_side:
 		var y_offset := 0.0
 		for y in grid_side:
-			if index < UVs:
+			if index < uvs:
 				var sub_y_offset := 0.0
 				for sub_y in step_length_divs:
 					var sub_x_offset := 0.0
