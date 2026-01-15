@@ -4,26 +4,44 @@ extends Node3D
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const Constants = preload("./consts.gd")
 
+const DEFAULT_PARAMETERS = {
+	line_sample_resolution = 100,
+	width_top = 1.0,
+	width_bottom = 1.0,
+	step_length_divs = 1,
+	step_width_divs = 1,
+	overshoot = 1.60158,
+	mat_shader_type = 0,
+	mat_custom_shader = null,
+	baking_resolution = 2,
+	baking_raycast_distance = 10.0,
+	baking_raycast_layers = 1,
+	baking_dilate = 0.6,
+	baking_flowmap_blur = 0.04,
+	baking_foam_cutoff = 0.9,
+	baking_foam_offset = 0.1,
+	baking_foam_blur = 0.02,
+}
+
 # Shape Properties
+## How many points to sample the curve at
 var line_sample_resolution: int = 100:
 	set = set_line_sample_resolution
+## The width of the top of the waterfall
 var width_top: float = 1.0:
 	set = set_width_top
+## The width of the bottom of the waterfall
 var width_bottom: float = 1.0:
 	set = set_width_bottom
 var step_length_divs: int = 1:
 	set = set_step_length_divs
 var step_width_divs: int = 1:
 	set = set_step_width_divs
+## The amount of overshoot for the waterfall
 var overshoot: float = 1.60158:
 	set = set_overshoot
 
-var _mesh_instance: MeshInstance3D
-var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)]):
-	set(value):
-		points = value
-		_generate_waterfall()
-		emit_signal("waterfall_changed")
+var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)])
 
 var valid_flowmap := false
 var flow_foam_noise: Texture2D
@@ -59,9 +77,23 @@ var _mdt: MeshDataTool
 var _steps := 2
 var _first_enter_tree = true
 var _uv2_sides: int
+var _mesh_instance: MeshInstance3D
 
 signal waterfall_changed
 signal progress_notified # Used to update progress bar when baking maps
+
+
+func _property_can_revert(property: StringName) -> bool:
+	if not DEFAULT_PARAMETERS.has(property):
+		return false
+	if get(property) != DEFAULT_PARAMETERS[property]:
+		return true
+	return false
+
+
+func _property_get_revert(property: StringName):
+	if DEFAULT_PARAMETERS.has(property):
+		return DEFAULT_PARAMETERS[property]
 
 
 func _get_property_list() -> Array:
@@ -111,7 +143,8 @@ func _get_property_list() -> Array:
 			name = "overshoot",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 5.0",
+			hint_string = "0.0,1.0,1.60158,5.0",
+			description = "The overshoot value for the waterfall",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
@@ -250,7 +283,6 @@ func get_points() -> PackedVector3Array:
 func set_point(id: int, position: Vector3) -> void:
 	points[id] = position
 	_generate_waterfall()
-	emit_signal("waterfall_changed")
 
 
 func _enter_tree() -> void:
@@ -327,6 +359,8 @@ func _generate_waterfall() -> void:
 	mesh = _st.commit()
 	mesh.surface_set_material(0, _material)
 	_mesh_instance.mesh = mesh
+
+	emit_signal("waterfall_changed")
 
 
 func ease_back_in(x: float) -> float:
