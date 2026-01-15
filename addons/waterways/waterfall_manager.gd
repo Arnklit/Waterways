@@ -200,19 +200,21 @@ func _get_property_list() -> Array:
 			var hit_category = null
 			for category in mat_categories:
 				if p.name.begins_with(category):
-					shader_props.append({
-						name = str("Material/", mat_categories[category]),
-						type = TYPE_NIL,
-						hint_string = str("mat_", category),
-						usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
-					})
+					shader_props.append(
+						{
+							name = str("Material/", mat_categories[category]),
+							type = TYPE_NIL,
+							hint_string = str("mat_", category),
+							usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
+						},
+					)
 					hit_category = category
 					break
 
 			if hit_category != null:
 				mat_categories.erase(hit_category)
 
-			var cp := {}
+			var cp := { }
 			for k in p:
 				cp[k] = p[k]
 			cp.name = str("mat_", p.name)

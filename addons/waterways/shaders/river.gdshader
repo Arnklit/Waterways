@@ -83,7 +83,7 @@ float ease(float p_x, float p_c) {
 		}
 	} else if (p_c < 0.0) {
 		//inout ease
-		
+
 		if (p_x < 0.5) {
 			return pow(p_x * 2.0, -p_c) * 0.5;
 		} else {
@@ -115,7 +115,7 @@ void fragment() {
 	vec2 custom_UV = (UV2 + 1.0 / float(i_uv2_sides)) * (float(i_uv2_sides) / float(i_uv2_sides + 2));
 	vec4 flow_foam_noise = textureLod(i_flowmap, custom_UV, 0.0);
 	vec2 dist_pressure = textureLod(i_distmap, custom_UV, 0.0).xy;
-	
+
 	vec2 flow;
 	float distance_map;
 	float pressure_map;
@@ -131,17 +131,17 @@ void fragment() {
 		pressure_map = 0.5;
 		foam_mask = 0.0;
 	}
-	
+
 	flow = (flow - 0.5) * 2.0; // unpack the flow vectors
-	
+
 	// Calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
-	
+
 	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
 	flow *= flow_force;
-	
+
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	vec2 jump2 = vec2(0.20, 0.25);
 	vec2 jump3 = vec2(0.22, 0.27);
@@ -150,7 +150,7 @@ void fragment() {
 	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
 	vec3 flowx2_uvA = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, false);
 	vec3 flowx2_uvB = FlowUVW(UV, flow, jump2, uv_scale * 2.0, time, true);
-	
+
 	// Level 1 Water
 	vec3 water_a = texture(normal_bump_texture, flow_uvA.xy).rgb;
 	vec3 water_b = texture(normal_bump_texture, flow_uvB.xy).rgb;
@@ -169,9 +169,9 @@ void fragment() {
 		water_norFBM += waterx2.rg * 0.35;
 		water_foamFBM *= waterx2.b * 2.0;
 	}
-	
+
 	float foam_randomness = texture(i_texture_foam_noise, UV * uv_scale.xy).r;
-	
+
 	foam_mask += steepness_map * foam_steepness * foam_randomness;
 	foam_mask = clamp(foam_mask, 0.0, 1.0);
 	water_foamFBM = clamp((water_foamFBM * foam_amount) - (0.5 / foam_amount), 0.0, 1.0);
@@ -180,14 +180,14 @@ void fragment() {
 	float combined_foam = mix(foam_sharp, foam_smooth, foam_smoothness);
 
 	// Depthtest
-	// We do two depth tests, one with the standard SCREEN_UV and one with the distorted 
-	// refraction UVs. We do this to be able to dismiss refractions that are in front 
+	// We do two depth tests, one with the standard SCREEN_UV and one with the distorted
+	// refraction UVs. We do this to be able to dismiss refractions that are in front
 	// of objects
 	float depth_tex = textureLod(depth_texture, SCREEN_UV, 0.0).r;
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
 	world_pos.xyz/=world_pos.w;
 	float water_depth = VERTEX.z - world_pos.z;
-		
+
 	float alb_t = clamp(water_depth / albedo_depth, 0.0, 1.0);
 	alb_t = ease(alb_t, albedo_depth_curve);
 	SPECULAR = 0.25; // Supposedly clear water has approximately a 0.25 specular value
@@ -209,7 +209,7 @@ void fragment() {
 	vec4 refracted_world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV * 2.0 - 1.0, refracted_depth_tex, 1.0);
 	refracted_world_pos.xyz /= refracted_world_pos.w;
 	float refracted_water_depth = VERTEX.z - refracted_world_pos.z;
-	
+
 	if (refracted_world_pos.z > VERTEX.z) {
 		ref_ofs = SCREEN_UV;
 	} else {
