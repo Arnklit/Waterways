@@ -83,7 +83,24 @@ signal waterfall_changed
 signal progress_notified # Used to update progress bar when baking maps
 
 
+func _set(property: StringName, value) -> bool:
+	if str(property).begins_with("mat_"):
+		var param_name: String = str(property).replace("mat_", "")
+		_material.set_shader_parameter(param_name, value)
+		return true
+	return false
+
+
+func _get(property: StringName):
+	if str(property).begins_with("mat_"):
+		var param_name: String = str(property).replace("mat_", "")
+		return _material.get_shader_parameter(param_name)
+
+
 func _property_can_revert(property: StringName) -> bool:
+	if str(property).begins_with("mat_"):
+		var param_name: String = str(property).replace("mat_", "")
+		return _material.property_can_revert(str("shader_parameter/", param_name))
 	if not DEFAULT_PARAMETERS.has(property):
 		return false
 	if get(property) != DEFAULT_PARAMETERS[property]:
@@ -92,12 +109,15 @@ func _property_can_revert(property: StringName) -> bool:
 
 
 func _property_get_revert(property: StringName):
+	if str(property).begins_with("mat_"):
+		var param_name: String = str(property).replace("mat_", "")
+		return _material.property_get_revert(str("shader_parameter/", param_name))
 	if DEFAULT_PARAMETERS.has(property):
 		return DEFAULT_PARAMETERS[property]
 
 
 func _get_property_list() -> Array:
-	return [
+	var props = [
 		{
 			name = "Shape",
 			type = TYPE_NIL,
@@ -147,6 +167,61 @@ func _get_property_list() -> Array:
 			description = "The overshoot value for the waterfall",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
+		{
+			name = "Material",
+			type = TYPE_NIL,
+			hint_string = "mat_",
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "mat_shader_type",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_ENUM,
+			hint_string = "Water, Lava, Custom",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "mat_custom_shader",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			hint_string = "Shader",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+	]
+
+	var shader_props = []
+	var mat_categories = Constants.MATERIAL_CATEGORIES.duplicate(true)
+
+	if _material.shader != null:
+		var shader_params := RenderingServer.get_shader_parameter_list(_material.shader.get_rid())
+		for p in shader_params:
+			if p.name.begins_with("i_"):
+				continue
+			var hit_category = null
+			for category in mat_categories:
+				if p.name.begins_with(category):
+					shader_props.append({
+						name = str("Material/", mat_categories[category]),
+						type = TYPE_NIL,
+						hint_string = str("mat_", category),
+						usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
+					})
+					hit_category = category
+					break
+
+			if hit_category != null:
+				mat_categories.erase(hit_category)
+
+			var cp := {}
+			for k in p:
+				cp[k] = p[k]
+			cp.name = str("mat_", p.name)
+			if "curve" in cp.name:
+				cp.hint = PROPERTY_HINT_EXP_EASING
+				cp.hint_string = "EASE"
+			shader_props.append(cp)
+
+	var storage_props = [
 		{
 			name = "points",
 			type = TYPE_PACKED_VECTOR3_ARRAY,
@@ -241,6 +316,7 @@ func _get_property_list() -> Array:
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 	]
+	return props + shader_props + storage_props
 
 
 func get_right_vector_top() -> Vector3:
