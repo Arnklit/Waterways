@@ -6,7 +6,6 @@ extends Node3D
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const Constants = preload("./consts.gd")
 
-
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
 	shape_step_width_divs = 1,
@@ -23,7 +22,6 @@ const DEFAULT_PARAMETERS = {
 	baking_foam_blur = 0.02,
 	lod_lod0_distance = 50.0,
 }
-
 
 # Shape Properties
 var shape_step_length_divs: int = 1:
@@ -82,6 +80,7 @@ signal progress_notified # Used to update progress bar when baking maps
 # albedo_set is needed since the gradient is a custom inspector that needs a signal to update from script side
 #signal albedo_set
 
+
 # Internal Methods
 func _get_property_list() -> Array:
 	var props = [
@@ -89,48 +88,48 @@ func _get_property_list() -> Array:
 			name = "Shape",
 			type = TYPE_NIL,
 			hint_string = "shape_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "shape_step_length_divs",
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "1, 8",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "shape_step_width_divs",
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "1, 8",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "shape_smoothness",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.1, 5.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "Material",
 			type = TYPE_NIL,
 			hint_string = "mat_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "mat_shader_type",
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_ENUM,
 			hint_string = "Water, Lava, Custom",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "mat_custom_shader",
 			type = TYPE_OBJECT,
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-			hint_string = "Shader"
+			hint_string = "Shader",
 		},
 	]
 
@@ -150,7 +149,7 @@ func _get_property_list() -> Array:
 							name = str("Material/", mat_categories[category]),
 							type = TYPE_NIL,
 							hint_string = str("mat_", category),
-							usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+							usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
 						},
 					)
 					hit_category = category
@@ -159,7 +158,7 @@ func _get_property_list() -> Array:
 			if hit_category != null:
 				mat_categories.erase(hit_category)
 
-			var cp := {}
+			var cp := { }
 			for k in p:
 				cp[k] = p[k]
 
@@ -175,119 +174,119 @@ func _get_property_list() -> Array:
 			name = "Lod",
 			type = TYPE_NIL,
 			hint_string = "lod_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "lod_lod0_distance",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "5.0, 200.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "Baking",
 			type = TYPE_NIL,
 			hint_string = "baking_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_resolution",
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_ENUM,
 			hint_string = "64, 128, 256, 512, 1024",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_raycast_distance",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 100.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_raycast_layers",
 			type = TYPE_INT,
 			hint = PROPERTY_HINT_LAYERS_3D_PHYSICS,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_dilate",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_flowmap_blur",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_foam_cutoff",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_foam_offset",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
 			name = "baking_foam_blur",
 			type = TYPE_FLOAT,
 			hint = PROPERTY_HINT_RANGE,
 			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		# Serialize these values without exposing it in the inspector
 		{
 			name = "curve",
 			type = TYPE_OBJECT,
-			usage = PROPERTY_USAGE_STORAGE
+			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
 			name = "widths",
 			type = TYPE_ARRAY,
-			usage = PROPERTY_USAGE_STORAGE
+			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
 			name = "valid_flowmap",
 			type = TYPE_BOOL,
-			usage = PROPERTY_USAGE_STORAGE
+			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
 			name = "flow_foam_noise",
 			type = TYPE_OBJECT,
-			usage = PROPERTY_USAGE_STORAGE
+			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
 			name = "dist_pressure",
 			type = TYPE_OBJECT,
-			usage = PROPERTY_USAGE_STORAGE
+			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
 			name = "_material",
 			type = TYPE_OBJECT,
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
 			hint_string = "ShaderMaterial",
-			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR
+			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
 		},
 		{
 			name = "_selected_shader",
 			type = TYPE_INT,
-			usage = PROPERTY_USAGE_STORAGE
+			usage = PROPERTY_USAGE_STORAGE,
 		},
 		{
 			name = "_uv2_sides",
 			type = TYPE_INT,
-			usage = PROPERTY_USAGE_STORAGE
-		}
+			usage = PROPERTY_USAGE_STORAGE,
+		},
 	]
 	return props + props2 + props3
 
