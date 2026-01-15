@@ -213,8 +213,8 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 
 	# Width handles (using actual right vectors)
 	var handles_width := PackedVector3Array()
-	var width_top_pos := waterfall.points[0] + right_top * waterfall.width_top
-	var width_bottom_pos := waterfall.points[1] + right_bottom * waterfall.width_bottom
+	var width_top_pos: Vector3 = waterfall.points[0] + right_top * waterfall.width_top
+	var width_bottom_pos: Vector3 = waterfall.points[1] + right_bottom * waterfall.width_bottom
 	handles_width.append(width_top_pos)
 	handles_width.append(width_bottom_pos)
 
