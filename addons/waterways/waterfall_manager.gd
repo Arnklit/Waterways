@@ -45,6 +45,22 @@ func get_mesh_instance() -> MeshInstance3D:
 	return _mesh_instance
 
 
+func get_step_length_divs() -> int:
+	return step_length_divs
+
+
+func get_step_width_divs() -> int:
+	return step_width_divs
+
+
+func _use_uv2_for_collisionmap() -> bool:
+	return false
+
+
+func _generate_mesh() -> void:
+	_generate_waterfall()
+
+
 func _property_can_revert(property: StringName) -> bool:
 	if super(property):
 		return true
@@ -394,85 +410,6 @@ func ease_back_in(x: float) -> float:
 func bake_texture() -> void:
 	_generate_waterfall()
 	_generate_flowmap(pow(2, 6 + baking_resolution))
-
-
-func _generate_flowmap(flowmap_resolution: float) -> void:
-	var image := Image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
-	image.fill(Color(0.0, 0.0, 0.0))
-
-	emit_signal("progress_notified", 0.0, "Calculating Collisions (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
-	await get_tree().process_frame
-
-	image = await WaterHelperMethods.generate_collisionmap(image, _mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, step_length_divs, step_width_divs, self, false)
-
-	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
-	await get_tree().process_frame
-
-	# Calculate how many columns are in UV2
-	_uv2_sides = WaterHelperMethods.calculate_side(_steps)
-
-	var margin := int(round(float(flowmap_resolution) / float(_uv2_sides)))
-	image = WaterHelperMethods.add_margins(image, flowmap_resolution, margin)
-
-	var collision_with_margins := ImageTexture.create_from_image(image)
-
-	# Create correctly tiling noise for A channel
-	var noise_texture := load(Constants.FLOW_OFFSET_NOISE_TEXTURE_PATH) as Texture2D
-	var noise_with_margin_size := float(_uv2_sides + 2) * (float(noise_texture.get_width()) / float(_uv2_sides))
-	var noise_with_tiling := Image.create(noise_with_margin_size, noise_with_margin_size, false, Image.FORMAT_RGB8)
-	var slice_width := float(noise_texture.get_width()) / float(_uv2_sides)
-
-	for x in _uv2_sides:
-		noise_with_tiling.blend_rect(noise_texture.get_image(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width - (noise_texture.get_width() / 2.0)))
-		noise_with_tiling.blend_rect(noise_texture.get_image(), Rect2(0.0, 0.0, slice_width, noise_texture.get_height()), Vector2(slice_width + float(x) * slice_width, slice_width + (noise_texture.get_width() / 2.0)))
-	var tiled_noise := ImageTexture.new()
-	tiled_noise.create_from_image(noise_with_tiling)
-
-	# Create renderer
-	var renderer_instance = _filter_renderer.instantiate()
-
-	self.add_child(renderer_instance)
-
-	var flow_pressure_blur_amount = 0.04 / float(_uv2_sides) * flowmap_resolution
-	var dilate_amount = baking_dilate / float(_uv2_sides)
-	var flowmap_blur_amount = baking_flowmap_blur / float(_uv2_sides) * flowmap_resolution
-	var foam_offset_amount = baking_foam_offset / float(_uv2_sides)
-	var foam_blur_amount = baking_foam_blur / float(_uv2_sides) * flowmap_resolution
-
-	var flow_pressure_map = await renderer_instance.apply_flow_pressure(collision_with_margins, flowmap_resolution, _uv2_sides + 2.0)
-	var blurred_flow_pressure_map = await renderer_instance.apply_vertical_blur(flow_pressure_map, flow_pressure_blur_amount, flowmap_resolution + margin * 2)
-	var dilated_texture = await renderer_instance.apply_dilate(collision_with_margins, dilate_amount, 0.0, flowmap_resolution + margin * 2)
-	var normal_map = await renderer_instance.apply_normal(dilated_texture, flowmap_resolution + margin * 2)
-	var flow_map = await renderer_instance.apply_normal_to_flow(normal_map, flowmap_resolution + margin * 2)
-	var blurred_flow_map = await renderer_instance.apply_blur(flow_map, flowmap_blur_amount, flowmap_resolution + margin * 2)
-	var foam_map = await renderer_instance.apply_foam(dilated_texture, foam_offset_amount, baking_foam_cutoff, flowmap_resolution + margin * 2)
-	var blurred_foam_map = await renderer_instance.apply_blur(foam_map, foam_blur_amount, flowmap_resolution + margin * 2)
-	var flow_foam_noise_img = await renderer_instance.apply_combine(blurred_flow_map, blurred_flow_map, blurred_foam_map, tiled_noise)
-	var dist_pressure_img = await renderer_instance.apply_combine(dilated_texture, blurred_flow_pressure_map)
-
-	# Debug texture gen
-	#	flow_pressure_map.get_image().save_png("res://test_assets/baked_pressure_map.png")
-	#	blurred_flow_pressure_map.get_image().save_png("res://test_assets/baked_pressure_map_blurred.png")
-	#	dilated_texture.get_image().save_png("res://test_assets/dilated_texture.png")
-	#	normal_map.get_image().save_png("res://test_assets/normal_map.png")
-	#	flow_map.get_image().save_png("res://test_assets/flow_map.png")
-	#	blurred_flow_map.get_image().save_png("res://test_assets/blurred_flow_map.png")
-
-	remove_child(renderer_instance) # cleanup
-
-	var flow_foam_noise_result = flow_foam_noise_img.get_image().get_region(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-	var dist_pressure_result = dist_pressure_img.get_image().get_region(Rect2(margin, margin, flowmap_resolution, flowmap_resolution))
-
-	flow_foam_noise = flow_foam_noise_img
-	dist_pressure = dist_pressure_img
-
-	set_materials("i_flowmap", flow_foam_noise)
-	set_materials("i_distmap", dist_pressure)
-	set_materials("i_valid_flowmap", true)
-	set_materials("i_uv2_sides", _uv2_sides)
-	valid_flowmap = true
-	emit_signal("progress_notified", 100.0, "finished")
-	update_configuration_warnings()
 
 
 func set_line_sample_resolution(value: int) -> void:
