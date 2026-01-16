@@ -79,7 +79,7 @@ func _property_get_revert(property: StringName):
 
 
 func _get_property_list() -> Array:
-	var props = [
+	var shape_props = [
 		{
 			name = "Shape",
 			type = TYPE_NIL,
@@ -128,68 +128,7 @@ func _get_property_list() -> Array:
 			description = "The overshoot value for the waterfall",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
-		{
-			name = "Material",
-			type = TYPE_NIL,
-			hint_string = "mat_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "mat_shader_type",
-			type = TYPE_INT,
-			hint = PROPERTY_HINT_ENUM,
-			hint_string = "Water, Lava, Custom",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "mat_custom_shader",
-			type = TYPE_OBJECT,
-			hint = PROPERTY_HINT_RESOURCE_TYPE,
-			hint_string = "Shader",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "_material",
-			type = TYPE_OBJECT,
-			hint = PROPERTY_HINT_RESOURCE_TYPE,
-			hint_string = "ShaderMaterial",
-			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
-		},
 	]
-
-	var shader_props = []
-	var mat_categories = Constants.MATERIAL_CATEGORIES.duplicate(true)
-
-	if _material.shader != null:
-		var shader_params := RenderingServer.get_shader_parameter_list(_material.shader.get_rid())
-		for p in shader_params:
-			if p.name.begins_with("i_"):
-				continue
-			var hit_category = null
-			for category in mat_categories:
-				if p.name.begins_with(category):
-					shader_props.append(
-						{
-							name = str("Material/", mat_categories[category]),
-							type = TYPE_NIL,
-							hint_string = str("mat_", category),
-							usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
-						},
-					)
-					hit_category = category
-					break
-
-			if hit_category != null:
-				mat_categories.erase(hit_category)
-
-			var cp := { }
-			for k in p:
-				cp[k] = p[k]
-			cp.name = str("mat_", p.name)
-			if "curve" in cp.name:
-				cp.hint = PROPERTY_HINT_EXP_EASING
-				cp.hint_string = "EASE"
-			shader_props.append(cp)
 
 	var storage_props = [
 		{
@@ -207,79 +146,16 @@ func _get_property_list() -> Array:
 			type = TYPE_VECTOR3,
 			usage = PROPERTY_USAGE_STORAGE,
 		},
-		{
-			name = "flow_foam_noise",
-			type = TYPE_OBJECT,
-			usage = PROPERTY_USAGE_STORAGE,
-		},
-		{
-			name = "dist_pressure",
-			type = TYPE_OBJECT,
-			usage = PROPERTY_USAGE_STORAGE,
-		},
-		{
-			name = "Baking",
-			type = TYPE_NIL,
-			hint_string = "baking_",
-			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_resolution",
-			type = TYPE_INT,
-			hint = PROPERTY_HINT_ENUM,
-			hint_string = "64, 128, 256, 512, 1024",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_raycast_distance",
-			type = TYPE_FLOAT,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 100.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_raycast_layers",
-			type = TYPE_INT,
-			hint = PROPERTY_HINT_LAYERS_3D_PHYSICS,
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_dilate",
-			type = TYPE_FLOAT,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_flowmap_blur",
-			type = TYPE_FLOAT,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_foam_cutoff",
-			type = TYPE_FLOAT,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_foam_offset",
-			type = TYPE_FLOAT,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
-		{
-			name = "baking_foam_blur",
-			type = TYPE_FLOAT,
-			hint = PROPERTY_HINT_RANGE,
-			hint_string = "0.0, 1.0",
-			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
-		},
 	]
-	return props + shader_props + storage_props
+
+	return (
+		shape_props +
+		_get_material_property_list() +
+		_get_shader_params_property_list() +
+		_get_baking_property_list() +
+		storage_props +
+		_get_base_storage_property_list()
+	)
 
 
 func get_right_vector_top() -> Vector3:
