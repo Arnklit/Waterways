@@ -8,16 +8,6 @@ const DEFAULT_PARAMETERS = {
 	step_length_divs = 1,
 	step_width_divs = 1,
 	overshoot = 1.60158,
-	mat_shader_type = 0,
-	mat_custom_shader = null,
-	baking_resolution = 2,
-	baking_raycast_distance = 10.0,
-	baking_raycast_layers = 1,
-	baking_dilate = 0.6,
-	baking_flowmap_blur = 0.04,
-	baking_foam_cutoff = 0.9,
-	baking_foam_offset = 0.1,
-	baking_foam_blur = 0.02,
 }
 
 # Shape Properties
@@ -60,37 +50,21 @@ var _mesh_instance: MeshInstance3D
 signal waterfall_changed
 
 
-func _set(property: StringName, value) -> bool:
-	if str(property).begins_with("mat_"):
-		var param_name: String = str(property).replace("mat_", "")
-		_material.set_shader_parameter(param_name, value)
-		return true
-	return false
-
-
-func _get(property: StringName):
-	if str(property).begins_with("mat_"):
-		var param_name: String = str(property).replace("mat_", "")
-		return _material.get_shader_parameter(param_name)
-
-
 func _property_can_revert(property: StringName) -> bool:
-	if str(property).begins_with("mat_"):
-		var param_name: String = str(property).replace("mat_", "")
-		return _material.property_can_revert(str("shader_parameter/", param_name))
-	if not DEFAULT_PARAMETERS.has(property):
-		return false
-	if get(property) != DEFAULT_PARAMETERS[property]:
+	if super(property):
 		return true
+	if DEFAULT_PARAMETERS.has(property):
+		return get(property) != DEFAULT_PARAMETERS[property]
 	return false
 
 
 func _property_get_revert(property: StringName):
-	if str(property).begins_with("mat_"):
-		var param_name: String = str(property).replace("mat_", "")
-		return _material.property_get_revert(str("shader_parameter/", param_name))
+	var base_result = super(property)
+	if base_result != null:
+		return base_result
 	if DEFAULT_PARAMETERS.has(property):
 		return DEFAULT_PARAMETERS[property]
+	return null
 
 
 func _get_property_list() -> Array:
