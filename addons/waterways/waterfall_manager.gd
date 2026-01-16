@@ -179,16 +179,7 @@ func _get_default_right_vector() -> Vector3:
 
 
 func _init() -> void:
-	_material = ShaderMaterial.new()
-	_filter_renderer = load(Constants.FILTER_RENDERER_PATH)
-	_material.shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
-	for texture in Constants.BUILTIN_SHADERS[mat_shader_type].texture_paths:
-		_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
-
-	_debug_material = ShaderMaterial.new()
-	_debug_material.shader = load(Constants.DEBUG_SHADER.shader_path) as Shader
-	for texture in Constants.DEBUG_SHADER.texture_paths:
-		_debug_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
+	super()
 
 
 func get_points() -> PackedVector3Array:

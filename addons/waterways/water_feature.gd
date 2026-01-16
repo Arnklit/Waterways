@@ -52,6 +52,20 @@ signal feature_changed
 signal progress_notified
 
 
+func _init() -> void:
+	_filter_renderer = load(Constants.FILTER_RENDERER_PATH)
+
+	_material = ShaderMaterial.new()
+	_material.shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
+	for texture in Constants.BUILTIN_SHADERS[mat_shader_type].texture_paths:
+		_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
+
+	_debug_material = ShaderMaterial.new()
+	_debug_material.shader = load(Constants.DEBUG_SHADER.shader_path) as Shader
+	for texture in Constants.DEBUG_SHADER.texture_paths:
+		_debug_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
+
+
 func get_mesh_instance() -> MeshInstance3D:
 	assert(false, "Subclass must implement get_mesh_instance()")
 	return null

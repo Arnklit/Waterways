@@ -145,20 +145,10 @@ func _property_get_revert(property: StringName):
 
 
 func _init() -> void:
+	super()
 	_st = SurfaceTool.new()
 	_mdt = MeshDataTool.new()
-	_filter_renderer = load(Constants.FILTER_RENDERER_PATH)
-
-	_debug_material = ShaderMaterial.new()
-	_debug_material.shader = load(Constants.DEBUG_SHADER.shader_path) as Shader
-	for texture in Constants.DEBUG_SHADER.texture_paths:
-		_debug_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
-
-	_material = ShaderMaterial.new()
-	_material.shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
-	for texture in Constants.BUILTIN_SHADERS[mat_shader_type].texture_paths:
-		_material.set_shader_parameter(texture.name, load(texture.path) as Texture2D)
-	# Have to manually set the color or it does not default right. Not sure how to work around this
+	# Have to manually set the color or it does not default right
 	_material.set_shader_parameter("albedo_color", Transform3D(Vector3(0.0, 0.8, 1.0), Vector3(0.15, 0.2, 0.5), Vector3.ZERO, Vector3.ZERO))
 
 
