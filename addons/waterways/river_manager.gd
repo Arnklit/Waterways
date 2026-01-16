@@ -26,7 +26,6 @@ var lod_lod0_distance: float = 50.0:
 var curve: Curve3D
 var widths: Array[float] = [1.0, 1.0]:
 	set = set_widths
-var mesh_instance: MeshInstance3D
 
 # Private variables
 var _st: SurfaceTool
@@ -34,10 +33,6 @@ var _mdt: MeshDataTool
 var _selected_shader: int = Constants.SHADER_TYPES.WATER
 
 signal river_changed
-
-
-func get_mesh_instance() -> MeshInstance3D:
-	return mesh_instance
 
 
 func get_step_length_divs() -> int:
@@ -50,6 +45,10 @@ func get_step_width_divs() -> int:
 
 func _generate_mesh() -> void:
 	_generate_river()
+
+
+func _get_default_parameters() -> Dictionary:
+	return DEFAULT_PARAMETERS
 
 
 func _get_property_list() -> Array:
@@ -127,23 +126,6 @@ func _get_property_list() -> Array:
 	)
 
 
-func _property_can_revert(property: StringName) -> bool:
-	if super(property):
-		return true
-	if DEFAULT_PARAMETERS.has(property):
-		return get(property) != DEFAULT_PARAMETERS[property]
-	return false
-
-
-func _property_get_revert(property: StringName):
-	var base_result = super(property)
-	if base_result != null:
-		return base_result
-	if DEFAULT_PARAMETERS.has(property):
-		return DEFAULT_PARAMETERS[property]
-	return null
-
-
 func _init() -> void:
 	super()
 	_st = SurfaceTool.new()
@@ -167,11 +149,11 @@ func _enter_tree() -> void:
 		var new_mesh_instance := MeshInstance3D.new()
 		new_mesh_instance.name = "RiverMeshInstance"
 		add_child(new_mesh_instance)
-		mesh_instance = get_child(0) as MeshInstance3D
+		_mesh_instance = get_child(0) as MeshInstance3D
 		_generate_river()
 	else:
-		mesh_instance = get_child(0) as MeshInstance3D
-		_material = mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
+		_mesh_instance = get_child(0) as MeshInstance3D
+		_material = _mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
 
 	set_materials("i_valid_flowmap", valid_flowmap)
 	set_materials("i_uv2_sides", _uv2_sides)
@@ -183,12 +165,12 @@ func _enter_tree() -> void:
 func _get_configuration_warning() -> String:
 	if valid_flowmap:
 		return ""
-	else:
-		return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
+
+	return "No flowmap is set. Select River -> Generate Flow & Foam Map to generate and assign one."
 
 
 func get_transformed_aabb() -> AABB:
-	return global_transform * mesh_instance.get_aabb()
+	return global_transform * _mesh_instance.get_aabb()
 
 
 # Public Methods - These should all be good to use as API from other scripts
@@ -219,11 +201,6 @@ func remove_point(index: int) -> void:
 	_generate_river()
 
 
-func bake_texture() -> void:
-	_generate_river()
-	_generate_flowmap(pow(2, 6 + baking_resolution))
-
-
 func set_curve_point_position(index: int, position: Vector3) -> void:
 	curve.set_point_position(index, position)
 	_generate_river()
@@ -250,7 +227,7 @@ func spawn_mesh() -> void:
 	if owner == null:
 		push_warning("Cannot create MeshInstance3D sibling when River is root.")
 		return
-	var sibling_mesh := mesh_instance.duplicate(true)
+	var sibling_mesh := _mesh_instance.duplicate(true)
 	get_parent().add_child(sibling_mesh)
 	sibling_mesh.set_owner(get_tree().get_edited_scene_root())
 	sibling_mesh.position = position
@@ -323,8 +300,8 @@ func _generate_river() -> void:
 	_steps = int(max(1.0, round(curve.get_baked_length() / average_width)))
 
 	var river_width_values := WaterHelperMethods.generate_river_width_values(curve, _steps, shape_step_length_divs, shape_step_width_divs, widths)
-	mesh_instance.mesh = WaterHelperMethods.generate_river_mesh(curve, _steps, shape_step_length_divs, shape_step_width_divs, shape_smoothness, river_width_values)
-	mesh_instance.mesh.surface_set_material(0, _material)
+	_mesh_instance.mesh = WaterHelperMethods.generate_river_mesh(curve, _steps, shape_step_length_divs, shape_step_width_divs, shape_smoothness, river_width_values)
+	_mesh_instance.mesh.surface_set_material(0, _material)
 
 
 # Signal Methods

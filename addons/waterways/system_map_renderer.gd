@@ -21,8 +21,8 @@ func grab_height(water_objects: Array[RiverManager], aabb: AABB, resolution: flo
 	height_mat.set_shader_parameter("lower_bounds", aabb.position.y)
 	height_mat.set_shader_parameter("upper_bounds", aabb.end.y)
 
-	for object in water_objects:
-		var water_mesh_copy := object.mesh_instance.duplicate(true)
+	for object: RiverManager in water_objects:
+		var water_mesh_copy := object.get_mesh_instance().duplicate(true)
 		_container.add_child(water_mesh_copy)
 		water_mesh_copy.transform = object.transform # TODO - This seems unneeded?
 		water_mesh_copy.material_override = height_mat
@@ -116,7 +116,7 @@ func grab_flow(water_objects: Array[RiverManager], aabb: AABB, resolution: float
 		flow_mat.set_shader_parameter("valid_flowmap", water_objects[i].get_shader_parameter("i_valid_flowmap"))
 		flow_mat.set_shader_parameter("uv2_sides", water_objects[i].get_shader_parameter("i_uv2_sides"))
 
-		var water_mesh_copy := water_objects[i].mesh_instance.duplicate(true)
+		var water_mesh_copy := water_objects[i].get_mesh_instance().duplicate(true)
 		_container.add_child(water_mesh_copy)
 		water_mesh_copy.transform = water_objects[i].transform
 		water_mesh_copy.material_override = flow_mat

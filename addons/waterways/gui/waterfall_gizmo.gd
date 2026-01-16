@@ -9,6 +9,7 @@ const DIRECTION_HANDLE_LENGTH = 4.0
 
 var editor_plugin: EditorPlugin
 var _handle_lines_mat: Material
+var _path_mat: Material
 
 
 func _init() -> void:
@@ -34,6 +35,7 @@ func _init() -> void:
 	mat.set_albedo(Color(1.0, 1.0, 0.0))
 	mat.render_priority = 10
 	add_material("handle_lines", mat)
+	add_material("path", mat)
 
 
 func _get_gizmo_name() -> String:
@@ -189,12 +191,30 @@ func _commit_handle(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool, r
 	ur.commit_action()
 
 
+func _draw_path(gizmo: EditorNode3DGizmo, waterfall: WaterfallManager) -> void:
+	var to_from: Vector3 = waterfall.points[1] - waterfall.points[0]
+	var to_from_2d := Vector3(to_from.x, 0.0, to_from.z)
+	var path := PackedVector3Array()
+	var resolution := waterfall.line_sample_resolution
+	for i in resolution:
+		var t0 := float(i) / float(resolution)
+		var t1 := float(i + 1) / float(resolution)
+		var p0 := waterfall.points[0] + to_from_2d * t0 + Vector3(0.0, waterfall.ease_back_in(t0) * to_from.y, 0.0)
+		var p1 := waterfall.points[0] + to_from_2d * t1 + Vector3(0.0, waterfall.ease_back_in(t1) * to_from.y, 0.0)
+		path.append(p0)
+		path.append(p1)
+	gizmo.add_lines(path, _path_mat)
+
+
 func _redraw(gizmo: EditorNode3DGizmo) -> void:
 	if not _handle_lines_mat:
 		_handle_lines_mat = get_material("handle_lines", gizmo)
+	if not _path_mat:
+		_path_mat = get_material("path", gizmo)
 	gizmo.clear()
 
 	var waterfall: WaterfallManager = gizmo.get_node_3d()
+	_draw_path(gizmo, waterfall)
 	var right_top := waterfall.get_right_vector_top()
 	var right_bottom := waterfall.get_right_vector_bottom()
 

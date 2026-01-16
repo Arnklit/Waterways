@@ -42,13 +42,13 @@ var mat_custom_shader: Shader:
 
 # Internal
 var _material: ShaderMaterial
+var _mesh_instance: MeshInstance3D
 var _debug_material: ShaderMaterial
 var _filter_renderer: PackedScene
 var _steps := 2
 var _first_enter_tree := true
 var _uv2_sides: int
 
-signal feature_changed
 signal progress_notified
 
 
@@ -67,8 +67,7 @@ func _init() -> void:
 
 
 func get_mesh_instance() -> MeshInstance3D:
-	assert(false, "Subclass must implement get_mesh_instance()")
-	return null
+	return _mesh_instance
 
 
 func get_step_length_divs() -> int:
@@ -89,6 +88,15 @@ func _generate_mesh() -> void:
 	assert(false, "Subclass must implement _generate_mesh()")
 
 
+func _get_default_parameters() -> Dictionary:
+	return { }
+
+
+func bake_texture() -> void:
+	_generate_mesh()
+	_generate_flowmap(pow(2, 6 + baking_resolution))
+
+
 func _generate_flowmap(flowmap_resolution: float) -> void:
 	var image := Image.create(flowmap_resolution, flowmap_resolution, true, Image.FORMAT_RGB8)
 	image.fill(Color(0.0, 0.0, 0.0))
@@ -96,7 +104,7 @@ func _generate_flowmap(flowmap_resolution: float) -> void:
 	emit_signal("progress_notified", 0.0, "Calculating Collisions (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
 	await get_tree().process_frame
 
-	image = await WaterHelperMethods.generate_collisionmap(image, get_mesh_instance(), baking_raycast_distance, baking_raycast_layers, _steps, get_step_length_divs(), get_step_width_divs(), self, _use_uv2_for_collisionmap())
+	image = await WaterHelperMethods.generate_collisionmap(image, _mesh_instance, baking_raycast_distance, baking_raycast_layers, _steps, get_step_length_divs(), get_step_width_divs(), self, _use_uv2_for_collisionmap())
 
 	emit_signal("progress_notified", 0.95, "Applying filters (" + str(flowmap_resolution) + "x" + str(flowmap_resolution) + ")")
 	await get_tree().process_frame
@@ -161,21 +169,20 @@ func set_materials(param: String, value) -> void:
 
 func set_debug_view(index: int) -> void:
 	debug_view = index
-	var mi := get_mesh_instance()
-	if mi == null:
+	if _mesh_instance == null:
 		return
 	if index == 0:
-		mi.material_override = null
+		_mesh_instance.material_override = null
 	else:
 		_debug_material.set_shader_parameter("mode", index)
-		mi.material_override = _debug_material
+		_mesh_instance.material_override = _debug_material
 
 
 func set_shader_type(type: int) -> void:
 	if type == mat_shader_type:
 		return
-	mat_shader_type = type
 
+	mat_shader_type = type
 	if mat_shader_type == Constants.SHADER_TYPES.CUSTOM:
 		_material.shader = mat_custom_shader
 	else:
@@ -189,6 +196,7 @@ func set_shader_type(type: int) -> void:
 func set_custom_shader(shader: Shader) -> void:
 	if mat_custom_shader == shader:
 		return
+
 	mat_custom_shader = shader
 	if mat_custom_shader != null:
 		_material.shader = mat_custom_shader
@@ -386,6 +394,9 @@ func _property_can_revert(property: StringName) -> bool:
 		return _material.property_can_revert(str("shader_parameter/", param_name))
 	if BASE_DEFAULT_PARAMETERS.has(property):
 		return get(property) != BASE_DEFAULT_PARAMETERS[property]
+	var subclass_defaults := _get_default_parameters()
+	if subclass_defaults.has(property):
+		return get(property) != subclass_defaults[property]
 	return false
 
 
@@ -395,4 +406,7 @@ func _property_get_revert(property: StringName):
 		return _material.property_get_revert(str("shader_parameter/", param_name))
 	if BASE_DEFAULT_PARAMETERS.has(property):
 		return BASE_DEFAULT_PARAMETERS[property]
+	var subclass_defaults := _get_default_parameters()
+	if subclass_defaults.has(property):
+		return subclass_defaults[property]
 	return null

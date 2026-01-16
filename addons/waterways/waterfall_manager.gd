@@ -11,20 +11,16 @@ const DEFAULT_PARAMETERS = {
 }
 
 # Shape Properties
-## How many points to sample the curve at
 var line_sample_resolution: int = 100:
 	set = set_line_sample_resolution
-## The width of the top of the waterfall
 var width_top: float = 1.0:
 	set = set_width_top
-## The width of the bottom of the waterfall
 var width_bottom: float = 1.0:
 	set = set_width_bottom
 var step_length_divs: int = 1:
 	set = set_step_length_divs
 var step_width_divs: int = 1:
 	set = set_step_width_divs
-## The amount of overshoot for the waterfall
 var overshoot: float = 1.60158:
 	set = set_overshoot
 
@@ -36,13 +32,8 @@ var direction_bottom := Vector3.ZERO
 
 var _st: SurfaceTool
 var _mdt: MeshDataTool
-var _mesh_instance: MeshInstance3D
 
 signal waterfall_changed
-
-
-func get_mesh_instance() -> MeshInstance3D:
-	return _mesh_instance
 
 
 func get_step_length_divs() -> int:
@@ -61,21 +52,8 @@ func _generate_mesh() -> void:
 	_generate_waterfall()
 
 
-func _property_can_revert(property: StringName) -> bool:
-	if super(property):
-		return true
-	if DEFAULT_PARAMETERS.has(property):
-		return get(property) != DEFAULT_PARAMETERS[property]
-	return false
-
-
-func _property_get_revert(property: StringName):
-	var base_result = super(property)
-	if base_result != null:
-		return base_result
-	if DEFAULT_PARAMETERS.has(property):
-		return DEFAULT_PARAMETERS[property]
-	return null
+func _get_default_parameters() -> Dictionary:
+	return DEFAULT_PARAMETERS
 
 
 func _get_property_list() -> Array:
@@ -272,11 +250,6 @@ func _generate_waterfall() -> void:
 func ease_back_in(x: float) -> float:
 	var c3 = overshoot + 1
 	return c3 * x * x * x - overshoot * x * x
-
-
-func bake_texture() -> void:
-	_generate_waterfall()
-	_generate_flowmap(pow(2, 6 + baking_resolution))
 
 
 func set_line_sample_resolution(value: int) -> void:
