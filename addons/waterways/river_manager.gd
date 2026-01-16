@@ -18,12 +18,6 @@ var shape_step_width_divs: int = 1:
 var shape_smoothness: float = 0.5:
 	set = set_smoothness
 
-# Material Properties that not handled in shader
-var mat_shader_type: Constants.SHADER_TYPES:
-	set = set_shader_type
-var mat_custom_shader: Shader:
-	set = set_custom_shader
-
 # LOD Properties
 var lod_lod0_distance: float = 50.0:
 	set = set_lod0_distance
@@ -32,8 +26,6 @@ var lod_lod0_distance: float = 50.0:
 var curve: Curve3D
 var widths: Array[float] = [1.0, 1.0]:
 	set = set_widths
-var debug_view: int = 0:
-	set = set_debug_view
 var mesh_instance: MeshInstance3D
 
 # Private variables
@@ -42,6 +34,10 @@ var _mdt: MeshDataTool
 var _selected_shader: int = Constants.SHADER_TYPES.WATER
 
 signal river_changed
+
+
+func get_mesh_instance() -> MeshInstance3D:
+	return mesh_instance
 
 
 # Internal Methods
@@ -93,6 +89,13 @@ func _get_property_list() -> Array:
 			hint = PROPERTY_HINT_RESOURCE_TYPE,
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 			hint_string = "Shader",
+		},
+		{
+			name = "_material",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			hint_string = "ShaderMaterial",
+			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
 		},
 	]
 
@@ -232,13 +235,6 @@ func _get_property_list() -> Array:
 			name = "dist_pressure",
 			type = TYPE_OBJECT,
 			usage = PROPERTY_USAGE_STORAGE,
-		},
-		{
-			name = "_material",
-			type = TYPE_OBJECT,
-			hint = PROPERTY_HINT_RESOURCE_TYPE,
-			hint_string = "ShaderMaterial",
-			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
 		},
 		{
 			name = "_selected_shader",
@@ -383,20 +379,6 @@ func set_widths(new_widths) -> void:
 	_generate_river()
 
 
-func set_materials(param: String, value) -> void:
-	_material.set_shader_parameter(param, value)
-	_debug_material.set_shader_parameter(param, value)
-
-
-func set_debug_view(index: int) -> void:
-	debug_view = index
-	if index == 0:
-		mesh_instance.material_override = null
-	else:
-		_debug_material.set_shader_parameter("mode", index)
-		mesh_instance.material_override = _debug_material
-
-
 func spawn_mesh() -> void:
 	if owner == null:
 		push_warning("Cannot create MeshInstance3D sibling when River is root.")
@@ -461,42 +443,6 @@ func set_smoothness(value: float) -> void:
 	set_materials("i_valid_flowmap", valid_flowmap)
 	_generate_river()
 	emit_signal("river_changed")
-
-
-func set_shader_type(type: int):
-	if type == mat_shader_type:
-		return
-	mat_shader_type = type
-
-	if mat_shader_type == Constants.SHADER_TYPES.CUSTOM:
-		_material.shader = mat_custom_shader
-	else:
-		_material.shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path)
-		for texture in Constants.BUILTIN_SHADERS[mat_shader_type].texture_paths:
-			_material.set_shader_parameter(texture.name, load(texture.path) as Texture)
-
-	notify_property_list_changed()
-
-
-func set_custom_shader(shader: Shader) -> void:
-	if mat_custom_shader == shader:
-		return
-	mat_custom_shader = shader
-	if mat_custom_shader != null:
-		_material.shader = mat_custom_shader
-
-		if Engine.is_editor_hint:
-			# Ability to fork default shader
-			if shader.code == "":
-				var selected_shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
-				shader.code = selected_shader.code
-
-	if shader != null:
-		print("shader != null - set shader type to custom")
-		print(shader)
-		set_shader_type(Constants.SHADER_TYPES.CUSTOM)
-	else:
-		set_shader_type(Constants.SHADER_TYPES.WATER)
 
 
 func set_lod0_distance(value: float) -> void:

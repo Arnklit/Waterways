@@ -30,24 +30,19 @@ var overshoot: float = 1.60158:
 
 var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)])
 
-var debug_view: int = 0:
-	set = set_debug_view
-
 # Direction vectors at each endpoint (normalized, in XZ plane). Zero means auto-calculate from points.
 var direction_top := Vector3.ZERO
 var direction_bottom := Vector3.ZERO
-
-# Material Properties
-var mat_shader_type: Constants.SHADER_TYPES:
-	set = set_shader_type
-var mat_custom_shader: Shader:
-	set = set_custom_shader
 
 var _st: SurfaceTool
 var _mdt: MeshDataTool
 var _mesh_instance: MeshInstance3D
 
 signal waterfall_changed
+
+
+func get_mesh_instance() -> MeshInstance3D:
+	return _mesh_instance
 
 
 func _property_can_revert(property: StringName) -> bool:
@@ -72,7 +67,6 @@ func _get_property_list() -> Array:
 		{
 			name = "Shape",
 			type = TYPE_NIL,
-			hint_string = "shape_",
 			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
 		{
@@ -138,6 +132,13 @@ func _get_property_list() -> Array:
 			hint_string = "Shader",
 			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
 		},
+		{
+			name = "_material",
+			type = TYPE_OBJECT,
+			hint = PROPERTY_HINT_RESOURCE_TYPE,
+			hint_string = "ShaderMaterial",
+			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
+		},
 	]
 
 	var shader_props = []
@@ -189,13 +190,6 @@ func _get_property_list() -> Array:
 			name = "direction_bottom",
 			type = TYPE_VECTOR3,
 			usage = PROPERTY_USAGE_STORAGE,
-		},
-		{
-			name = "_material",
-			type = TYPE_OBJECT,
-			hint = PROPERTY_HINT_RESOURCE_TYPE,
-			hint_string = "ShaderMaterial",
-			usage = PROPERTY_USAGE_STORAGE | PROPERTY_USAGE_EDITOR,
 		},
 		{
 			name = "flow_foam_noise",
@@ -522,50 +516,6 @@ func set_overshoot(value: float) -> void:
 		return
 
 	_generate_waterfall()
-
-
-func set_materials(param: String, value) -> void:
-	_material.set_shader_parameter(param, value)
-	_debug_material.set_shader_parameter(param, value)
-
-
-func set_debug_view(index: int) -> void:
-	print("Setting debug view to ", index)
-	debug_view = index
-	if index == 0:
-		_mesh_instance.material_override = null
-	else:
-		_debug_material.set_shader_parameter("mode", index)
-		_mesh_instance.material_override = _debug_material
-
-
-func set_shader_type(type: int) -> void:
-	if type == mat_shader_type:
-		return
-	mat_shader_type = type
-
-	if mat_shader_type == Constants.SHADER_TYPES.CUSTOM:
-		_material.shader = mat_custom_shader
-	else:
-		_material.shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path)
-		for texture in Constants.BUILTIN_SHADERS[mat_shader_type].texture_paths:
-			_material.set_shader_parameter(texture.name, load(texture.path) as Texture)
-
-	notify_property_list_changed()
-
-
-func set_custom_shader(shader: Shader) -> void:
-	if mat_custom_shader == shader:
-		return
-	mat_custom_shader = shader
-	if mat_custom_shader != null:
-		_material.shader = mat_custom_shader
-
-		if Engine.is_editor_hint:
-			# Ability to fork default shader
-			if shader.code == "":
-				var selected_shader = load(Constants.BUILTIN_SHADERS[mat_shader_type].shader_path) as Shader
-				shader.code = selected_shader.code
 
 
 # Signal Methods
