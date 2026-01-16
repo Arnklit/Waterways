@@ -70,7 +70,7 @@ float ease(float p_x, float p_c) {
 		}
 	} else if (p_c < 0.0) {
 		//inout ease
-		
+
 		if (p_x < 0.5) {
 			return pow(p_x * 2.0, -p_c) * 0.5;
 		} else {
@@ -102,7 +102,7 @@ void fragment() {
 	vec2 custom_UV = (UV2 + 1.0 / float(i_uv2_sides)) * (float(i_uv2_sides) / float(i_uv2_sides + 2));
 	vec4 flow_foam_noise = textureLod(i_flowmap, custom_UV, 0.0);
 	vec2 dist_pressure = textureLod(i_distmap, custom_UV, 0.0).xy;
-	
+
 	vec2 flow;
 	float distance_map;
 	float pressure_map;
@@ -115,56 +115,56 @@ void fragment() {
 		distance_map = 0.5;
 		pressure_map = 0.5;
 	}
-	
+
 	flow = (flow - 0.5) * 2.0; // unpack the flow vectors
-	
+
 	// Calculate the steepness map
 	vec3 flow_viewspace = flow.x * TANGENT + flow.y * BINORMAL;
 	vec3 up_viewspace = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
 	float steepness_map = max(0.0, dot(flow_viewspace, up_viewspace)) * 4.0;
-	
+
 	float flow_force = min(flow_base + steepness_map * flow_steepness + distance_map * flow_distance + pressure_map * flow_pressure, flow_max);
 	flow *= flow_force;
-	
+
 	vec2 jump1 = vec2(0.24, 0.2083333);
 	float time = TIME * flow_speed + flow_foam_noise.a;
 	vec3 flow_uvA = FlowUVW(UV, flow, jump1, uv_scale, time, false);
 	vec3 flow_uvB = FlowUVW(UV, flow, jump1, uv_scale, time, true);
-	
+
 	// Level 1 Lava
 	vec3 lava_nor_bump_a = texture(normal_bump_texture, flow_uvA.xy).rgb;
 	vec3 lava_nor_bump_b = texture(normal_bump_texture, flow_uvB.xy).rgb;
 	vec3 lava_nor_bump = lava_nor_bump_a * flow_uvA.z + lava_nor_bump_b * flow_uvB.z;
-	
+
 	vec3 lava_emission_a = texture(emission_texture, flow_uvA.xy).rgb;
 	vec3 lava_emission_b = texture(emission_texture, flow_uvB.xy).rgb;
 	vec3 lava_emission = lava_emission_a * flow_uvA.z + lava_emission_b * flow_uvB.z;
-	
+
 	vec2 lava_norFBM = lava_nor_bump.rg;
 	float lava_bumpFBM = lava_nor_bump.b; // TODO - Will we use this?
-	
+
 	// Depthtest
 	float depth_tex = textureLod(depth_texture, SCREEN_UV, 0.0).r;
 	vec4 world_pos = INV_PROJECTION_MATRIX * vec4(SCREEN_UV*2.0-1.0,depth_tex,1.0);
 	world_pos.xyz/=world_pos.w;
 	float lava_depth = VERTEX.z - world_pos.z;
-	
+
 	ROUGHNESS = roughness;
 	NORMAL_MAP = vec3(lava_norFBM, 0);
 	NORMAL_MAP_DEPTH = normal_scale;
-	
+
 	float emission_t = clamp(lava_depth / emission_depth, 0.0, 1.0);
 	emission_t = ease(emission_t, emission_depth_curve);
-	
+
 	mat4 emission_color_srgb = gradient_lin2srgb(emission_color);
 	vec3 emission_color_near = vec3(emission_color_srgb[0].x, emission_color_srgb[0].y, emission_color_srgb[0].z);
 	vec3 emission_color_far = vec3(emission_color_srgb[1].x, emission_color_srgb[1].y, emission_color_srgb[1].z);
 
 	vec3 final_lava = mix(lava_emission * emission_color_near.rgb, lava_emission * emission_color_far.rgb, emission_t);
-	
+
 	ALBEDO = vec3(0.0);
 	EMISSION = final_lava * emission_energy;
-	
+
 	ALPHA = 1.0;
 	ALPHA *= clamp(1.0 - smoothstep(world_pos.z + edge_fade, world_pos.z, VERTEX.z), 0.0, 1.0);
 }
