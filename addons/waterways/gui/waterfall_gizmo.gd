@@ -13,21 +13,36 @@ var _path_mat: Material
 
 
 func _init() -> void:
+	# Two materials for every handle type:
+	# 1) Transparent handle that is always shown (depth test disabled)
+	# 2) Opaque handle that is only shown above terrain (depth test enabled)
 	create_handle_material("handles")
 	create_handle_material("handles_width")
 	create_handle_material("handles_direction")
+	create_handle_material("handles_with_depth")
+	create_handle_material("handles_width_with_depth")
+	create_handle_material("handles_direction_with_depth")
 
 	var handles_mat := get_material("handles")
-	handles_mat.set_albedo(Color(1.0, 0.0, 0.0, 1.0))
-	handles_mat.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, false)
-
+	var handles_mat_wd := get_material("handles_with_depth")
 	var handles_width_mat := get_material("handles_width")
-	handles_width_mat.set_albedo(Color(0.0, 1.0, 1.0, 1.0))
-	handles_width_mat.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, false)
-
+	var handles_width_mat_wd := get_material("handles_width_with_depth")
 	var handles_direction_mat := get_material("handles_direction")
-	handles_direction_mat.set_albedo(Color(1.0, 0.5, 0.0, 1.0)) # Orange like river control points
-	handles_direction_mat.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, false)
+	var handles_direction_mat_wd := get_material("handles_direction_with_depth")
+
+	handles_mat.set_albedo(Color(1.0, 0.0, 0.0, 0.25))
+	handles_mat_wd.set_albedo(Color(1.0, 0.0, 0.0, 1.0))
+	handles_width_mat.set_albedo(Color(0.0, 1.0, 1.0, 0.25))
+	handles_width_mat_wd.set_albedo(Color(0.0, 1.0, 1.0, 1.0))
+	handles_direction_mat.set_albedo(Color(1.0, 0.5, 0.0, 0.25))
+	handles_direction_mat_wd.set_albedo(Color(1.0, 0.5, 0.0, 1.0))
+
+	handles_mat.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, true)
+	handles_mat_wd.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, false)
+	handles_width_mat.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, true)
+	handles_width_mat_wd.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, false)
+	handles_direction_mat.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, true)
+	handles_direction_mat_wd.set_flag(StandardMaterial3D.FLAG_DISABLE_DEPTH_TEST, false)
 
 	var mat = StandardMaterial3D.new()
 	mat.shading_mode = StandardMaterial3D.SHADING_MODE_UNSHADED
@@ -49,9 +64,9 @@ func _has_gizmo(node_3d) -> bool:
 func _get_handle_name(gizmo: EditorNode3DGizmo, index: int, secondary: bool) -> String:
 	if index < 2:
 		return "Position " + str(index)
-	if index < 4:
+	if index < 6:
 		return "Width " + str(index - 2)
-	return "Direction " + str(index - 4)
+	return "Direction " + str(index - 6)
 
 
 func _get_handle_value(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool):
@@ -60,13 +75,13 @@ func _get_handle_value(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool
 		return waterfall.points[0]
 	if handle_id == 1:
 		return waterfall.points[1]
-	if handle_id == 2:
+	if handle_id == 2 or handle_id == 3:
 		return waterfall.width_top
-	if handle_id == 3:
+	if handle_id == 4 or handle_id == 5:
 		return waterfall.width_bottom
-	if handle_id == 4:
+	if handle_id == 6:
 		return waterfall.direction_top
-	if handle_id == 5:
+	if handle_id == 7:
 		return waterfall.direction_bottom
 
 
@@ -110,15 +125,14 @@ func _set_handle(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool, came
 		var new_pos_local = waterfall.to_local(new_pos)
 		waterfall.set_point(handle_id, new_pos_local)
 
-	# Width handles (2, 3)
-	elif handle_id < 4:
-		var point_index = handle_id - 2
-		var base: Vector3 = waterfall.points[point_index]
-		var right_vector: Vector3
-		if point_index == 0:
-			right_vector = waterfall.get_right_vector_top()
-		else:
-			right_vector = waterfall.get_right_vector_bottom()
+	# Width handles (2-5): 2=top_right, 3=top_left, 4=bottom_right, 5=bottom_left
+	elif handle_id < 6:
+		var is_top := handle_id < 4
+		var is_left := (handle_id == 3 or handle_id == 5)
+		var base: Vector3 = waterfall.points[0] if is_top else waterfall.points[1]
+		var right_vector: Vector3 = waterfall.get_right_vector_top() if is_top else waterfall.get_right_vector_bottom()
+		if is_left:
+			right_vector = -right_vector
 
 		# Project ray onto the width axis
 		var p1 = base
@@ -130,15 +144,15 @@ func _set_handle(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool, came
 		var new_width = geo_points[0].distance_to(base)
 		new_width = max(new_width, MIN_WIDTH)
 
-		if point_index == 0:
+		if is_top:
 			waterfall.width_top = new_width
 		else:
 			waterfall.width_bottom = new_width
 		waterfall.properties_changed()
 
-	# Direction handles (4, 5)
+	# Direction handles (6, 7)
 	else:
-		var point_index = handle_id - 4
+		var point_index = handle_id - 6
 		var base: Vector3 = waterfall.points[point_index]
 		var base_global: Vector3 = waterfall.to_global(base)
 
@@ -173,16 +187,16 @@ func _commit_handle(gizmo: EditorNode3DGizmo, handle_id: int, secondary: bool, r
 	elif handle_id == 1:
 		ur.add_do_method(waterfall, "set_point", 1, waterfall.points[1])
 		ur.add_undo_method(waterfall, "set_point", 1, restore)
-	elif handle_id == 2:
+	elif handle_id == 2 or handle_id == 3:
 		ur.add_do_property(waterfall, "width_top", waterfall.width_top)
 		ur.add_undo_property(waterfall, "width_top", restore)
-	elif handle_id == 3:
+	elif handle_id == 4 or handle_id == 5:
 		ur.add_do_property(waterfall, "width_bottom", waterfall.width_bottom)
 		ur.add_undo_property(waterfall, "width_bottom", restore)
-	elif handle_id == 4:
+	elif handle_id == 6:
 		ur.add_do_property(waterfall, "direction_top", waterfall.direction_top)
 		ur.add_undo_property(waterfall, "direction_top", restore)
-	elif handle_id == 5:
+	elif handle_id == 7:
 		ur.add_do_property(waterfall, "direction_bottom", waterfall.direction_bottom)
 		ur.add_undo_property(waterfall, "direction_bottom", restore)
 
@@ -231,12 +245,16 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 	handles_pos.append(waterfall.points[0])
 	handles_pos.append(waterfall.points[1])
 
-	# Width handles (using actual right vectors)
+	# Width handles (both left and right sides)
 	var handles_width := PackedVector3Array()
-	var width_top_pos: Vector3 = waterfall.points[0] + right_top * waterfall.width_top
-	var width_bottom_pos: Vector3 = waterfall.points[1] + right_bottom * waterfall.width_bottom
-	handles_width.append(width_top_pos)
-	handles_width.append(width_bottom_pos)
+	var width_top_right: Vector3 = waterfall.points[0] + right_top * waterfall.width_top
+	var width_top_left: Vector3 = waterfall.points[0] - right_top * waterfall.width_top
+	var width_bottom_right: Vector3 = waterfall.points[1] + right_bottom * waterfall.width_bottom
+	var width_bottom_left: Vector3 = waterfall.points[1] - right_bottom * waterfall.width_bottom
+	handles_width.append(width_top_right)
+	handles_width.append(width_top_left)
+	handles_width.append(width_bottom_right)
+	handles_width.append(width_bottom_left)
 
 	# Direction handles (orange, showing flow direction)
 	var handles_direction := PackedVector3Array()
@@ -248,18 +266,26 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 	# Lines from center to handles
 	var lines := PackedVector3Array()
 	lines.append(waterfall.points[0])
-	lines.append(width_top_pos)
+	lines.append(width_top_right)
+	lines.append(waterfall.points[0])
+	lines.append(width_top_left)
 	lines.append(waterfall.points[1])
-	lines.append(width_bottom_pos)
+	lines.append(width_bottom_right)
+	lines.append(waterfall.points[1])
+	lines.append(width_bottom_left)
 	lines.append(waterfall.points[0])
 	lines.append(dir_top_pos)
 	lines.append(waterfall.points[1])
 	lines.append(dir_bottom_pos)
 
 	gizmo.add_lines(lines, _handle_lines_mat)
+	# Add each handle twice, for both material types (transparent always-visible + opaque with depth)
 	gizmo.add_handles(handles_pos, get_material("handles", gizmo), [])
 	gizmo.add_handles(handles_width, get_material("handles_width", gizmo), [])
 	gizmo.add_handles(handles_direction, get_material("handles_direction", gizmo), [])
+	gizmo.add_handles(handles_pos, get_material("handles_with_depth", gizmo), [])
+	gizmo.add_handles(handles_width, get_material("handles_width_with_depth", gizmo), [])
+	gizmo.add_handles(handles_direction, get_material("handles_direction_with_depth", gizmo), [])
 
 	if waterfall.has_signal("waterfall_changed") and not waterfall.is_connected("waterfall_changed", Callable(self, "_redraw")):
 		waterfall.waterfall_changed.connect(_redraw.bind(gizmo))
