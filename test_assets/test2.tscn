@@ -1,0 +1,95 @@
+[gd_scene load_steps=6 format=3 uid="uid://bq6mrc0matwx1"]
+
+[ext_resource type="Script" uid="uid://57l7k335edim" path="res://addons/waterways/water_system_manager.gd" id="1_k0al4"]
+[ext_resource type="Script" uid="uid://dgkoecpeeetdd" path="res://addons/waterways/waterfall_manager.gd" id="2_1x7pv"]
+[ext_resource type="Texture2D" uid="uid://b85tlq8wcklbo" path="res://addons/waterways/textures/water1_normal_bump.png" id="3_o2cck"]
+[ext_resource type="Shader" uid="uid://cuvnw2fmx6e6j" path="res://addons/waterways/shaders/river.gdshader" id="4_govfu"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_rt88p"]
+render_priority = 0
+shader = ExtResource("4_govfu")
+shader_parameter/normal_scale = 1.0
+shader_parameter/normal_bump_texture = ExtResource("3_o2cck")
+shader_parameter/uv_scale = Vector3(1, 1, 1)
+shader_parameter/roughness = 0.2
+shader_parameter/edge_fade = 0.25
+shader_parameter/albedo_color = Projection(0, 0.8, 1, 0, 0.15, 0.2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+shader_parameter/albedo_depth = 10.0
+shader_parameter/albedo_depth_curve = 0.25
+shader_parameter/transparency_clarity = 10.0
+shader_parameter/transparency_depth_curve = 0.25
+shader_parameter/transparency_refraction = 0.05
+shader_parameter/flow_speed = 1.0
+shader_parameter/flow_base = 0.0
+shader_parameter/flow_steepness = 2.0
+shader_parameter/flow_distance = 1.0
+shader_parameter/flow_pressure = 1.0
+shader_parameter/flow_max = 4.0
+shader_parameter/foam_color = Color(0.9, 0.9, 0.9, 1)
+shader_parameter/foam_amount = 2.0
+shader_parameter/foam_steepness = 2.0
+shader_parameter/foam_smoothness = 0.3
+shader_parameter/i_lod0_distance = 50.0
+shader_parameter/i_valid_flowmap = false
+shader_parameter/i_uv2_sides = 2
+
+[node name="Test2" type="Node3D"]
+
+[node name="WaterSystem" type="Node3D" parent="."]
+script = ExtResource("1_k0al4")
+system_map = null
+system_bake_resolution = 2
+system_group_name = "waterways_system"
+minimum_water_level = 0.0
+wet_group_name = "waterways_wet"
+surface_index = -1
+material_override = false
+_system_aabb = AABB(0, 0, 0, 0, 0, 0)
+metadata/_custom_type_script = "uid://57l7k335edim"
+
+[node name="Waterfall" type="Node3D" parent="WaterSystem"]
+script = ExtResource("2_1x7pv")
+line_sample_resolution = 100
+width_top = 1.0
+width_bottom = 1.0
+step_length_divs = 1
+step_width_divs = 1
+overshoot = 1.0
+mat_shader_type = 0
+mat_custom_shader = null
+mat_normal_scale = 1.0
+mat_normal_bump_texture = ExtResource("3_o2cck")
+mat_uv_scale = Vector3(1, 1, 1)
+mat_roughness = 0.2
+mat_edge_fade = 0.25
+mat_albedo_color = Projection(0, 0.8, 1, 0, 0.15, 0.2, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+mat_albedo_depth = 10.0
+mat_albedo_depth_curve = 0.25
+mat_transparency_clarity = 10.0
+mat_transparency_depth_curve = 0.25
+mat_transparency_refraction = 0.05
+mat_flow_speed = 1.0
+mat_flow_base = 0.0
+mat_flow_steepness = 2.0
+mat_flow_distance = 1.0
+mat_flow_pressure = 1.0
+mat_flow_max = 4.0
+mat_foam_color = Color(0.9, 0.9, 0.9, 1)
+mat_foam_amount = 2.0
+mat_foam_steepness = 2.0
+mat_foam_smoothness = 0.3
+points = PackedVector3Array(0, 4, 0, 0.46019888, -0.44082737, 9.138563)
+direction_top = Vector3(0, 0, 0)
+direction_bottom = Vector3(0, 0, 0)
+_material = SubResource("ShaderMaterial_rt88p")
+flow_foam_noise = null
+dist_pressure = null
+baking_resolution = 2
+baking_raycast_distance = 10.0
+baking_raycast_layers = 1
+baking_dilate = 0.6
+baking_flowmap_blur = 0.04
+baking_foam_cutoff = 0.9
+baking_foam_offset = 0.1
+baking_foam_blur = 0.02
+metadata/_custom_type_script = "uid://dgkoecpeeetdd"

@@ -1,10 +1,7 @@
 # Copyright © 2023 Kasper Arnklit Frandsen - MIT License
 # See `LICENSE.md` included in the source distribution for details.
 @tool
-extends Node3D
-
-const WaterHelperMethods = preload("./water_helper_methods.gd")
-const Constants = preload("./consts.gd")
+extends "res://addons/waterways/water_feature.gd"
 
 const DEFAULT_PARAMETERS = {
 	shape_step_length_divs = 1,
@@ -41,44 +38,20 @@ var mat_custom_shader: Shader:
 var lod_lod0_distance: float = 50.0:
 	set = set_lod0_distance
 
-# Bake Properties
-var baking_resolution: int = 2
-var baking_raycast_distance: float = 10.0
-var baking_raycast_layers: int = 1
-var baking_dilate: float = 0.6
-var baking_flowmap_blur: float = 0.04
-var baking_foam_cutoff: float = 0.9
-var baking_foam_offset: float = 0.1
-var baking_foam_blur: float = 0.02
-
 # Public variables
 var curve: Curve3D
 var widths: Array[float] = [1.0, 1.0]:
 	set = set_widths
-var valid_flowmap := false
 var debug_view: int = 0:
 	set = set_debug_view
 var mesh_instance: MeshInstance3D
-var flow_foam_noise: Texture2D
-var dist_pressure: Texture2D
 
 # Private variables
-var _steps: int = 2
 var _st: SurfaceTool
 var _mdt: MeshDataTool
-var _debug_material: ShaderMaterial
-var _first_enter_tree := true
-var _filter_renderer: PackedScene
-
-# Serialised private variables
-var _material: ShaderMaterial
 var _selected_shader: int = Constants.SHADER_TYPES.WATER
-var _uv2_sides: int
 
-signal river_changed # Used to update handles when values are changed on script side
-signal progress_notified # Used to update progress bar when baking maps
-# albedo_set is needed since the gradient is a custom inspector that needs a signal to update from script side
-#signal albedo_set
+signal river_changed
 
 
 # Internal Methods

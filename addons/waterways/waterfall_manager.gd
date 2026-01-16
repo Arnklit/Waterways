@@ -1,8 +1,5 @@
 @tool
-extends Node3D
-
-const WaterHelperMethods = preload("./water_helper_methods.gd")
-const Constants = preload("./consts.gd")
+extends "res://addons/waterways/water_feature.gd"
 
 const DEFAULT_PARAMETERS = {
 	line_sample_resolution = 100,
@@ -43,9 +40,6 @@ var overshoot: float = 1.60158:
 
 var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)])
 
-var valid_flowmap := false
-var flow_foam_noise: Texture2D
-var dist_pressure: Texture2D
 var debug_view: int = 0:
 	set = set_debug_view
 
@@ -59,28 +53,11 @@ var mat_shader_type: Constants.SHADER_TYPES:
 var mat_custom_shader: Shader:
 	set = set_custom_shader
 
-# Bake Properties
-var baking_resolution: int = 2
-var baking_raycast_distance: float = 10.0
-var baking_raycast_layers: int = 1
-var baking_dilate: float = 0.6
-var baking_flowmap_blur: float = 0.04
-var baking_foam_cutoff: float = 0.9
-var baking_foam_offset: float = 0.1
-var baking_foam_blur: float = 0.02
-
-var _filter_renderer: PackedScene
-var _material: ShaderMaterial
-var _debug_material: ShaderMaterial
 var _st: SurfaceTool
 var _mdt: MeshDataTool
-var _steps := 2
-var _first_enter_tree = true
-var _uv2_sides: int
 var _mesh_instance: MeshInstance3D
 
 signal waterfall_changed
-signal progress_notified # Used to update progress bar when baking maps
 
 
 func _set(property: StringName, value) -> bool:
