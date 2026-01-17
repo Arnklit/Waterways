@@ -228,6 +228,14 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 	gizmo.clear()
 
 	var waterfall: WaterfallManager = gizmo.get_node_3d()
+
+	# Add collision triangles for editor selection
+	var mesh_instance := waterfall.get_mesh_instance()
+	if mesh_instance and mesh_instance.mesh:
+		var tri_mesh := mesh_instance.mesh.generate_triangle_mesh()
+		if tri_mesh:
+			gizmo.add_collision_triangles(tri_mesh)
+
 	_draw_path(gizmo, waterfall)
 	var right_top := waterfall.get_right_vector_top()
 	var right_bottom := waterfall.get_right_vector_bottom()
