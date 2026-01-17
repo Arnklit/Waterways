@@ -1,5 +1,8 @@
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 @tool
 extends SubViewport
+
 
 const DILATE_PASS1_PATH = "res://addons/waterways/shaders/filters/dilate_filter_pass1.gdshader"
 const DILATE_PASS2_PATH = "res://addons/waterways/shaders/filters/dilate_filter_pass2.gdshader"
@@ -13,19 +16,20 @@ const COMBINE_PASS_PATH = "res://addons/waterways/shaders/filters/combine_pass.g
 const DOTPRODUCT_PASS_PATH = "res://addons/waterways/shaders/filters/dotproduct.gdshader"
 const FLOW_PRESSURE_PASS_PATH = "res://addons/waterways/shaders/filters/flow_pressure_pass.gdshader"
 
-var dilate_pass_1_shader: Shader
-var dilate_pass_2_shader: Shader
-var dilate_pass_3_shader: Shader
-var normal_map_pass_shader: Shader
-var normal_to_flow_pass_shader: Shader
-var blur_pass1_shader: Shader
-var blur_pass2_shader: Shader
-var foam_pass_shader: Shader
-var combine_pass_shader: Shader
-var dotproduct_pass_shader: Shader
-var flow_pressure_pass_shader: Shader
 
-var filter_mat: ShaderMaterial
+var dilate_pass_1_shader : Shader
+var dilate_pass_2_shader : Shader
+var dilate_pass_3_shader : Shader
+var normal_map_pass_shader : Shader
+var normal_to_flow_pass_shader : Shader
+var blur_pass1_shader : Shader
+var blur_pass2_shader : Shader
+var foam_pass_shader : Shader
+var combine_pass_shader : Shader
+var dotproduct_pass_shader : Shader
+var flow_pressure_pass_shader : Shader
+
+var filter_mat : ShaderMaterial
 
 
 func _enter_tree() -> void:
@@ -40,13 +44,13 @@ func _enter_tree() -> void:
 	combine_pass_shader = load(COMBINE_PASS_PATH) as Shader
 	dotproduct_pass_shader = load(DOTPRODUCT_PASS_PATH) as Shader
 	flow_pressure_pass_shader = load(FLOW_PRESSURE_PASS_PATH) as Shader
-
+	
 	filter_mat = ShaderMaterial.new()
-
+	
 	$ColorRect.material = filter_mat
 
 
-func apply_combine(r_texture: Texture2D, g_texture: Texture2D, b_texture: Texture2D = null, a_texture: Texture2D = null) -> ImageTexture:
+func apply_combine(r_texture : Texture2D, g_texture : Texture2D, b_texture : Texture2D = null, a_texture : Texture2D = null) -> ImageTexture:
 	filter_mat.shader = combine_pass_shader
 	size = r_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -58,13 +62,13 @@ func apply_combine(r_texture: Texture2D, g_texture: Texture2D, b_texture: Textur
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
-
+	var image : Image = get_texture().get_image()
+	
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_dotproduct(input_texture: Texture2D, resolution: float) -> ImageTexture:
+func apply_dotproduct(input_texture : Texture2D, resolution : float) -> ImageTexture:
 	filter_mat.shader = dotproduct_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -73,13 +77,13 @@ func apply_dotproduct(input_texture: Texture2D, resolution: float) -> ImageTextu
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
-
+	var image : Image = get_texture().get_image()
+	
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_flow_pressure(input_texture: Texture2D, resolution: float, rows: float) -> ImageTexture:
+func apply_flow_pressure(input_texture : Texture2D, resolution : float, rows : float) -> ImageTexture:
 	filter_mat.shader = flow_pressure_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -91,13 +95,13 @@ func apply_flow_pressure(input_texture: Texture2D, resolution: float, rows: floa
 	await get_tree().process_frame
 	await get_tree().process_frame
 	#await RenderingServer.frame_post_draw - TODO, replace with these?
-	var image: Image = get_texture().get_image()
-
+	var image : Image = get_texture().get_image()
+	
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_foam(input_texture: Texture2D, distance: float, cutoff: float, resolution: float) -> ImageTexture:
+func apply_foam(input_texture : Texture2D, distance : float, cutoff : float, resolution : float) -> ImageTexture:
 	filter_mat.shader = foam_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -109,13 +113,13 @@ func apply_foam(input_texture: Texture2D, distance: float, cutoff: float, resolu
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
-
+	var image : Image = get_texture().get_image()
+	
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_blur(input_texture: Texture2D, blur: float, resolution: float) -> ImageTexture:
+func apply_blur(input_texture : Texture2D, blur : float, resolution : float) -> ImageTexture:
 	filter_mat.shader = blur_pass1_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -126,7 +130,7 @@ func apply_blur(input_texture: Texture2D, blur: float, resolution: float) -> Ima
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
+	var image : Image = get_texture().get_image()
 	var pass1_result := ImageTexture.create_from_image(image)
 	# Pass 2
 	filter_mat.shader = blur_pass2_shader
@@ -136,13 +140,13 @@ func apply_blur(input_texture: Texture2D, blur: float, resolution: float) -> Ima
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image2: Image = get_texture().get_image()
-
+	var image2 : Image = get_texture().get_image()
+	
 	var pass2_result := ImageTexture.create_from_image(image2)
 	return pass2_result
 
 
-func apply_vertical_blur(input_texture: Texture2D, blur: float, resolution: float) -> ImageTexture:
+func apply_vertical_blur(input_texture : Texture2D, blur : float, resolution : float) -> ImageTexture:
 	filter_mat.shader = blur_pass2_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -153,12 +157,12 @@ func apply_vertical_blur(input_texture: Texture2D, blur: float, resolution: floa
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
+	var image : Image = get_texture().get_image()
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_normal_to_flow(input_texture: Texture2D, resolution: float) -> ImageTexture:
+func apply_normal_to_flow(input_texture : Texture2D, resolution : float) -> ImageTexture:
 	filter_mat.shader = normal_to_flow_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -168,13 +172,13 @@ func apply_normal_to_flow(input_texture: Texture2D, resolution: float) -> ImageT
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
-
+	var image : Image = get_texture().get_image()
+	
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_normal(input_texture: Texture2D, resolution: float) -> ImageTexture:
+func apply_normal(input_texture : Texture2D, resolution : float) -> ImageTexture:
 	filter_mat.shader = normal_map_pass_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -185,12 +189,12 @@ func apply_normal(input_texture: Texture2D, resolution: float) -> ImageTexture:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	var image = get_texture().get_image()
-
+	
 	var result := ImageTexture.create_from_image(image)
 	return result
 
 
-func apply_dilate(input_texture: Texture2D, dilation: float, fill: float, resolution: float, fill_texture: Texture2D = null) -> ImageTexture:
+func apply_dilate(input_texture : Texture2D, dilation: float, fill: float, resolution: float, fill_texture: Texture2D = null) -> ImageTexture:
 	filter_mat.shader = dilate_pass_1_shader
 	size = input_texture.get_size()
 	$ColorRect.position = Vector2(0, 0)
@@ -201,7 +205,7 @@ func apply_dilate(input_texture: Texture2D, dilation: float, fill: float, resolu
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image: Image = get_texture().get_image()
+	var image : Image = get_texture().get_image()
 	var pass1_result := ImageTexture.create_from_image(image)
 	# Pass 2
 	filter_mat.shader = dilate_pass_2_shader
@@ -211,9 +215,9 @@ func apply_dilate(input_texture: Texture2D, dilation: float, fill: float, resolu
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image2: Image = get_texture().get_image()
+	var image2 : Image = get_texture().get_image()
 	var pass2_result := ImageTexture.create_from_image(image2)
-	#	return pass2_result
+#	return pass2_result
 	# Pass 3
 	filter_mat.shader = dilate_pass_3_shader
 	$ColorRect.material.set_shader_parameter("distance_texture", pass2_result)
@@ -224,6 +228,6 @@ func apply_dilate(input_texture: Texture2D, dilation: float, fill: float, resolu
 	render_target_update_mode = SubViewport.UPDATE_ONCE
 	await get_tree().process_frame
 	await get_tree().process_frame
-	var image3: Image = get_texture().get_image()
+	var image3 : Image = get_texture().get_image()
 	var pass3_result := ImageTexture.create_from_image(image3)
 	return pass3_result

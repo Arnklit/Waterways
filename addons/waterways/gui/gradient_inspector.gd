@@ -1,3 +1,5 @@
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 @tool
 extends HBoxContainer
 
@@ -6,7 +8,7 @@ extends HBoxContainer
 @onready var gradient := $Gradient as ColorRect
 
 
-func set_value(new_gradient: Projection):
+func set_value(new_gradient : Projection):
 	color1.color = Color(new_gradient[0].x, new_gradient[0].y, new_gradient[0].z)
 	color2.color = Color(new_gradient[1].x, new_gradient[1].y, new_gradient[1].z)
 	gradient.material.set_shader_parameter("color1", color1.color)

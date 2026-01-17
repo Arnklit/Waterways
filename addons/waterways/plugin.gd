@@ -105,21 +105,6 @@ func _handles(node):
 	return false
 
 
-# func _edit(p_object: Object) -> void:
-# 	if !p_object:
-# 		_clear()
-
-# 	if p_object == _edited_node:
-# 		return
-
-# 	# TODO
-# 	if p_object is RiverManager:
-# 		return
-# 	else:
-# 		_clear()
-
-
-
 func _on_selection_change() -> void:
 	_editor_selection = get_editor_interface().get_selection()
 	var selected = _editor_selection.get_selected_nodes()

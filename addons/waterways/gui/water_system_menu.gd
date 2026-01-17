@@ -1,10 +1,12 @@
+# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
+# See `LICENSE.md` included in the source distribution for details.
 @tool
 extends MenuButton
 
 signal generate_system_maps
 
 enum RIVER_MENU {
-	GENERATE_SYSTEM_MAPS,
+	GENERATE_SYSTEM_MAPS
 }
 
 
@@ -18,7 +20,7 @@ func _exit_tree() -> void:
 	get_popup().disconnect("id_pressed", Callable(self, "_menu_item_selected"))
 
 
-func _menu_item_selected(index: int) -> void:
+func _menu_item_selected(index : int) -> void:
 	match index:
 		RIVER_MENU.GENERATE_SYSTEM_MAPS:
 			emit_signal("generate_system_maps")
