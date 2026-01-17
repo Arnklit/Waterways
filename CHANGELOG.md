@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.0
+-----
+- Waterfall component polished for release
+- Nodes are now selectable from the viewport 
+
 0.2.1
 -----
 - New axis constraints for adding and moving river curve points (implemented by Winston)

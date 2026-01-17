@@ -28,7 +28,6 @@ var _heightmap_renderer = null
 var _mode := "select"
 var constraint: int = RiverControls.CONSTRAINTS.NONE
 var local_editing := false
-var selection_locked := false
 
 
 func _enter_tree() -> void:
@@ -49,7 +48,6 @@ func _enter_tree() -> void:
 	_gui_manager.connect("generate_mesh_pressed", Callable(self, "_on_generate_mesh_pressed"))
 	_gui_manager.connect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
 	_gui_manager.connect("generate_system_maps_pressed", Callable(self, "_on_generate_system_maps_pressed"))
-	_gui_manager.connect("selection_lock_cleared", Callable(self, "_on_selection_lock_cleared"))
 
 	var river_controls = _gui_manager.get_river_controls()
 	river_controls.connect("mode", Callable(self, "_on_mode_change"))
@@ -74,9 +72,6 @@ func _on_debug_view_changed(index : int) -> void:
 
 func _on_generate_system_maps_pressed() -> void:
 	_edited_node.generate_system_maps()
-
-func _on_selection_lock_cleared() -> void:
-	selection_locked = false
 
 func _exit_tree() -> void:
 	remove_custom_type("River")
@@ -129,12 +124,6 @@ func _on_selection_change() -> void:
 	_editor_selection = get_editor_interface().get_selection()
 	var selected = _editor_selection.get_selected_nodes()
 
-	# If selection is locked by the plugin
-	if selection_locked:
-		_editor_selection.clear()
-		_editor_selection.add_node(_edited_node)
-		return
-
 	_gui_manager.hide_all_control_panels()
 
 	if len(selected) == 0:
@@ -172,8 +161,6 @@ func _on_option_change(option, value) -> void:
 			pass
 	elif option == "local_mode":
 		local_editing = value
-	elif option == "lock_selection":
-		selection_locked = value
 
 
 func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:

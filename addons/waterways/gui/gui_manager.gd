@@ -5,7 +5,6 @@ signal generate_flowmap_pressed
 signal generate_mesh_pressed
 signal debug_view_changed(index: int)
 signal generate_system_maps_pressed
-signal selection_lock_cleared
 
 var _river_controls = preload("./river_controls.tscn").instantiate()
 var _waterfall_controls = preload("./waterfall_controls.tscn").instantiate()
@@ -49,10 +48,6 @@ func hide_river_control_panel() -> void:
 		_river_controls.menu.disconnect("generate_flowmap", _on_generate_flowmap_pressed)
 		_river_controls.menu.disconnect("generate_mesh", _on_generate_mesh_pressed)
 		_river_controls.menu.disconnect("debug_view_changed", _on_debug_view_changed)
-
-		if _river_controls.lock_selection:
-			_river_controls.lock_selection.button_pressed = false
-		emit_signal("selection_lock_cleared")
 
 
 func show_water_system_control_panel() -> void:
