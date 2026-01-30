@@ -7,6 +7,7 @@ addons/Todo_Manager/
 .import/
 export.cfg
 export_presets.cfg
+*.tmp
 
 # Mono-specific ignores
 .mono/

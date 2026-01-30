@@ -6,20 +6,21 @@ extends EditorPlugin
 const WaterHelperMethods = preload("./water_helper_methods.gd")
 const WaterSystem = preload("./water_system_manager.gd")
 const RiverManager = preload("./river_manager.gd")
-const WaterfallManager = preload("./waterfall_manager.gd")
-const WaterfallConfiguration = preload("./waterfall_configuration.gd")
 const RiverGizmo = preload("./gui/river_gizmo.gd")
+const WaterfallManager = preload("./waterfall_manager.gd")
 const WaterfallGizmo = preload("./gui/waterfall_gizmo.gd")
 const InspectorPlugin = preload("./inspector_plugin.gd")
 const ProgressWindow = preload("./gui/progress_window.tscn")
 const RiverControls = preload("./gui/river_controls.gd")
+const GuiManager = preload("./gui/gui_manager.gd")
+const RiverIcon = preload("./icons/river.svg")
+const SystemIcon = preload("./icons/system.svg")
 
 var river_gizmo: RiverGizmo = RiverGizmo.new()
 var waterfall_gizmo: WaterfallGizmo = WaterfallGizmo.new()
 var gradient_inspector: InspectorPlugin = InspectorPlugin.new()
+var _gui_manager: GuiManager = null
 
-var _river_controls = preload("./gui/river_controls.tscn").instantiate()
-var _water_system_controls = preload("./gui/water_system_controls.tscn").instantiate()
 var _edited_node = null
 var _progress_window = null
 var _editor_selection : EditorSelection = null
@@ -27,24 +28,33 @@ var _heightmap_renderer = null
 var _mode := "select"
 var constraint: int = RiverControls.CONSTRAINTS.NONE
 var local_editing := false
-var selection_locked := false
 
 
 func _enter_tree() -> void:
-	add_custom_type("River", "Node3D",RiverManager, preload("./icons/river.svg"))
-	add_custom_type("Waterfall", "Node3D", WaterfallManager, preload("./icons/river.svg"))
-	add_custom_type("WaterfallConfiguration", "Resource", WaterfallConfiguration, preload("./icons/river.svg"))
-	add_custom_type("WaterSystem", "Node3D", preload("./water_system_manager.gd"), preload("./icons/system.svg"))
+	add_custom_type("River", "Node3D", RiverManager, RiverIcon)
+	add_custom_type("Waterfall", "Node3D", WaterfallManager, RiverIcon)
+	add_custom_type("WaterSystem", "Node3D", WaterSystem, SystemIcon)
 	add_custom_type("Buoyant", "Node3D", preload("./buoyant_manager.gd"), preload("./icons/buoyant.svg"))
+
 	add_node_3d_gizmo_plugin(river_gizmo)
 	add_node_3d_gizmo_plugin(waterfall_gizmo)
 	add_inspector_plugin(gradient_inspector)
+
 	river_gizmo.editor_plugin = self
 	waterfall_gizmo.editor_plugin = self
-	_river_controls.connect("mode", Callable(self, "_on_mode_change"))
-	_river_controls.connect("options", Callable(self, "_on_option_change"))
+
+	_gui_manager = GuiManager.new(self)
+	_gui_manager.connect("generate_flowmap_pressed", Callable(self, "_on_generate_flowmap_pressed"))
+	_gui_manager.connect("generate_mesh_pressed", Callable(self, "_on_generate_mesh_pressed"))
+	_gui_manager.connect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
+	_gui_manager.connect("generate_system_maps_pressed", Callable(self, "_on_generate_system_maps_pressed"))
+
+	var river_controls = _gui_manager.get_river_controls()
+	river_controls.connect("mode", Callable(self, "_on_mode_change"))
+	river_controls.connect("options", Callable(self, "_on_option_change"))
 	_progress_window = ProgressWindow.instantiate()
-	_river_controls.add_child(_progress_window)
+	river_controls.add_child(_progress_window)
+
 	_editor_selection = get_editor_interface().get_selection()
 	_editor_selection.connect("selection_changed", Callable(self, "_on_selection_change"))
 	scene_changed.connect(_on_scene_changed)
@@ -54,101 +64,78 @@ func _enter_tree() -> void:
 func _on_generate_flowmap_pressed() -> void:
 	_edited_node.bake_texture()
 
-
 func _on_generate_mesh_pressed() -> void:
 	_edited_node.spawn_mesh()
-
 
 func _on_debug_view_changed(index : int) -> void:
 	_edited_node.set_debug_view(index)
 
-
 func _on_generate_system_maps_pressed() -> void:
 	_edited_node.generate_system_maps()
-
 
 func _exit_tree() -> void:
 	remove_custom_type("River")
 	remove_custom_type("Waterfall")
-	remove_custom_type("WaterfallConfiguration")
 	remove_custom_type("WaterSystem")
 	remove_custom_type("Buoyant")
+
 	remove_node_3d_gizmo_plugin(river_gizmo)
 	remove_node_3d_gizmo_plugin(waterfall_gizmo)
+
 	remove_inspector_plugin(gradient_inspector)
-	_river_controls.disconnect("mode", Callable(self, "_on_mode_change"))
-	_river_controls.disconnect("options", Callable(self, "_on_option_change"))
+
+	var river_controls = _gui_manager.get_river_controls()
+	river_controls.disconnect("mode", Callable(self, "_on_mode_change"))
+	river_controls.disconnect("options", Callable(self, "_on_option_change"))
 	_editor_selection.disconnect("selection_changed", Callable(self, "_on_selection_change"))
+
 	disconnect("scene_changed", Callable(self, "_on_scene_changed"));
 	disconnect("scene_closed", Callable(self, "_on_scene_closed"));
-	_hide_river_control_panel()
-	_hide_water_system_control_panel()
+
+	_gui_manager.hide_all_control_panels()
 
 
 func _handles(node):
-	return node is RiverManager or node is WaterfallManager or node is WaterSystem
-
-
-# TODO - I think this was commented out for 4.0 conversion and isn't needed anymore
-#func _edit(node):
-#	print("edit(), node is: ", node)
-#	if node is RiverManager:
-#		_show_river_control_panel()
-#		_edited_node = node as RiverManager
-#	if node is WaterSystem:
-#		_show_water_system_control_panel()
-#		_edited_node = node as WaterSystem
+	if node is RiverManager:
+		return true
+	if node is WaterfallManager:
+		return true
+	if node is WaterSystem:
+		return true
+	return false
 
 
 func _on_selection_change() -> void:
 	_editor_selection = get_editor_interface().get_selection()
 	var selected = _editor_selection.get_selected_nodes()
 
-	# If selection is locked to a river, revert any selection change
-	if selection_locked and _edited_node is RiverManager:
-		if len(selected) == 0 or selected[0] != _edited_node:
-			_editor_selection.clear()
-			_editor_selection.add_node(_edited_node)
-			_show_river_control_panel()
-			_edited_node = selected[0] as RiverManager
-			_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
-			if not _edited_node.is_connected("progress_notified", Callable(self, "_river_progress_notified")):
-				_edited_node.connect("progress_notified", Callable(self, "_river_progress_notified"))
-			return
-
-	_hide_water_system_control_panel()
-	_hide_river_control_panel()
+	_gui_manager.hide_all_control_panels()
 
 	if len(selected) == 0:
 		return
+
 	if selected[0] is RiverManager:
-		_show_river_control_panel()
+		_gui_manager.show_river_control_panel()
 		_edited_node = selected[0] as RiverManager
-		_river_controls.menu.debug_view_menu_selected = _edited_node.debug_view
+		_gui_manager.get_river_controls().menu.debug_view_menu_selected = _edited_node.debug_view
 		if not _edited_node.is_connected("progress_notified", Callable(self, "_river_progress_notified")):
 			_edited_node.connect("progress_notified", Callable(self, "_river_progress_notified"))
 	elif selected[0] is WaterfallManager:
-		_edited_node = selected[0] as WaterfallManager
+		_gui_manager.show_waterfall_control_panel()
+		_edited_node = selected[0]
 	elif selected[0] is WaterSystem:
-		_show_water_system_control_panel()
-		_edited_node = selected[0] as WaterSystem
-	else:
-		_edited_node = null
+		_gui_manager.show_water_system_control_panel()
+		_edited_node = selected[0]
 
 
-func _on_scene_changed(scene_root) -> void:
-	_hide_river_control_panel()
-	_hide_water_system_control_panel()
-
+func _on_scene_changed(_scene_root) -> void:
+	_gui_manager.hide_all_control_panels()
 
 func _on_scene_closed(_value) -> void:
-	_hide_river_control_panel()
-	_hide_water_system_control_panel()
-
+	_gui_manager.hide_all_control_panels()
 
 func _on_mode_change(mode) -> void:
 	_mode = mode
-
 
 func _on_option_change(option, value) -> void:
 	if option == "constraint":
@@ -159,8 +146,6 @@ func _on_option_change(option, value) -> void:
 			pass
 	elif option == "local_mode":
 		local_editing = value
-	elif option == "lock_selection":
-		selection_locked = value
 
 
 func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
@@ -169,10 +154,11 @@ func _forward_3d_gui_input(camera: Camera3D, event: InputEvent) -> int:
 
 	if _edited_node is RiverManager:
 		return _forward_3d_gui_input_river(camera, event)
-	elif _edited_node is WaterfallManager:
-		return AFTER_GUI_INPUT_PASS
+	if _edited_node is WaterfallManager:
+		return _forward_3d_gui_input_waterfall(camera, event)
 
 	return AFTER_GUI_INPUT_PASS
+
 
 
 func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
@@ -230,6 +216,7 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 			if not event.pressed:
 				river_gizmo.reset()
 			return AFTER_GUI_INPUT_PASS
+
 		if _mode == "add" and not event.pressed:
 			# if we don't have a point on the line, we'll calculate a point
 			# based of a plane of the last point of the curve
@@ -320,57 +307,39 @@ func _forward_3d_gui_input_river(camera: Camera3D, event: InputEvent) -> int:
 				ur.commit_action()
 		return AFTER_GUI_INPUT_STOP
 
-	elif _edited_node is RiverManager:
+	if _edited_node is RiverManager:
 		# Forward input to river controls. This is cleaner than handling
 		# the keybindings here as the keybindings need to interact with
 		# the buttons. Handling it here would expose more private details
 		# of the controls than needed, instead only the spatial_gui_input()
 		# method needs to be exposed.
 		# TODO - so this was returning a bool before? Check this
-		return _river_controls.spatial_gui_input(event)
+		return _gui_manager.get_river_controls().spatial_gui_input(event)
+
 	return AFTER_GUI_INPUT_PASS
+
+
+func _forward_3d_gui_input_waterfall(_camera: Camera3D, _event: InputEvent) -> int:
+	var waterfall: WaterfallManager = _edited_node
+	var global_transform: Transform3D = waterfall.transform
+
+	return AFTER_GUI_INPUT_PASS
+
+
+func _find_all_rivers(node: Node) -> Array[RiverManager]:
+	var rivers: Array[RiverManager] = []
+	if node is RiverManager:
+		rivers.append(node)
+	for child in node.get_children():
+		rivers.append_array(_find_all_rivers(child))
+	return rivers
 
 
 func _river_progress_notified(progress : float, message : String) -> void:
 	if message == "finished":
 		_progress_window.hide()
-
 	else:
 		if not _progress_window.visible:
 			_progress_window.popup_centered()
 
 		_progress_window.show_progress(message, progress)
-
-
-func _show_river_control_panel() -> void:
-	if not _river_controls.get_parent():
-		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
-		_river_controls.menu.connect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
-		_river_controls.menu.connect("generate_mesh", Callable(self, "_on_generate_mesh_pressed"))
-		_river_controls.menu.connect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
-
-
-func _hide_river_control_panel() -> void:
-	if _river_controls.get_parent():
-		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _river_controls)
-		_river_controls.menu.disconnect("generate_flowmap", Callable(self, "_on_generate_flowmap_pressed"))
-		_river_controls.menu.disconnect("generate_mesh", Callable(self, "_on_generate_mesh_pressed"))
-		_river_controls.menu.disconnect("debug_view_changed", Callable(self, "_on_debug_view_changed"))
-
-		if _river_controls.lock_selection:
-			_river_controls.lock_selection.button_pressed = false
-
-		if selection_locked:
-			selection_locked = false
-
-
-func _show_water_system_control_panel() -> void:
-	if not _water_system_controls.get_parent():
-		add_control_to_container(CONTAINER_SPATIAL_EDITOR_MENU, _water_system_controls)
-		_water_system_controls.menu.connect("generate_system_maps", Callable(self, "_on_generate_system_maps_pressed"))
-
-
-func _hide_water_system_control_panel() -> void:
-	if _water_system_controls.get_parent():
-		remove_control_from_container(CONTAINER_SPATIAL_EDITOR_MENU, _water_system_controls)
-		_water_system_controls.menu.disconnect("generate_system_maps", Callable(self, "_on_generate_system_maps_pressed"))

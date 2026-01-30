@@ -7,13 +7,19 @@ const SystemMapRenderer = preload("./system_map_renderer.tscn")
 const FilterRenderer = preload("./filter_renderer.tscn")
 const RiverManager = preload("./river_manager.gd")
 
+## The baked system maps texture
 var system_map : ImageTexture = null: set = set_system_map
+## The resolution of the system maps
 var system_bake_resolution := 2
+## This group name is assigned at runtime, it is used by the Buoyant node to find the WaterSystem. If you only have one WaterSystem, you can just leave this be.
 var system_group_name := "waterways_system"
+## This is the value returned when an object queries the Water System heightmap, but hits outside the baked height data.
 var minimum_water_level := 0.0
-# Auto assign
+## Subcategory for auto assign setting, used to send the system map and coordinates to materials to be used in shaders
 var wet_group_name := "waterways_wet"
+## The surface index the material you want to send the maps to is set on the MeshInstance, -1 means disabled.
 var surface_index := -1
+## If the material is instead set as a Material Override, check this box for the maps to be assigned there.
 var material_override := false
 
 var _system_aabb : AABB
@@ -100,36 +106,36 @@ func _get_property_list() -> Array:
 
 func generate_system_maps() -> void:
 	var rivers: Array[RiverManager]
-	
+
 	for child in get_children():
 		if child is RiverManager:
 			rivers.append(child)
-	
+
 	# We need to make the aabb out of the first river, so we don't include 0,0
 	if rivers.size() > 0:
 		_system_aabb = rivers[0].get_transformed_aabb()
-	
+
 	for river in rivers:
 		var river_aabb = river.get_transformed_aabb()
 		_system_aabb = _system_aabb.merge(river_aabb)
 	print(_system_aabb)
-	
+
 	var renderer = SystemMapRenderer.instantiate()
 	add_child(renderer)
 	var resolution := pow(2, system_bake_resolution + 7)
 	var flow_map: ImageTexture = await renderer.grab_flow(rivers, _system_aabb, resolution)
 	var height_map: ImageTexture = await renderer.grab_height(rivers, _system_aabb, resolution)
 	var alpha_map: ImageTexture = await renderer.grab_alpha(rivers, _system_aabb, resolution)
-	
+
 	remove_child(renderer)
-	
+
 	var filter_renderer = FilterRenderer.instantiate()
 	add_child(filter_renderer)
-	
+
 	system_map = await filter_renderer.apply_combine(flow_map, flow_map, height_map) as ImageTexture
-	
+
 	remove_child(filter_renderer)
-	
+
 	# give the map and coordinates to all nodes in the wet_group
 	var wet_nodes = get_tree().get_nodes_in_group(wet_group_name)
 	for node in wet_nodes:
@@ -139,7 +145,7 @@ func generate_system_maps() -> void:
 				material = node.get_surface_override_material(surface_index)
 		if material_override:
 			material = node.material_override
-		
+
 		if material != null:
 			material.set_shader_parameter("water_systemmap", system_map)
 			material.set_shader_parameter("water_systemmap_coords", get_system_map_coordinates())
@@ -156,7 +162,7 @@ func get_water_altitude(query_pos : Vector3) -> float:
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
 		# We are outside the aabb of the Water System
 		return min(query_pos.y, minimum_water_level)
-	
+
 	pos_2d = pos_2d * _system_img.get_width()
 	var col : Color = _system_img.get_pixelv(pos_2d)
 	if col == Color(0, 0, 0, 1):
@@ -176,14 +182,14 @@ func get_water_flow(query_pos : Vector3) -> Vector3:
 	pos_2d = pos_2d / _system_aabb.get_longest_axis_size()
 	if pos_2d.x > 1.0 or pos_2d.x < 0.0 or pos_2d.y > 1.0 or pos_2d.y < 0.0:
 		return Vector3.ZERO
-	
+
 	pos_2d = pos_2d * _system_img.get_width()
 	var col = _system_img.get_pixelv(pos_2d)
-	
+
 	if col == Color(0, 0, 0, 1):
 		# We hit the empty part of the System Map
 		return Vector3.ZERO
-	
+
 	var flow = Vector3(col.r, 0.5, col.g) * 2.0 - Vector3(1.0, 1.0, 1.0)
 	return flow
 

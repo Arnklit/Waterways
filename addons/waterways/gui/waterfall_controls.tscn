@@ -1,0 +1,14 @@
+[gd_scene load_steps=3 format=3 uid="uid://dorqj61wirtnh"]
+
+[ext_resource type="Script" uid="uid://dmf7pg68pcttl" path="res://addons/waterways/gui/waterfall_controls.gd" id="2_script"]
+[ext_resource type="Script" path="res://addons/waterways/gui/waterfall_menu.gd" id="3_menu_script"]
+
+[node name="HBoxContainer" type="HBoxContainer"]
+offset_right = 128.0
+offset_bottom = 26.0
+script = ExtResource("2_script")
+
+[node name="WaterfallMenu" type="MenuButton" parent="."]
+layout_mode = 2
+text = "Waterfall"
+script = ExtResource("3_menu_script")

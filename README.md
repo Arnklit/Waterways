@@ -2,7 +2,7 @@
 
 [![Waterways Add-on for Godot v0.1.0 Released - Feature Overview](https://raw.githubusercontent.com/Arnklit/media/main/WaterWaysAdd-on/screenshot01.jpg)](https://youtu.be/t54jUPFtRO8 "Waterways Add-on for Godot v0.1.0 Released - Feature Overview")
 
-A tool to generate river meshes with flow and foam maps based on bezier curves. Try out the [demo project](https://github.com/Arnklit/WaterGenGodotDemo) for an example.
+A tool to generate river meshes with flow and foam maps based on bezier curves.
 
 [Discord Server](https://discord.gg/mjGvWwQwv2)
 
@@ -16,6 +16,29 @@ Purpose
 -------
 I've been very impressed with examples of using flowmaps to imitate water simulations in games for a while, but most of the implementations I've seen were using either manually painted flowmaps, or flowmaps generated in an external program. I wanted to see if it was possible to have good flowmap results purely generated within Godot. Both the generation of the flowmaps and the generation of the mesh for the river was of interest to me and I've learned a lot implementing my solution.
 
+Godot Version Support
+----------
+Use the table below to determine which branch to use for your Godot version.
+
+Note that newer updates are not made available in previous branches. The latest updates are pushed to the latest version branch.
+
+| Godot Version | Supported | Branch |
+| ------------- | --------- | --------- |
+| 3.6           | Yes       | [main](https://github.com/Arnklit/Waterways/tree/main) |
+| 4.0           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.1           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.2           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.3           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.4           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.5           | Yes       | [godot4_5_1](https://github.com/Arnklit/Waterways/tree/godot4_5_1) |
+
+Demo Projects
+-------------
+
+For Godot 3.x, a sample project was maintained and can still be accessed  [here](https://github.com/Arnklit/WaterGenGodotDemo).
+
+Starting with Godot 4.0, a test scene is included in this repo to demonstrate the addon in action. Once you've loaded the addon, simply locate and open `test_scene.tscn`.
+
 Usage
 -----
 Once the addon is active, you can simply add a River node to the scene.
@@ -23,7 +46,7 @@ Once the addon is active, you can simply add a River node to the scene.
 
 **Shaping**
 
-You can then use the Path controls to shape the river to your liking. 
+You can then use the Path controls to shape the river to your liking.
 ![FOa6ZrcTXA](https://user-images.githubusercontent.com/4955051/105954879-4af1e280-606d-11eb-9f53-bf60f701395e.gif)
 
 The "Snap to Colliders" constraint can be used to easily place the path of the river along a terrain.
@@ -87,6 +110,12 @@ For effects such as this:
 
 ![UtzIm3ohmc](https://user-images.githubusercontent.com/4955051/104092678-75762a00-527d-11eb-9eff-18851b84a429.gif)
 
+**Waterfall Nodes**
+
+A *Waterfall* node is a newer node type that supports waterfall-like meshes. Check it out and give us feedback on it!
+
+![Image](https://github.com/user-attachments/assets/474a800f-e341-4255-bdd4-ee7014ae88c6)
+
 
 River Parameters
 ----------------
@@ -115,38 +144,38 @@ The river's parameters are split into 4 sections.
 - *Roughness* - The roughness of the river surface, also affects the blurring that occurs in the refractions.
 - *Edge Fade* - The distance the river fades out when it intesects other objects to give the shore line a softer look.
 - *Flow* - Subcategory for flow options.
-    - *Speed* - How fast the river flows.
-    - *Base Strength* - Base multiplier of the flow vectors.
-    - *Steepness Strength* - Flow vectors multiplied by the steepness of the river.
-    - *Distance Strength* - Flow vectors multiplied by the distance field for faster flows further away from shore.
-    - *Pressure Strength* - Flow vectors multiplied by a pressure map, to imitate the flow increasing when there is less available space in the river.
-    - *Max Strength* - Clamps the maximum multiplier of the flow vectors.
+	- *Speed* - How fast the river flows.
+	- *Base Strength* - Base multiplier of the flow vectors.
+	- *Steepness Strength* - Flow vectors multiplied by the steepness of the river.
+	- *Distance Strength* - Flow vectors multiplied by the distance field for faster flows further away from shore.
+	- *Pressure Strength* - Flow vectors multiplied by a pressure map, to imitate the flow increasing when there is less available space in the river.
+	- *Max Strength* - Clamps the maximum multiplier of the flow vectors.
 
 *Parameters specific to Water shader*
 
 - *Albedo* - Subcategory for the albedo parameters.
-    - *Color* - The two colours of the water mixed based on the depth set in *Depth*.
-    - *Depth* - The water depth at which the far colour of the gradient is returned.
-    - *Depth Curve* - The interpolation curve used for the depth gradient.
+	- *Color* - The two colours of the water mixed based on the depth set in *Depth*.
+	- *Depth* - The water depth at which the far colour of the gradient is returned.
+	- *Depth Curve* - The interpolation curve used for the depth gradient.
 
 - *Transparency* - Subcategory for the transparency parameters.
-    - *Clarity* - How far light can travel in the water before only returning the albedo colour.
-    - *Depth Curve* - The interpolation curve used for the clarity depth.
-    - *Refraction* - How much the background gets bent by the water shape.
-    
+	- *Clarity* - How far light can travel in the water before only returning the albedo colour.
+	- *Depth Curve* - The interpolation curve used for the clarity depth.
+	- *Refraction* - How much the background gets bent by the water shape.
+
 - *Foam* - Subcategory for the foam options.
-    - *Color* - The colour of the foam.
-    - *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
-    - *Steepness* - Gives the option to add in foam where the river is steep.
-    - *Smoothness* - Controls how the foam layers are combined to give a sharper or softer look.
+	- *Color* - The colour of the foam.
+	- *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
+	- *Steepness* - Gives the option to add in foam where the river is steep.
+	- *Smoothness* - Controls how the foam layers are combined to give a sharper or softer look.
 
 *Parameters specific to the Lava shader*
 
 - *Emission* - Subcategory for the emission options.
-    - *Color* - The two colours multiplied by the emission texture of the lava mixed based on the depth set in *Depth*.
-    - *Depth* - The lava depth at which the far colour of the gradient is returned.
-    - *Depth Curve* - The interpolation curve used for the depth gradient.
-    - *Texture* - The emission texture.
+	- *Color* - The two colours multiplied by the emission texture of the lava mixed based on the depth set in *Depth*.
+	- *Depth* - The lava depth at which the far colour of the gradient is returned.
+	- *Depth Curve* - The interpolation curve used for the depth gradient.
+	- *Texture* - The emission texture.
 
 **Lod**
 
@@ -210,9 +239,9 @@ WaterSystem Parameters
 - *System Group Name* - This group name is assigned at runtime, it is used by the *Buoyant* node to find the WaterSystem. If you only have one *WaterSystem*, you can just leave this be.
 - *Minimum Water Level* - This is the value returned when an object queries the Water System heightmap, but hits outside the baked height data.
 - *Auto Assign Texture & Coordinates On Generate* - Subcategory for auto assign setting, used to send the system map and coordinates to materials to be used in shaders
-    - *Wet Group Name* - This name will be used to find any *MeshInstances* that should have the maps assigned
-    - *Surface Index* - The surface index the material you want to send the maps to is set on the *MeshInstance*, -1 means disabled.
-    - *Material Override* - If the material is instead set as a Material Override, check this box for the maps to be assigned there.
+	- *Wet Group Name* - This name will be used to find any *MeshInstances* that should have the maps assigned
+	- *Surface Index* - The surface index the material you want to send the maps to is set on the *MeshInstance*, -1 means disabled.
+	- *Material Override* - If the material is instead set as a Material Override, check this box for the maps to be assigned there.
 
 Buoyant Parameters
 ------------------

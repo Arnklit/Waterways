@@ -1,7 +1,7 @@
 [gd_scene load_steps=5 format=3 uid="uid://c34hw5u3n1nnt"]
 
-[ext_resource type="Script" path="res://addons/waterways/gui/gradient_inspector.gd" id="1"]
-[ext_resource type="Shader" path="res://addons/waterways/shaders/gui/gradient.gdshader" id="2"]
+[ext_resource type="Script" uid="uid://bbptp3mw8uyta" path="res://addons/waterways/gui/gradient_inspector.gd" id="1"]
+[ext_resource type="Shader" uid="uid://birl6x2dlqf58" path="res://addons/waterways/shaders/gui/gradient.gdshader" id="2"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_v5c7w"]
 bg_color = Color(1, 1, 1, 1)

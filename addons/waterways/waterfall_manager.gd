@@ -1,42 +1,163 @@
 @tool
-extends Node3D
+extends "res://addons/waterways/water_feature.gd"
 
-const WaterfallConfiguration = preload("./waterfall_configuration.gd")
-const WaterHelperMethods = preload("./water_helper_methods.gd")
-const line_sample_resolution := 100
+const DEFAULT_PARAMETERS = {
+	line_sample_resolution = 100,
+	width_top = 1.0,
+	width_bottom = 1.0,
+	step_length_divs = 1,
+	step_width_divs = 1,
+	overshoot = 1.60158,
+}
 
-@export var configuration: WaterfallConfiguration:
-	set(value):
-		configuration = value
-		configuration.changed.connect(_configuration_changed)
-		print("configuration set function is called")
-#@export var width := 3.0:
-#	set(value):
-#		width = value
-#		_generate_waterfall()
-#@export var step_length_divs := 1:
-#	set(value):
-#		step_length_divs = value
-#		_generate_waterfall()
-#@export var step_width_divs := 1:
-#	set(value):
-#		step_width_divs = value
-#		_generate_waterfall()
+# Shape Properties
+var line_sample_resolution: int = 100:
+	set = set_line_sample_resolution
+var width_top: float = 1.0:
+	set = set_width_top
+var width_bottom: float = 1.0:
+	set = set_width_bottom
+var step_length_divs: int = 1:
+	set = set_step_length_divs
+var step_width_divs: int = 1:
+	set = set_step_width_divs
+var overshoot: float = 1.60158:
+	set = set_overshoot
 
-var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)]):
-	set(value):
-		points = value
-		_generate_waterfall()
-		emit_signal("waterfall_changed")
-var mesh_instance : MeshInstance3D
+var points := PackedVector3Array([Vector3(0.0, 4.0, 0.0), Vector3(0.0, 0.0, 1.0)])
 
-var _st : SurfaceTool
-var _mdt : MeshDataTool
-var _steps := 2
-var _first_enter_tree = true
+# Direction vectors at each endpoint (normalized, in XZ plane). Zero means auto-calculate from points.
+var direction_top := Vector3.ZERO
+var direction_bottom := Vector3.ZERO
 
-# TODO - connect this
+var _st: SurfaceTool
+var _mdt: MeshDataTool
+
 signal waterfall_changed
+
+
+func get_step_length_divs() -> int:
+	return step_length_divs
+
+
+func get_step_width_divs() -> int:
+	return step_width_divs
+
+
+func _use_uv2_for_collisionmap() -> bool:
+	return false
+
+
+func _generate_mesh() -> void:
+	_generate_waterfall()
+
+
+func _get_default_parameters() -> Dictionary:
+	return DEFAULT_PARAMETERS
+
+
+func _get_property_list() -> Array:
+	var shape_props = [
+		{
+			name = "Shape",
+			type = TYPE_NIL,
+			usage = PROPERTY_USAGE_GROUP | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "line_sample_resolution",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1, 200",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "width_top",
+			type = TYPE_FLOAT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.1, 10.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "width_bottom",
+			type = TYPE_FLOAT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.1, 10.0",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "step_length_divs",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1, 8",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "step_width_divs",
+			type = TYPE_INT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "1, 8",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+		{
+			name = "overshoot",
+			type = TYPE_FLOAT,
+			hint = PROPERTY_HINT_RANGE,
+			hint_string = "0.0,1.0,1.60158,5.0",
+			description = "The overshoot value for the waterfall",
+			usage = PROPERTY_USAGE_DEFAULT | PROPERTY_USAGE_SCRIPT_VARIABLE,
+		},
+	]
+
+	var storage_props = [
+		{
+			name = "points",
+			type = TYPE_PACKED_VECTOR3_ARRAY,
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+		{
+			name = "direction_top",
+			type = TYPE_VECTOR3,
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+		{
+			name = "direction_bottom",
+			type = TYPE_VECTOR3,
+			usage = PROPERTY_USAGE_STORAGE,
+		},
+	]
+
+	return (
+		shape_props +
+		_get_material_property_list() +
+		_get_shader_params_property_list() +
+		_get_baking_property_list() +
+		storage_props +
+		_get_base_storage_property_list()
+	)
+
+
+func get_right_vector_top() -> Vector3:
+	if direction_top != Vector3.ZERO:
+		return direction_top.cross(Vector3.UP).normalized()
+	return _get_default_right_vector()
+
+
+func get_right_vector_bottom() -> Vector3:
+	if direction_bottom != Vector3.ZERO:
+		return direction_bottom.cross(Vector3.UP).normalized()
+	return _get_default_right_vector()
+
+
+func _get_default_right_vector() -> Vector3:
+	var to_from: Vector3 = points[1] - points[0]
+	var to_from_2d = Vector3(to_from.x, 0.0, to_from.z)
+	if to_from_2d.length() < 0.001:
+		return Vector3.RIGHT
+	return to_from_2d.cross(Vector3.UP).normalized()
+
+
+func _init() -> void:
+	super()
 
 
 func get_points() -> PackedVector3Array:
@@ -46,14 +167,6 @@ func get_points() -> PackedVector3Array:
 func set_point(id: int, position: Vector3) -> void:
 	points[id] = position
 	_generate_waterfall()
-	emit_signal("waterfall_changed")
-
-
-func _configuration_changed() -> void:
-	print("_configuration changed")
-	# TODO - I assume we can pass a parameter about whether a re-gen is needed
-	_generate_waterfall()
-	emit_signal("waterfall_changed")
 
 
 func _enter_tree() -> void:
@@ -64,76 +177,122 @@ func _enter_tree() -> void:
 		var new_mesh_instance := MeshInstance3D.new()
 		new_mesh_instance.name = "WaterfallMeshInstance"
 		add_child(new_mesh_instance)
-		mesh_instance = get_child(0) as MeshInstance3D
+		_mesh_instance = get_child(0) as MeshInstance3D
 		_generate_waterfall()
 	else:
-		mesh_instance = get_child(0) as MeshInstance3D
-		# TODO set material?
-	
+		_mesh_instance = get_child(0) as MeshInstance3D
+		if _mesh_instance.mesh:
+			_material = _mesh_instance.mesh.surface_get_material(0) as ShaderMaterial
+
 
 func _generate_waterfall() -> void:
-	
-	# TODO - This spams "the target vector can't be zero", not sure which part, maybe cross product
-	
+	if _mesh_instance == null:
+		return
+
 	var to_from: Vector3 = points[1] - points[0]
 	var to_from_2d = Vector3(to_from.x, 0.0, to_from.z)
 	var dist = to_from_2d.length()
-	
+
 	var line_points := PackedVector3Array()
-	
 	var curve := Curve3D.new()
-	
+
 	for i in line_sample_resolution + 1:
 		var val = float(i) / float(line_sample_resolution)
 		var position = points[0] + to_from_2d * val + Vector3(0.0, ease_back_in(val) * to_from.y, 0.0)
 		curve.add_point(position)
 		line_points.append(position)
-	
+
 	var curve_length := curve.get_baked_length()
-		
-	_steps = int( max(1.0, round(curve_length / configuration.width)))
-	
+	var avg_width := (width_top + width_bottom) / 2.0
+
+	_steps = int(max(1.0, round(curve_length / avg_width)))
+
 	_st = SurfaceTool.new()
 	_st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	_st.set_smooth_group(0)
-	
+
 	# Generating the verts
-	for step in _steps * configuration.step_length_divs + 1:
-		var position := curve.sample_baked(float(step) / float(_steps * configuration.step_length_divs) * curve_length, false)
-		var backward_pos := curve.sample_baked((float(step) - 0.05) / float(_steps * configuration.step_length_divs) * curve_length, false)
-		var forward_pos := curve.sample_baked((float(step) + 0.05) / float(_steps *configuration. step_length_divs) * curve_length, false)
-		var forward_vector := forward_pos - backward_pos
-		var right_vector := forward_vector.cross(Vector3.UP).normalized()
-		
-				
-		for w_sub in configuration.step_width_divs + 1:
-			_st.set_uv(Vector2(float(w_sub) / (float(configuration.step_width_divs)), float(step) / float(configuration.step_length_divs) ))
-			_st.add_vertex(position + right_vector * configuration.width - 2.0 * right_vector * configuration.width * float(w_sub) / (float(configuration.step_width_divs)))
-	
+	var right_top := get_right_vector_top()
+	var right_bottom := get_right_vector_bottom()
+	for step in _steps * step_length_divs + 1:
+		var t := float(step) / float(_steps * step_length_divs)
+		var position := curve.sample_baked(t * curve_length, false)
+		var right_vector := right_top.slerp(right_bottom, t).normalized()
+		var width := lerpf(width_top, width_bottom, t)
+
+		for w_sub in step_width_divs + 1:
+			_st.set_uv(Vector2(float(w_sub) / (float(step_width_divs)), float(step) / float(step_length_divs)))
+			_st.add_vertex(position + right_vector * width - 2.0 * right_vector * width * float(w_sub) / (float(step_width_divs)))
+
 	# Defining the tris
-	for step in _steps * configuration.step_length_divs:
-		for w_sub in configuration.step_width_divs:
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 1)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 2 + configuration.step_width_divs - 1)
-			
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 1)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 3 + configuration.step_width_divs - 1)
-			_st.add_index( (step * (configuration.step_width_divs + 1)) + w_sub + 2 + configuration.step_width_divs - 1)
-		
+	for step in _steps * step_length_divs:
+		for w_sub in step_width_divs:
+			_st.add_index((step * (step_width_divs + 1)) + w_sub)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 1)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 2 + step_width_divs - 1)
+
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 1)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 3 + step_width_divs - 1)
+			_st.add_index((step * (step_width_divs + 1)) + w_sub + 2 + step_width_divs - 1)
+
 	_st.generate_normals()
 	_st.generate_tangents()
 	_st.deindex()
-	
+
 	var mesh := ArrayMesh.new()
 	mesh = _st.commit()
-	mesh_instance.mesh = mesh
+	mesh.surface_set_material(0, _material)
+	_mesh_instance.mesh = mesh
+
+	emit_signal("waterfall_changed")
 
 
 func ease_back_in(x: float) -> float:
-	var c1 = 1.70158
-	var c3 = c1 + 1
-	return c3 * x * x * x - c1 * x * x
+	var c3 = overshoot + 1
+	return c3 * x * x * x - overshoot * x * x
+
+
+func set_line_sample_resolution(value: int) -> void:
+	line_sample_resolution = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_width_top(value: float) -> void:
+	width_top = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_width_bottom(value: float) -> void:
+	width_bottom = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_step_length_divs(value: int) -> void:
+	step_length_divs = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_step_width_divs(value: int) -> void:
+	step_width_divs = value
+	if _first_enter_tree:
+		return
+	_generate_waterfall()
+
+
+func set_overshoot(value: float) -> void:
+	overshoot = value
+	if _first_enter_tree:
+		return
+
+	_generate_waterfall()
 
 
 # Signal Methods

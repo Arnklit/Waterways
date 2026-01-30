@@ -1,5 +1,3 @@
-# Copyright © 2023 Kasper Arnklit Frandsen - MIT License
-# See `LICENSE.md` included in the source distribution for details.
 extends EditorNode3DGizmoPlugin
 
 const RiverManager = preload("./../river_manager.gd")
@@ -366,6 +364,13 @@ func _redraw(gizmo: EditorNode3DGizmo) -> void:
 	gizmo.clear()
 
 	var river := gizmo.get_node_3d() as RiverManager
+
+	# Add collision triangles for editor selection
+	var mesh_instance := river.get_mesh_instance()
+	if mesh_instance and mesh_instance.mesh:
+		var tri_mesh := mesh_instance.mesh.generate_triangle_mesh()
+		if tri_mesh:
+			gizmo.add_collision_triangles(tri_mesh)
 
 	if not river.is_connected("river_changed", Callable(self, "_redraw")):
 		river.river_changed.connect(_redraw.bind(gizmo))
