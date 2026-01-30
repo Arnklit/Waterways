@@ -110,6 +110,12 @@ For effects such as this:
 
 ![UtzIm3ohmc](https://user-images.githubusercontent.com/4955051/104092678-75762a00-527d-11eb-9eff-18851b84a429.gif)
 
+**Waterfall Nodes**
+
+A *Waterfall* node is a newer node type that supports waterfall-like meshes. Check it out and give us feedback on it!
+
+![Image](https://github.com/user-attachments/assets/474a800f-e341-4255-bdd4-ee7014ae88c6)
+
 
 River Parameters
 ----------------
