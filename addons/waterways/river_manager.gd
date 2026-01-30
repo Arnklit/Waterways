@@ -11,14 +11,19 @@ const DEFAULT_PARAMETERS = {
 }
 
 # Shape Properties
+# How many subdivisions the river will have per step along its length.
 var shape_step_length_divs: int = 1:
 	set = set_step_length_divs
+# How many subdivisions the river will have along its width.
 var shape_step_width_divs: int = 1:
 	set = set_step_width_divs
+# How much the shape of the river is relaxed to even out corners.
 var shape_smoothness: float = 0.5:
 	set = set_smoothness
 
 # LOD Properties
+# Controls the cutoff point for whether the shader samples
+# textures twice to create an FBM effect for the waves and foam.
 var lod_lod0_distance: float = 50.0:
 	set = set_lod0_distance
 

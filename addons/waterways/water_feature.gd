@@ -18,13 +18,26 @@ const BASE_DEFAULT_PARAMETERS = {
 }
 
 # Bake Properties
+# Controls the resolution of the baked flow and foam map.
+# This texture does not need to be very large to look decent,
+# so only increse it if needed as the baking time can increase a lot.
 var baking_resolution: int = 2
+# The collision map is calculated using raycasts from the river surface to detect colliders,
+# adjust the length as needed.
 var baking_raycast_distance: float = 10.0
+# The physics layers to use for the raycast.
 var baking_raycast_layers: int = 1
+# The amount of dilation happening to convert the collision map to an Distance Field.
+# This value should generally not be adjusted.
 var baking_dilate: float = 0.6
+# How much the flowmap is blurred to clear up seams or artifacts.
 var baking_flowmap_blur: float = 0.04
+# How much of the Distance Field is cut off to generate the foam mask.
+# Increasing this calue will make the foam mask tighter around the collisions.
 var baking_foam_cutoff: float = 0.9
+# How far the foam stretches along the flow direction.
 var baking_foam_offset: float = 0.1
+# How much the foam mask is blurred.
 var baking_foam_blur: float = 0.02
 
 # Flowmap state
