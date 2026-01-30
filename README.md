@@ -2,7 +2,7 @@
 
 [![Waterways Add-on for Godot v0.1.0 Released - Feature Overview](https://raw.githubusercontent.com/Arnklit/media/main/WaterWaysAdd-on/screenshot01.jpg)](https://youtu.be/t54jUPFtRO8 "Waterways Add-on for Godot v0.1.0 Released - Feature Overview")
 
-A tool to generate river meshes with flow and foam maps based on bezier curves. Try out the [demo project](https://github.com/Arnklit/WaterGenGodotDemo) for an example.
+A tool to generate river meshes with flow and foam maps based on bezier curves.
 
 [Discord Server](https://discord.gg/mjGvWwQwv2)
 
@@ -16,6 +16,29 @@ Purpose
 -------
 I've been very impressed with examples of using flowmaps to imitate water simulations in games for a while, but most of the implementations I've seen were using either manually painted flowmaps, or flowmaps generated in an external program. I wanted to see if it was possible to have good flowmap results purely generated within Godot. Both the generation of the flowmaps and the generation of the mesh for the river was of interest to me and I've learned a lot implementing my solution.
 
+Godot Version Support
+----------
+Use the table below to determine which branch to use for your Godot version.
+
+Note that newer updates are not made available in previous branches. The latest updates are pushed to the latest version branch.
+
+| Godot Version | Supported | Branch |
+| ------------- | --------- | --------- |
+| 3.6           | Yes       | [main](https://github.com/Arnklit/Waterways/tree/main) |
+| 4.0           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.1           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.2           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.3           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.4           | Yes       | [godot4_0](https://github.com/Arnklit/Waterways/tree/godot4_0) |
+| 4.5           | Yes       | [godot4_5_1](https://github.com/Arnklit/Waterways/tree/godot4_5_1) |
+
+Demo Projects
+-------------
+
+For Godot 3.x, a sample project was maintained and can still be accessed  [here](https://github.com/Arnklit/WaterGenGodotDemo).
+
+Starting with Godot 4.0, a test scene is included in this repo to demonstrate the addon in action. Once you've loaded the addon, simply locate and open `test_scene.tscn`.
+
 Usage
 -----
 Once the addon is active, you can simply add a River node to the scene.
@@ -23,7 +46,7 @@ Once the addon is active, you can simply add a River node to the scene.
 
 **Shaping**
 
-You can then use the Path controls to shape the river to your liking. 
+You can then use the Path controls to shape the river to your liking.
 ![FOa6ZrcTXA](https://user-images.githubusercontent.com/4955051/105954879-4af1e280-606d-11eb-9f53-bf60f701395e.gif)
 
 The "Snap to Colliders" constraint can be used to easily place the path of the river along a terrain.
@@ -133,7 +156,7 @@ The river's parameters are split into 4 sections.
 	- *Clarity* - How far light can travel in the water before only returning the albedo colour.
 	- *Depth Curve* - The interpolation curve used for the clarity depth.
 	- *Refraction* - How much the background gets bent by the water shape.
-	
+
 - *Foam* - Subcategory for the foam options.
 	- *Color* - The colour of the foam.
 	- *Ammount* - Controls the foam cutoff in the shader, you may have to use the foam baking setting to change the amount of foam further. See below.
