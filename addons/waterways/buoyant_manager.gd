@@ -5,11 +5,16 @@ extends Node3D
 
 const WaterSystem = preload("res://addons/waterways/water_system_manager.gd")
 
-
+## This is used to find the WaterSystem to get height and flow data from,
+## this should match the value in your WaterSystem.
 @export var water_system_group_name : String = "waterways_system"
+## The amount of upwards force applied to the RigidBody when the Buoyant is under the water level.
 @export var buoyancy_force := 5.0
+## The amount of torque force added to the RigidBody to try and keep the object upright.
 @export var up_correcting_force := 5.0
+## The amount the flow vectors from the WaterSystem get's applied to the RigidBody.
 @export var flow_force := 50.0
+## This sets the RigidBody's damping parameter when under the water level.
 @export var water_resistance := 5.0
 
 var _rb : RigidBody3D
@@ -48,8 +53,8 @@ func _get_rotation_correction() -> Vector3:
 	var up_vector := global_transform.basis.y
 	var angle := up_vector.angle_to(Vector3.UP)
 	if angle < 0.1:
-		# Don't reaturn a rotation as object is almost upright, since the cross 
-		# product at an angle that small might cause precission errors.
+		# Don't return a rotation as object is almost upright, since the cross
+		# product at an angle that small might cause precision errors.
 		return Vector3.ZERO
 	var cross := up_vector.cross(Vector3.UP).normalized()
 	rotation_transform = rotation_transform.rotated(cross, angle)
